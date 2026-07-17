@@ -1,0 +1,2312 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Host PRO - Diretoria V5</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --sidebar-bg: #2b2b2b;
+            --primary: #0088ff;
+            --primary-hover: #0055cc;
+            --text-light: #f0f0f0;
+            --text-muted: #aaaaaa;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-light);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Menu Lateral */
+        #sidebar {
+            width: 250px;
+            background-color: var(--sidebar-bg);
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+            z-index: 100;
+        }
+
+        .logo-area {
+            text-align: center;
+            padding: 0 20px 20px 20px;
+            border-bottom: 1px solid #444;
+            margin-bottom: 20px;
+        }
+
+        .logo-area h2 {
+            margin: 0;
+            color: #00ffff;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
+        }
+
+        /* Botões do Menu */
+        .nav-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 15px 20px;
+            text-align: left;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .nav-btn:hover {
+            background-color: #333;
+            color: var(--text-light);
+        }
+
+        .nav-btn.active {
+            background-color: #111;
+            color: var(--primary);
+            border-left-color: var(--primary);
+            font-weight: bold;
+        }
+
+        /* Área Central de Conteúdo */
+        #main-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        /* Seções das Abas (Ocultas por padrão) */
+        .tab-section {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Estilos genéricos para os painéis de configuração */
+        .card {
+            background-color: var(--sidebar-bg);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        /* ========================================= */
+        /* RESPONSIVIDADE (MOBILE / CELULAR)         */
+        /* ========================================= */
+        #mobile-header {
+            display: none;
+            background-color: var(--sidebar-bg);
+            padding: 15px 20px;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            z-index: 90;
+        }
+        #mobile-header h2 { margin: 0; color: #00ffff; text-shadow: 0 0 10px rgba(0, 255, 255, 0.4); font-size: 20px; }
+        .menu-btn { background: none; border: none; color: white; font-size: 26px; cursor: pointer; padding: 0; }
+
+        #sidebar-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.7); z-index: 99; opacity: 0; transition: opacity 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            #mobile-header { display: flex; flex-shrink: 0; }
+
+            #sidebar {
+                position: fixed; left: -260px; height: 100vh; transition: left 0.3s ease; z-index: 100; width: 240px;
+            }
+            #sidebar.open { left: 0; }
+            #sidebar-overlay.active { display: block; opacity: 1; }
+
+            #main-content { padding: 15px; overflow-x: hidden; }
+
+            /* Força colunas em telas pequenas (Quebra Narrador, Chat e Sorteio para baixo) */
+            div[style*="display: flex; gap: 20px;"] { flex-direction: column !important; gap: 15px !important; }
+            div[style*="display: flex; gap: 15px;"] { flex-wrap: wrap !important; }
+
+            /* Ajuste dos Grids de Mídia para o Celular */
+            #grid-midias, #grid-vips, #grid-itens-gerador { grid-template-columns: 1fr !important; }
+
+            /* Ajustes gerais de inputs e cartões para não vazarem da tela */
+            input, select, textarea { box-sizing: border-box; max-width: 100% !important; }
+            .card { min-width: 0 !important; width: 100%; box-sizing: border-box; }
+
+            /* Oculta textos muito grandes nos botões do topo em telas menores */
+            .tab-section .card > div:first-child p { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Overlay e Cabeçalho Mobile -->
+    <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
+    <div id="mobile-header">
+        <h2>DIRETORIA V5</h2>
+        <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+    </div>
+
+    <!-- Menu Lateral -->
+    <div id="sidebar">
+        <div class="logo-area">
+            <h2>DIRETORIA</h2>
+            <p style="margin: 5px 0 0 0; font-size: 12px; color: #ffeb3b;">Painel Host Web</p>
+        </div>
+
+        <button class="nav-btn active" onclick="abrirAba('aba-chat')">💬 Monitor de Chat</button>
+        <button class="nav-btn" onclick="abrirAba('aba-rankings')">🏆 Rankings e Tap</button>
+        <button class="nav-btn" onclick="abrirAba('aba-letreiro')">✨ Letreiro Animado</button>
+        <button class="nav-btn" onclick="abrirAba('aba-filtros')">🎙️ Filtros e Voz</button>
+        <button class="nav-btn" onclick="abrirAba('aba-midia')">🎭 Mídias Interativas</button>
+        <button class="nav-btn" onclick="abrirAba('aba-metas')">🎯 Metas ao Vivo</button>
+        <button class="nav-btn" onclick="abrirAba('aba-sorteio')">🎟️ Sorteio (Roleta)</button>
+        <button class="nav-btn" onclick="abrirAba('aba-geradores')">📺 Telas Gerador PRO</button>
+        <button class="nav-btn" onclick="abrirAba('aba-links')">🔗 Links (OBS/TikTok)</button>
+    </div>
+
+    <!-- Área de Conteúdo -->
+    <div id="main-content">
+
+        <div id="aba-chat" class="tab-section active">
+            <div style="display: flex; gap: 20px; align-items: stretch;">
+                <!-- Coluna do Chat (Esquerda) -->
+                <div class="card" style="flex: 2; margin-bottom: 0;">
+                    <h3 style="margin-top: 0;">💬 Monitor de Chat ao Vivo</h3>
+                    <p style="margin-top: 0; font-size: 13px; color: #aaa;">O chat e as mensagens da live aparecerão aqui via WebSocket.</p>
+                    <div id="chat-box" style="height: 400px; background: #111; border-radius: 8px; padding: 15px; overflow-y: auto;"></div>
+                </div>
+
+                <!-- Coluna do Narrador (Direita) -->
+                <div class="card" style="flex: 1; margin-bottom: 0; background: #222; border: 1px solid #444;">
+                    <h3 style="color: #00f2fe; margin-top: 0;">🎙️ Narrador</h3>
+                    <button id="btn-pausar-narrador" onclick="togglePausarNarrador()" style="width: 100%; background: #e74c3c; color: white; border: none; padding: 12px; border-radius: 5px; font-weight: bold; cursor: pointer; margin-bottom: 20px; transition: 0.2s;">⏸️ Pausar Narrador</button>
+
+                    <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; margin-bottom: 15px;">
+                        <strong style="color: #fff; margin-bottom: 5px;">Voz Principal Padrão:</strong>
+                        <select id="seletor-vozes" style="padding: 8px; background: #111; color: white; border: 1px solid #555; border-radius: 4px; outline: none;"></select>
+                    </label>
+
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #f39c12; margin-bottom: 15px; cursor: pointer; background: #111; padding: 10px; border-radius: 5px; border: 1px solid #333;">
+                        <input type="checkbox" id="voz-dinamica">
+                        <strong>🎲 Voz Dinâmica (Aleatória)</strong>
+                    </label>
+
+                    <hr style="border-color: #333; margin: 15px 0;">
+
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <label style="cursor: pointer; color: #ccc; font-size: 13px;"><input type="checkbox" id="ler-chat" checked> Ler Mensagens do Chat</label>
+                        <label style="cursor: pointer; color: #ccc; font-size: 13px;"><input type="checkbox" id="ler-presentes" checked> Ler Presentes</label>
+                        <label style="cursor: pointer; color: #ccc; font-size: 13px;"><input type="checkbox" id="ler-likes"> Ler Tap Tap</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="aba-rankings" class="tab-section">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 15px; margin-bottom: 20px;">
+                    <div>
+                        <h3 style="margin: 0; color: #f39c12;">🏆 Rankings de Engajamento</h3>
+                        <p style="margin: 5px 0 0 0; font-size: 13px;">Os rankings ficam salvos automaticamente. Troque o período para ver o histórico.</p>
+                    </div>
+                    <select id="periodo-ranking" onchange="renderizarRankings()" style="padding: 10px; background: #111; color: #00ffcc; border: 1px solid #00ffcc; border-radius: 5px; font-weight: bold; cursor: pointer; outline: none;">
+                        <option value="diario">📅 Diário (Hoje)</option>
+                        <option value="semanal">📆 Semanal</option>
+                        <option value="mensal">🗓️ Mensal</option>
+                        <option value="semestral">🌗 Semestral</option>
+                        <option value="anual">🌍 Anual</option>
+                        <option value="geral">♾️ Geral (Histórico Completo)</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <!-- Tabela de Presentes -->
+                    <div style="flex: 1; background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444; min-width: 300px;">
+                        <h4 style="color: gold; margin-top: 0; text-align: center; border-bottom: 1px dashed #555; padding-bottom: 10px;">💎 Top Presenteadores</h4>
+                        <div id="lista-ranking-gifters" style="display: flex; flex-direction: column; gap: 8px; height: 350px; overflow-y: auto; padding-right: 5px;"></div>
+                    </div>
+
+                    <!-- Tabela de Likes -->
+                    <div style="flex: 1; background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444; min-width: 300px;">
+                        <h4 style="color: #ff4757; margin-top: 0; text-align: center; border-bottom: 1px dashed #555; padding-bottom: 10px;">❤️ Top Tap Tap (Likes)</h4>
+                        <div id="lista-ranking-likes" style="display: flex; flex-direction: column; gap: 8px; height: 350px; overflow-y: auto; padding-right: 5px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="aba-letreiro" class="tab-section">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 15px; margin-bottom: 20px;">
+                    <div>
+                        <h3 style="margin: 0; color: #00f2fe;">✨ Letreiro Animado (Ticker)</h3>
+                        <p style="margin: 5px 0 0 0; font-size: 13px;">Clique em "✨ Add" nos rankings para colocar a pessoa (nome e foto) aqui.</p>
+                    </div>
+                    <button onclick="copiarLinkOBS('letreiro')" style="background: #0088ff; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer;">📋 Copiar Link p/ OBS</button>
+                </div>
+
+                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <!-- Coluna Esquerda: Adicionar Manual e Configurar -->
+                    <div style="flex: 1; background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444; min-width: 300px;">
+                        <h4 style="color: #fff; margin-top: 0;">Adicionar Manualmente</h4>
+                        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                            <input type="text" id="input-nome-letreiro" placeholder="Digite o nome..." style="flex: 1; padding: 10px; background: #111; color: white; border: 1px solid #555; border-radius: 4px; outline: none;">
+                            <button onclick="adicionarNomeLetreiro()" style="background: #28a745; color: white; border: none; padding: 0 15px; border-radius: 4px; font-weight: bold; cursor: pointer;">➕ Add</button>
+                        </div>
+
+                        <hr style="border-color: #333; margin: 15px 0;">
+                        <h4 style="color: #fff; margin-top: 0;">Ajustes Visuais</h4>
+
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                            <label style="flex: 1; color: #ccc; font-size: 13px;">Separador:<br>
+                                <select id="letreiro-separador" onchange="salvarConfigLetreiro()" style="width: 100%; margin-top: 5px; padding: 8px; background: #111; color: white; border: 1px solid #555; border-radius: 4px; outline: none;">
+                                    <option value="⭐">⭐ Estrela</option>
+                                    <option value="🔥">🔥 Fogo</option>
+                                    <option value="💎">💎 Diamante</option>
+                                    <option value="🚀">🚀 Foguete</option>
+                                    <option value="•">• Ponto</option>
+                                </select>
+                            </label>
+
+                            <label style="flex: 1; color: #ccc; font-size: 13px;">Velocidade (s):<br>
+                                <input type="number" id="letreiro-velocidade" value="60" min="10" max="150" onchange="salvarConfigLetreiro()" style="width: 100%; box-sizing: border-box; margin-top: 5px; padding: 8px; background: #111; color: white; border: 1px solid #555; border-radius: 4px; outline: none;">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Coluna Direita: Lista Atual -->
+                    <div style="flex: 1; background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444; min-width: 300px; display: flex; flex-direction: column;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <h4 style="color: #fff; margin: 0;">Fila do Letreiro</h4>
+                            <button onclick="limparLetreiro()" style="background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">🗑️ Limpar Todos</button>
+                        </div>
+                        <div id="lista-nomes-letreiro" style="flex: 1; background: #111; border: 1px solid #333; border-radius: 4px; padding: 10px; height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px;">
+                            <!-- Nomes aparecerão aqui -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="aba-filtros" class="tab-section">
+            <div class="card">
+                <h3 style="color: #ff4757; margin-top: 0; margin-bottom: 15px;">🛡️ Filtros de Segurança e Moderação</h3>
+
+                <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; margin-bottom: 15px;">
+                    <strong style="color: #fff; margin-bottom: 5px;">Moedas Mínimas para Narrador ler (0 = Grátis):</strong>
+                    <input type="number" id="moedas-minimas" value="0" min="0" style="padding: 10px; background: #111; color: white; border: 1px solid #f39c12; border-radius: 4px; max-width: 200px;">
+                </label>
+
+                <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; margin-bottom: 15px;">
+
+                    <strong style="color: #fff; margin-bottom: 5px;">Limite Spam (repetições da mesma palavra):</strong>
+                    <input type="number" id="limite-spam" value="3" min="0" style="padding: 10px; background: #111; color: white; border: 1px solid #555; border-radius: 4px; max-width: 200px;">
+                </label>
+
+                <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc;">
+                    <strong style="color: #fff; margin-bottom: 5px;">Palavras Proibidas (separe por vírgula):</strong>
+                    <textarea id="palavroes" rows="4" style="padding: 10px; background: #111; color: white; border: 1px solid #ff4757; border-radius: 4px; resize: none; font-family: inherit;">porra, caralho, buceta, puta, viado, fdp, cuzao, merda, cacete, pqp</textarea>
+                </label>
+            </div>
+        </div>
+
+        <div id="aba-links" class="tab-section">
+            <div class="card">
+                <h3 style="color: #00f2fe; margin-top: 0; margin-bottom: 15px;">🔗 Links de Captura (OBS / TikTok Studio)</h3>
+                <p style="font-size: 13px; color: #ccc;">Copie os links abaixo e adicione como "Fonte de Link/Navegador" no seu gravador. No TikTok Studio, não se esqueça de ativar o "Chroma Key" Verde na fonte.</p>
+
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+                    <!-- Link: Top Presenteadores -->
+                    <div style="background: #222; padding: 15px; border-radius: 8px; border-left: 4px solid gold; display: flex; justify-content: space-between; align-items: center;">
+                        <div><strong style="color: white;">🏆 Ranking: Top Presenteadores</strong><br><span style="color: #aaa; font-size: 12px;">Acumulado de moedas</span></div>
+                        <button onclick="copiarLinkOBS('ranking_gifters')" style="background: #0088ff; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">📋 Copiar Link</button>
+                    </div>
+
+                    <!-- Link: Maior Presente -->
+                    <div style="background: #222; padding: 15px; border-radius: 8px; border-left: 4px solid #f39c12; display: flex; justify-content: space-between; align-items: center;">
+                        <div><strong style="color: white;">🔥 Ranking: Maior Presente</strong><br><span style="color: #aaa; font-size: 12px;">Combos isolados mais caros</span></div>
+                        <button onclick="copiarLinkOBS('ranking_gifts')" style="background: #0088ff; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">📋 Copiar Link</button>
+                    </div>
+
+                    <!-- Link: Tap Tap -->
+                    <div style="background: #222; padding: 15px; border-radius: 8px; border-left: 4px solid #ff4757; display: flex; justify-content: space-between; align-items: center;">
+                        <div><strong style="color: white;">❤️ Ranking: Top Tap Tap</strong><br><span style="color: #aaa; font-size: 12px;">Quem deu mais curtidas</span></div>
+                        <button onclick="copiarLinkOBS('ranking_likes')" style="background: #0088ff; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">📋 Copiar Link</button>
+                    </div>
+
+                    <!-- Link: Auditório -->
+                    <div style="background: #222; padding: 15px; border-radius: 8px; border-left: 4px solid #2ed573; display: flex; justify-content: space-between; align-items: center;">
+                        <div><strong style="color: white;">🟢 Auditório (Ativos)</strong><br><span style="color: #aaa; font-size: 12px;">Pessoas interagindo na live</span></div>
+                        <button onclick="copiarLinkOBS('ativos')" style="background: #0088ff; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">📋 Copiar Link</button>
+                    </div>
+                    <!-- Link: Mídias Interativas -->
+                    <div style="background: #222; padding: 15px; border-radius: 8px; border-left: 4px solid #a855f7; display: flex; justify-content: space-between; align-items: center;">
+                        <div><strong style="color: white;">🎭 Mídias Interativas</strong><br><span style="color: #aaa; font-size: 12px;">Áudios, Imagens e Vídeos de gatilho</span></div>
+                        <button onclick="copiarLinkOBS('midia')" style="background: #0088ff; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">📋 Copiar Link</button>
+                    </div>
+
+                    <!-- Links: Potes de Presentes -->
+                    <div style="background: #222; padding: 15px; border-radius: 8px; border-left: 4px solid #e67e22; display: flex; justify-content: space-between; align-items: center;">
+                        <div><strong style="color: white;">🍯 Pote 1 (Padrão)</strong><br><span style="color: #aaa; font-size: 12px;">Presentes quicam e caem no vidro</span></div>
+                        <button onclick="copiarLinkOBS('pote1')" style="background: #0088ff; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">📋 Copiar Link</button>
+                    </div>
+                    <div style="background: #222; padding: 15px; border-radius: 8px; border-left: 4px solid #e67e22; display: flex; justify-content: space-between; align-items: center;">
+                        <div><strong style="color: white;">🍯 Pote 2</strong></div>
+                        <button onclick="copiarLinkOBS('pote2')" style="background: #0088ff; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">📋 Copiar Link</button>
+                    </div>
+                    <div style="background: #222; padding: 15px; border-radius: 8px; border-left: 4px solid #e67e22; display: flex; justify-content: space-between; align-items: center;">
+                        <div><strong style="color: white;">🍯 Pote 3</strong></div>
+                        <button onclick="copiarLinkOBS('pote3')" style="background: #0088ff; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">📋 Copiar Link</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA DE MÍDIAS E VIPS -->
+        <div id="aba-midia" class="tab-section">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 15px; margin-bottom: 20px;">
+                    <div>
+                        <h3 style="margin: 0; color: #00f2fe;">🎭 Mídias Interativas & Entradas VIPs</h3>
+                        <p style="margin: 5px 0 0 0; font-size: 13px;">Configure Mídias por gatilho e as Entradas Triunfais da sua live.</p>
+                    </div>
+                    <button onclick="salvarMidias()" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; transition: 0.2s;">💾 Salvar Todas as Mídias</button>
+                </div>
+
+                <div id="grid-midias" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 15px;"></div>
+
+                <h3 style="color: gold; margin-top: 40px; border-top: 1px solid #444; padding-top: 20px;">🌟 Entradas Triunfais VIP (1ª Vez no Dia)</h3>
+                <p style="font-size: 13px; color: #aaa; margin-bottom: 20px;">Coloque o @nome exato (sem o @) da pessoa. Quando ela mandar a 1ª mensagem do dia, a mídia dispara.</p>
+
+                <div id="grid-vips" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 15px;"></div>
+            </div>
+        </div>
+
+        <!-- NOVA ABA: METAS AO VIVO -->
+        <div id="aba-metas" class="tab-section">
+            <div class="card">
+                <h3 style="margin: 0 0 5px 0; color: #f39c12;">🎯 Metas ao Vivo (Goal Bars)</h3>
+                <p style="margin: 0 0 20px 0; font-size: 13px;">Configure as barras de progresso para o OBS.</p>
+
+                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <!-- META DE PRESENTES -->
+                    <div style="flex: 1; background: #222; padding: 20px; border-radius: 8px; border-left: 4px solid #00f2fe; min-width: 300px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h4 style="margin: 0; color: white;">Meta de Presentes</h4>
+                            <button onclick="copiarLinkOBS('meta_gift')" style="background: #0088ff; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">📋 Link OBS</button>
+                        </div>
+
+                        <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; margin-bottom: 10px;">
+                            Presente Específico (Deixe em branco para Qualquer 1):
+                            <input type="text" id="meta-gift-nome" placeholder="Ex: Rosa" style="margin-top: 4px; padding: 8px; background: #111; color: white; border: 1px solid #555; border-radius: 4px;">
+                        </label>
+
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                            <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; flex: 1;">
+                                Atual:
+                                <input type="number" id="meta-gift-atual" value="0" style="margin-top: 4px; padding: 8px; background: #111; color: white; border: 1px solid #555; border-radius: 4px;">
+                            </label>
+                            <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; flex: 1;">
+                                Alvo (Total):
+                                <input type="number" id="meta-gift-alvo" value="100" style="margin-top: 4px; padding: 8px; background: #111; color: white; border: 1px solid #555; border-radius: 4px;">
+                            </label>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button onclick="salvarMeta('gift')" style="background: #28a745; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; flex: 1; font-weight: bold;">💾 Salvar</button>
+                            <button onclick="zerarMeta('gift')" style="background: #e74c3c; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; flex: 1; font-weight: bold;">🔄 Zerar Atual</button>
+                        </div>
+                    </div>
+
+                    <!-- META DE TAP TAP -->
+                    <div style="flex: 1; background: #222; padding: 20px; border-radius: 8px; border-left: 4px solid #ff4757; min-width: 300px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h4 style="margin: 0; color: white;">Meta de Tap Tap (Likes)</h4>
+                            <button onclick="copiarLinkOBS('meta_like')" style="background: #0088ff; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">📋 Link OBS</button>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px; margin-top: 36px;">
+                            <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; flex: 1;">
+                                Atual:
+                                <input type="number" id="meta-like-atual" value="0" style="margin-top: 4px; padding: 8px; background: #111; color: white; border: 1px solid #555; border-radius: 4px;">
+                            </label>
+                            <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; flex: 1;">
+                                Alvo (Total):
+                                <input type="number" id="meta-like-alvo" value="10000" style="margin-top: 4px; padding: 8px; background: #111; color: white; border: 1px solid #555; border-radius: 4px;">
+                            </label>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button onclick="salvarMeta('like')" style="background: #28a745; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; flex: 1; font-weight: bold;">💾 Salvar</button>
+                            <button onclick="zerarMeta('like')" style="background: #e74c3c; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; flex: 1; font-weight: bold;">🔄 Zerar Atual</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NOVA ABA: SORTEIO AO VIVO -->
+        <div id="aba-sorteio" class="tab-section">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 15px; margin-bottom: 20px;">
+                    <div>
+                        <h3 style="margin: 0; color: #9b59b6;">🎟️ Sorteio Ao Vivo (Roleta)</h3>
+                        <p style="margin: 5px 0 0 0; font-size: 13px;">Sorteie um espectador da live com uma animação na tela.</p>
+                    </div>
+                    <button onclick="copiarLinkOBS('sorteio')" style="background: #0088ff; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer;">📋 Copiar Link p/ OBS</button>
+                </div>
+
+                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <!-- Configurações do Sorteio -->
+                    <div style="flex: 1; background: #222; padding: 20px; border-radius: 8px; border-left: 4px solid #9b59b6; min-width: 300px;">
+                        <label style="display: flex; flex-direction: column; font-size: 14px; color: #ccc; margin-bottom: 20px; font-weight: bold;">
+                            Quem vai participar do Sorteio? (Apenas pessoas no Auditório)
+                            <select id="filtro-sorteio" onchange="atualizarFiltroSorteio()" style="margin-top: 8px; padding: 10px; background: #111; color: white; border: 1px solid #555; border-radius: 4px; outline: none; cursor: pointer;">
+                                <option value="ativos">🟢 Qualquer pessoa que falou/curtiu (Todos)</option>
+                                <option value="gifters">💎 Top Ranking de Presenteadores</option>
+                                <option value="presente">🎁 Apenas quem enviou um Presente Específico</option>
+                            </select>
+                        </label>
+
+                        <div id="div-sorteio-pres" style="display: none; margin-bottom: 20px;">
+                            <label style="display: flex; flex-direction: column; font-size: 13px; color: #f39c12; font-weight: bold;">
+                                Qual presente a pessoa precisa enviar para participar?
+                                <input type="text" id="sorteio-presente-nome" placeholder="Ex: Rosa" style="margin-top: 4px; padding: 10px; background: #111; color: white; border: 1px solid #f39c12; border-radius: 4px; outline: none;">
+                            </label>
+                        </div>
+
+                        <div id="div-sorteio-top" style="display: none; margin-bottom: 20px;">
+                            <label style="display: flex; flex-direction: column; font-size: 13px; color: #00f2fe; font-weight: bold;">
+                                Quantos do Top Ranking? (Ex: 10 para sortear entre os Top 10)
+                                <input type="number" id="sorteio-top-qtd" value="10" min="1" style="margin-top: 4px; padding: 10px; background: #111; color: white; border: 1px solid #00f2fe; border-radius: 4px; outline: none;">
+                            </label>
+                        </div>
+
+                        <script>
+                            function atualizarFiltroSorteio() {
+                                const v = document.getElementById('filtro-sorteio').value;
+                                document.getElementById('div-sorteio-pres').style.display = v === 'presente' ? 'block' : 'none';
+                                document.getElementById('div-sorteio-top').style.display = v === 'gifters' ? 'block' : 'none';
+                            }
+                        </script>
+
+                        <button onclick="iniciarSorteio()" style="width: 100%; background: linear-gradient(90deg, #9b59b6, #8e44ad); color: white; border: none; padding: 15px; border-radius: 5px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(155, 89, 182, 0.4); text-transform: uppercase; text-shadow: 1px 1px 2px black;">
+                            🎉 Rodar Roleta no OBS
+                        </button>
+                    </div>
+
+                    <!-- Resultado -->
+                    <div style="flex: 1; background: #222; padding: 20px; border-radius: 8px; border: 1px solid #444; min-width: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+                        <h4 style="color: #aaa; margin: 0 0 10px 0;">Último Ganhador:</h4>
+                        <div id="resultado-sorteio" style="font-size: 28px; font-weight: bold; color: gold; text-shadow: 0 0 15px rgba(255,215,0,0.4);">
+                            ---
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NOVA ABA: TELAS GERADOR PRO -->
+        <div id="aba-geradores" class="tab-section">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 15px; margin-bottom: 20px;">
+                    <div>
+                        <h3 style="margin: 0; color: #f39c12;">📺 Telas Gerador PRO (Multitelas)</h3>
+                        <p style="margin: 5px 0 0 0; font-size: 13px;">Crie até 5 telas geradoras. Use imagens da web ou puxe do Catálogo Oficial de Presentes.</p>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <span style="color: #aaa; font-size: 14px;">Editando Tela:</span>
+                        <select id="seletor-gerador" onchange="carregarGerador()" style="background: #222; color: #f39c12; border: 1px solid #f39c12; padding: 8px; border-radius: 5px; font-weight: bold; cursor: pointer; outline: none;">
+                            <option value="1">Gerador 1</option>
+                            <option value="2">Gerador 2</option>
+                            <option value="3">Gerador 3</option>
+                            <option value="4">Gerador 4</option>
+                            <option value="5">Gerador 5</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="background: #222; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #f39c12; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong style="color: #fff;">Link da Tela Atual:</strong>
+                        <div id="link-gerador-atual" style="color: #00ffff; font-family: monospace; margin-top: 5px;"></div>
+                    </div>
+                    <button onclick="copiarLinkOBS('gerador&id=' + document.getElementById('seletor-gerador').value)" style="background: #0088ff; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">📋 Copiar Link p/ OBS</button>
+                </div>
+
+                <div class="global-settings" style="display: flex; gap: 15px; background: #2b2b2b; padding: 15px; border-radius: 8px; border: 1px solid #444; margin-bottom: 20px;">
+                    <label style="flex: 1; display: flex; flex-direction: column; font-size: 13px; color: #ccc;">
+                        Orientação:
+                        <select id="config-layout" style="margin-top: 5px; padding: 8px; background: #111; color: white; border: 1px solid #555; border-radius: 4px; outline: none;">
+                            <option value="horizontal">Horizontal (De lado)</option>
+                            <option value="vertical">Vertical (De pé)</option>
+                        </select>
+                    </label>
+                    <label style="flex: 1; display: flex; flex-direction: column; font-size: 13px; color: #ccc;">
+                        Animação:
+                        <select id="config-anim" style="margin-top: 5px; padding: 8px; background: #111; color: white; border: 1px solid #555; border-radius: 4px; outline: none;">
+                            <option value="none">Nenhuma (Fixo)</option>
+                            <option value="fade">Piscar (Fade In/Out)</option>
+                            <option value="pulse">Pulsar (Crescer/Diminuir)</option>
+                            <option value="slide">Letreiro (Deslizando)</option>
+                            <option value="one-by-one">Mostrar um de cada vez</option>
+                        </select>
+                    </label>
+                    <label style="flex: 1; display: flex; flex-direction: column; font-size: 13px; color: #ccc;">
+                        Velocidade (Segundos):
+                        <input type="number" id="config-speed" value="3" min="1" max="20" style="margin-top: 5px; padding: 8px; background: #111; color: white; border: 1px solid #555; border-radius: 4px; outline: none;">
+                    </label>
+                    <div style="display: flex; align-items: flex-end;">
+                        <button onclick="salvarGerador()" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; height: 35px;">💾 Salvar Tela</button>
+                    </div>
+                </div>
+
+                <h4 style="color: #fff; margin-bottom: 10px;">Itens Visuais da Tela</h4>
+                <div id="grid-itens-gerador" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;"></div>
+            </div>
+        </div>
+
+        <!-- SCRIPT GERADOR PRO OTIMIZADO (SEM LAG - DATALIST) -->
+        <script>
+            async function inicializarGeradorPRO() {
+                let catLocal = JSON.parse(localStorage.getItem('diretoria_catalogo_presentes')) || {};
+                try {
+                    const res = await fetch('catalogo_presentes_live_2.json');
+                    if (res.ok) {
+                        const jsonExterno = await res.json();
+                        let atualizou = false;
+
+                        for (const key in jsonExterno) {
+                            if (!catLocal[key]) {
+                                const item = jsonExterno[key];
+                                const urlOficial = item.dados_completos && item.dados_completos.giftPictureUrl ? item.dados_completos.giftPictureUrl : "";
+                                catLocal[key] = {
+                                    nome_original: item.nome_original_tiktok || key,
+                                    nome_limpo: item.nome_limpo_pro_jogo || key.toLowerCase(),
+                                    moedas: item.valor_moedas || 1,
+                                    url: urlOficial
+                                };
+                                atualizou = true;
+                            }
+                        }
+                        if (atualizou) {
+                            localStorage.setItem('diretoria_catalogo_presentes', JSON.stringify(catLocal));
+                            console.log("✅ Catálogo sincronizado!");
+                        }
+                    }
+                } catch (e) {
+                    console.log("Aviso: JSON externo não encontrado. Usando cache.");
+                }
+
+                // Cria uma lista de dados ÚNICA e invisível para o navegador não travar
+                window.catalogoGlobal = catLocal;
+                const grid = document.getElementById('grid-itens-gerador');
+
+                let datalistHTML = '<datalist id="lista-presentes">';
+                const itensOrdenados = Object.values(window.catalogoGlobal).sort((a, b) => b.moedas - a.moedas);
+                itensOrdenados.forEach(item => {
+                    if(item.url) {
+                        datalistHTML += `<option value="${item.nome_original}">🪙 ${item.moedas} moedas</option>`;
+                    }
+                });
+                datalistHTML += '</datalist>';
+
+                // Função ultrarrápida para injetar a imagem ao pesquisar
+                window.selecionarPresente = function(nomePesquisado, idItem) {
+                    if (window.catalogoGlobal[nomePesquisado]) {
+                        document.getElementById('img-gerador-' + idItem).value = window.catalogoGlobal[nomePesquisado].url;
+                    }
+                };
+
+                // Monta o HTML com campos de pesquisa nativos (autocomplete)
+                let htmlGeral = datalistHTML;
+                for (let i = 1; i <= 10; i++) {
+                    htmlGeral += `
+                        <div style="background: #222; border: 1px solid #444; border-radius: 8px; padding: 15px;">
+                            <h5 style="margin: 0 0 10px 0; color: #aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">Item ${i}</h5>
+
+                            <label style="display: flex; flex-direction: column; font-size: 12px; color: #00f2fe; margin-bottom: 8px; font-weight: bold;">
+                                🔍 Pesquisar no Catálogo:
+                                <input list="lista-presentes" placeholder="Digite para buscar..." onchange="selecionarPresente(this.value, ${i})" style="margin-top: 4px; background: #111; border: 1px solid #00f2fe; color: white; padding: 6px; border-radius: 3px; outline: none;">
+                            </label>
+
+                            <label style="display: flex; flex-direction: column; font-size: 12px; color: #ccc; margin-bottom: 8px;">
+                                Imagem (URL gerada ou customizada):
+                                <input type="text" id="img-gerador-${i}" placeholder="https://" style="margin-top: 4px; background: #111; border: 1px solid #555; color: white; padding: 5px; border-radius: 3px; outline: none;">
+                            </label>
+
+                            <label style="display: flex; flex-direction: column; font-size: 12px; color: #ccc; margin-bottom: 8px;">
+                                Texto Base:
+                                <input type="text" id="txt-gerador-${i}" placeholder="Ex: Matar o Chefe..." style="margin-top: 4px; background: #111; border: 1px solid #555; color: white; padding: 5px; border-radius: 3px; outline: none;">
+                            </label>
+
+                            <div style="display: flex; gap: 5px;">
+                                <label style="display: flex; flex-direction: column; font-size: 12px; color: #ccc; flex: 1;">
+                                    Cor:
+                                    <input type="color" id="cor-gerador-${i}" value="#ffffff" style="margin-top: 4px; border: none; border-radius: 3px; width: 100%; height: 25px; padding: 0; cursor: pointer;">
+                                </label>
+                                <label style="display: flex; flex-direction: column; font-size: 12px; color: #ccc; flex: 1;">
+                                    Tamanho (px):
+                                    <input type="number" id="tam-gerador-${i}" value="30" style="margin-top: 4px; background: #111; border: 1px solid #555; color: white; padding: 5px; border-radius: 3px; outline: none;">
+                                </label>
+                            </div>
+                        </div>
+                    `;
+                }
+                grid.innerHTML = htmlGeral;
+
+                document.getElementById('seletor-gerador').addEventListener('change', carregarGerador);
+                carregarGerador();
+            }
+
+            function salvarGerador() {
+                const idGerador = document.getElementById('seletor-gerador').value;
+                const config = {
+                    layout: document.getElementById('config-layout').value,
+                    anim: document.getElementById('config-anim').value,
+                    speed: document.getElementById('config-speed').value,
+                    itens: []
+                };
+
+                for (let i = 1; i <= 10; i++) {
+                    config.itens.push({
+                        img: document.getElementById(`img-gerador-${i}`).value,
+                        txt: document.getElementById(`txt-gerador-${i}`).value,
+                        cor: document.getElementById(`cor-gerador-${i}`).value,
+                        tam: document.getElementById(`tam-gerador-${i}`).value
+                    });
+                }
+                localStorage.setItem(`diretoria_gerador_${idGerador}`, JSON.stringify(config));
+                alert(`✅ Gerador ${idGerador} salvo com sucesso!`);
+            }
+
+            function carregarGerador() {
+                const idGerador = document.getElementById('seletor-gerador').value;
+                const config = JSON.parse(localStorage.getItem(`diretoria_gerador_${idGerador}`));
+
+                const baseUrl = window.location.href.split('?')[0];
+                const user = localStorage.getItem('rdm_user_tiktok') || localStorage.getItem('rdm_user') || 'visitante';
+                document.getElementById('link-gerador-atual').innerText = `${baseUrl}?u=${user}&p=pro&view=gerador&id=${idGerador}`;
+
+                if (config) {
+                    document.getElementById('config-layout').value = config.layout || 'horizontal';
+                    document.getElementById('config-anim').value = config.anim || 'none';
+                    document.getElementById('config-speed').value = config.speed || 3;
+                    for (let i = 1; i <= 10; i++) {
+                        if(config.itens[i-1]) {
+                            document.getElementById(`img-gerador-${i}`).value = config.itens[i-1].img || '';
+                            document.getElementById(`txt-gerador-${i}`).value = config.itens[i-1].txt || '';
+                            document.getElementById(`cor-gerador-${i}`).value = config.itens[i-1].cor || '#ffffff';
+                            document.getElementById(`tam-gerador-${i}`).value = config.itens[i-1].tam || 30;
+                        }
+                    }
+                } else {
+                    document.getElementById('config-layout').value = 'horizontal';
+                    document.getElementById('config-anim').value = 'none';
+                    document.getElementById('config-speed').value = 3;
+                    for (let i = 1; i <= 10; i++) {
+                        document.getElementById(`img-gerador-${i}`).value = '';
+                        document.getElementById(`txt-gerador-${i}`).value = '';
+                        document.getElementById(`cor-gerador-${i}`).value = '#ffffff';
+                        document.getElementById(`tam-gerador-${i}`).value = 30;
+                    }
+                }
+            }
+
+            inicializarGeradorPRO();
+        </script>
+
+        <!-- SCRIPT PARA GERAR E SALVAR OS 20 SLOTS AUTOMATICAMENTE -->
+        <script>
+            function gerarSlotsDeMidia() {
+                const gridMidia = document.getElementById('grid-midias');
+                const gridVip = document.getElementById('grid-vips');
+                let htmlMidia = ''; let htmlVip = '';
+
+                // Dicionário com os seus vídeos hospedados no GitHub
+                const videosGithub = `
+                    <option value="">📂 Escolher do Arquivo (GitHub)</option>
+                    <option value="Criação_de_Bebê_Capivara_Animado.mp4">Bebê Capivara Animado</option>
+                    <option value="Homer_Simpson_Comendo_Rosquinha.mp4">Homer Simpson Rosquinha</option>
+                    <option value="perfume.mp4">Perfume (Comum)</option>
+                    <option value="Refazer_dinossauro_bebê_com_chroma_key.mp4">Dinossauro Bebê (Chroma)</option>
+                    <option value="Vídeo_de_Dragão_Sem_Narrador.mp4">Dragão Sem Narrador</option>
+                    <option value="Vídeo_de_Perfume_com_Chroma_Key.mp4">Perfume (Chroma)</option>
+                `;
+
+                // Gera as 20 mídias normais
+                for (let i = 1; i <= 20; i++) {
+                    htmlMidia += `
+                        <div style="background: #222; border: 1px solid #444; border-radius: 8px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <h4 style="margin: 0; color: #f39c12;">Slot ${i}</h4>
+                                <select id="tipo-midia-${i}" style="background: #333; color: white; border: 1px solid #555; border-radius: 4px; padding: 4px; outline: none;">
+                                    <option value="video">🎥 Vídeo</option>
+                                    <option value="image">🖼️ Imagem/GIF</option>
+                                    <option value="audio">🎵 Áudio Oculto</option>
+                                </select>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+
+                                <select onchange="document.getElementById('url-midia-${i}').value = this.value" style="background: #111; border: 1px solid #00f2fe; color: white; padding: 6px; border-radius: 4px; outline: none; cursor: pointer;">
+                                    ${videosGithub}
+                                </select>
+
+                                <label style="display: flex; flex-direction: column;">🔗 Link da Web ou Nome do Arquivo:
+                                    <input type="text" id="url-midia-${i}" placeholder="ex: https://... ou video.mp4" style="background: #111; border: 1px solid #444; color: white; padding: 6px; border-radius: 4px; outline: none;">
+                                </label>
+
+                                <label style="display: flex; flex-direction: column;">📁 Arquivo do PC (Máx 3MB):
+                                    <input type="file" id="file-midia-${i}" accept="video/*, image/*, audio/*" style="background: #111; border: 1px solid #444; color: white; padding: 4px; border-radius: 4px; outline: none;">
+                                </label>
+
+                                <div style="display: flex; gap: 10px; margin-top: 5px;">
+                                    <label style="display: flex; flex-direction: column; flex: 1;"><span style="color: #2ed573;">🎁 Gatilho (Presente):</span>
+                                        <input type="text" id="gatilho-pres-${i}" placeholder="Ex: Rosa" style="background: #111; border: 1px solid #2ed573; color: white; padding: 6px; border-radius: 4px; outline: none;">
+                                    </label>
+                                    <label style="display: flex; flex-direction: column; flex: 1;"><span style="color: #00aaff;">💬 Gatilho (Chat):</span>
+                                        <input type="text" id="gatilho-chat-${i}" placeholder="Ex: !susto" style="background: #111; border: 1px solid #00aaff; color: white; padding: 6px; border-radius: 4px; outline: none;">
+                                    </label>
+                                </div>
+                            </div>
+                        </div>`;
+                }
+
+                // Gera os 10 slots VIPs
+                for (let i = 1; i <= 10; i++) {
+                    htmlVip += `
+                        <div style="background: #2a2a2a; border: 1px solid #c2a331; border-radius: 8px; padding: 15px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <h4 style="margin: 0; color: gold;">VIP ${i}</h4>
+                                <select id="tipo-vip-${i}" style="background: #333; color: white; border: 1px solid #555; border-radius: 4px; padding: 4px; outline: none;">
+                                    <option value="video">🎥 Vídeo</option>
+                                    <option value="audio">🎵 Áudio Oculto</option>
+                                    <option value="image">🖼️ Imagem/GIF</option>
+                                </select>
+                            </div>
+                            <label style="display: flex; flex-direction: column; font-size: 13px; color: gold; font-weight: bold; margin-bottom: 8px;">
+                                @ Username da Pessoa:
+                                <input type="text" id="nome-vip-${i}" placeholder="Ex: joao_silva" style="background: #111; border: 1px solid gold; color: white; padding: 6px; border-radius: 4px; margin-top: 4px; outline: none;">
+                            </label>
+
+                            <select onchange="document.getElementById('url-vip-${i}').value = this.value" style="background: #111; border: 1px solid #00f2fe; color: white; padding: 6px; border-radius: 4px; outline: none; margin-top: 4px; cursor: pointer;">
+                                ${videosGithub}
+                            </select>
+
+                            <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; margin-top: 8px;">🔗 Link ou Nome do Arquivo:
+                                <input type="text" id="url-vip-${i}" placeholder="ex: https://... ou video.mp4" style="background: #111; border: 1px solid #444; color: white; padding: 6px; border-radius: 4px; margin-top: 4px; outline: none;">
+                            </label>
+
+                            <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; margin-top: 8px;">📁 Arquivo do PC (Máx 3MB):
+                                <input type="file" id="file-vip-${i}" accept="video/*, image/*, audio/*" style="background: #111; border: 1px solid #444; color: white; padding: 4px; border-radius: 4px; margin-top: 4px; outline: none;">
+                            </label>
+                        </div>`;
+                }
+
+                gridMidia.innerHTML = htmlMidia;
+                gridVip.innerHTML = htmlVip;
+            }
+
+            function ativarConversorLocal(idInputFile, idInputUrl) {
+                const fileInput = document.getElementById(idInputFile);
+                if(!fileInput) return;
+                fileInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    if (file.size > 3 * 1024 * 1024) {
+                        alert("⚠️ O arquivo é muito grande (Máx 3MB).\nPor favor, hospede seu vídeo/imagem na internet e cole o Link!");
+                        fileInput.value = "";
+                        return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        document.getElementById(idInputUrl).value = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            function carregarMidias() {
+                const salvasM = JSON.parse(localStorage.getItem('diretoria_midias_config')) || [];
+                for (let i = 1; i <= 20; i++) {
+                    if (salvasM[i-1]) {
+                        document.getElementById(`tipo-midia-${i}`).value = salvasM[i-1].tipo || 'video';
+                        document.getElementById(`url-midia-${i}`).value = salvasM[i-1].url || '';
+                        document.getElementById(`gatilho-pres-${i}`).value = salvasM[i-1].gatilhoPres || '';
+                        document.getElementById(`gatilho-chat-${i}`).value = salvasM[i-1].gatilhoChat || '';
+                    }
+                    ativarConversorLocal(`file-midia-${i}`, `url-midia-${i}`);
+                }
+                const salvasV = JSON.parse(localStorage.getItem('diretoria_vips_config')) || [];
+                for (let i = 1; i <= 10; i++) {
+                    if (salvasV[i-1]) {
+                        document.getElementById(`tipo-vip-${i}`).value = salvasV[i-1].tipo || 'audio';
+                        document.getElementById(`nome-vip-${i}`).value = salvasV[i-1].nome || '';
+                        document.getElementById(`url-vip-${i}`).value = salvasV[i-1].url || '';
+                    }
+                    ativarConversorLocal(`file-vip-${i}`, `url-vip-${i}`);
+                }
+            }
+
+            function salvarMidias() {
+                let confM = []; let confV = [];
+                for (let i = 1; i <= 20; i++) {
+                    confM.push({
+                        tipo: document.getElementById(`tipo-midia-${i}`).value, url: document.getElementById(`url-midia-${i}`).value,
+                        gatilhoPres: document.getElementById(`gatilho-pres-${i}`).value, gatilhoChat: document.getElementById(`gatilho-chat-${i}`).value
+                    });
+                }
+                for (let i = 1; i <= 10; i++) {
+                    confV.push({
+                        tipo: document.getElementById(`tipo-vip-${i}`).value, nome: document.getElementById(`nome-vip-${i}`).value, url: document.getElementById(`url-vip-${i}`).value
+                    });
+                }
+                localStorage.setItem('diretoria_midias_config', JSON.stringify(confM));
+                localStorage.setItem('diretoria_vips_config', JSON.stringify(confV));
+                alert("✅ Mídias e VIPs salvos com sucesso!");
+            }
+
+            // --- Lógica das Metas ---
+            function salvarMeta(tipo) {
+                const config = {
+                    alvo: parseInt(document.getElementById(`meta-${tipo}-alvo`).value) || 0,
+                    atual: parseInt(document.getElementById(`meta-${tipo}-atual`).value) || 0,
+                    presente: tipo === 'gift' ? document.getElementById('meta-gift-nome').value : ""
+                };
+                localStorage.setItem(`diretoria_meta_${tipo}`, JSON.stringify(config));
+            }
+            function zerarMeta(tipo) {
+                document.getElementById(`meta-${tipo}-atual`).value = 0;
+                salvarMeta(tipo);
+            }
+            function carregarMetas() {
+                const confG = JSON.parse(localStorage.getItem('diretoria_meta_gift')) || { alvo: 100, atual: 0, presente: "" };
+                const confL = JSON.parse(localStorage.getItem('diretoria_meta_like')) || { alvo: 10000, atual: 0 };
+                document.getElementById('meta-gift-alvo').value = confG.alvo; document.getElementById('meta-gift-atual').value = confG.atual; document.getElementById('meta-gift-nome').value = confG.presente;
+                document.getElementById('meta-like-alvo').value = confL.alvo; document.getElementById('meta-like-atual').value = confL.atual;
+            }
+
+            // --- Lógica do Sorteio (Com Avatar e Top Ranking) ---
+            function iniciarSorteio() {
+                const filtro = document.getElementById('filtro-sorteio').value;
+                const presEspecifico = document.getElementById('sorteio-presente-nome').value.toLowerCase().trim();
+                const topQtd = parseInt(document.getElementById('sorteio-top-qtd').value) || 10;
+
+                let ativosObj = JSON.parse(localStorage.getItem('diretoria_ativos_obj')) || {};
+                let rankData = JSON.parse(localStorage.getItem('diretoria_rankings')) || {};
+                let rastreio = JSON.parse(localStorage.getItem('diretoria_rastreio_sorteio')) || {};
+
+                let candidados = Object.keys(ativosObj); // OBRIGATÓRIO: Apenas pessoas que estão no auditório
+
+                if (filtro === 'gifters') {
+                    const giftersHoje = rankData['diario']?.gifters || {};
+                    // Pega apenas os nomes dos Top N que mais gastaram
+                    const topNomes = Object.entries(giftersHoje)
+                                        .sort((a, b) => b[1].pontos - a[1].pontos)
+                                        .slice(0, topQtd)
+                                        .map(entry => entry[0]);
+
+                    // Cruza a lista do Top N com quem está no Auditório
+                    candidados = candidados.filter(user => topNomes.includes(user));
+                } else if (filtro === 'presente') {
+                    if (presEspecifico === "") {
+                        alert("⚠️ Digite o nome do presente!"); return;
+                    }
+                    candidados = candidados.filter(user => {
+                        const enviados = rastreio[user] || [];
+                        return enviados.some(p => p.includes(presEspecifico));
+                    });
+                }
+
+                if (candidados.length === 0) {
+                    alert("⚠️ Ninguém ativo no auditório atende aos requisitos do sorteio (Top Ranking / Presente)!");
+                    return;
+                }
+
+                // Sorteia o vencedor
+                const ganhadorNome = candidados[Math.floor(Math.random() * candidados.length)];
+                const ganhadorAvatar = ativosObj[ganhadorNome];
+
+                // Monta a lista completa com foto e nome para criar a ilusão da roleta
+                const listaRica = candidados.map(nome => ({ nome: nome, avatar: ativosObj[nome] }));
+
+                // Exibe no painel de controle
+                document.getElementById('resultado-sorteio').innerHTML = `
+                    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;">
+                        <img src="${ganhadorAvatar}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid gold;">
+                        <span style="font-size: 20px;">${ganhadorNome}</span>
+                    </div>`;
+
+                // Dispara o gatilho para a tela do OBS rodar a animação
+                localStorage.setItem('diretoria_sorteio_disparo', JSON.stringify({
+                    id: Date.now(),
+                    ganhador: { nome: ganhadorNome, avatar: ganhadorAvatar },
+                    lista: listaRica
+                }));
+            }
+            gerarSlotsDeMidia();
+            carregarMidias();
+            carregarMetas();
+
+            function salvarMidias() {
+                let configs = [];
+                for (let i = 1; i <= 20; i++) {
+                    configs.push({
+                        tipo: document.getElementById(`tipo-midia-${i}`).value,
+                        url: document.getElementById(`url-midia-${i}`).value,
+                        gatilhoPres: document.getElementById(`gatilho-pres-${i}`).value,
+                        gatilhoChat: document.getElementById(`gatilho-chat-${i}`).value
+                    });
+                }
+                localStorage.setItem('diretoria_midias_config', JSON.stringify(configs));
+                alert("✅ As 20 mídias foram salvas com sucesso!");
+            }
+
+            // Inicialização
+            gerarSlotsDeMidia();
+            carregarMidias();
+        </script>
+
+    </div>
+
+    <script>
+
+        // Lógica da Gaveta Lateral (Mobile)
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+
+            if (sidebar.classList.contains('open')) {
+                sidebar.classList.remove('open');
+                overlay.classList.remove('active');
+                setTimeout(() => overlay.style.display = 'none', 300);
+            } else {
+                sidebar.classList.add('open');
+                overlay.style.display = 'block';
+                setTimeout(() => overlay.classList.add('active'), 10);
+            }
+        }
+
+        // Função simples para alternar entre as abas visuais
+        function abrirAba(idAba) {
+            document.querySelectorAll('.tab-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(idAba).classList.add('active');
+
+            // Tratamento de compatibilidade para event.currentTarget
+            const btnClicado = window.event ? window.event.currentTarget : null;
+            if(btnClicado) btnClicado.classList.add('active');
+
+            // Recolhe o menu automaticamente ao clicar numa aba (se estiver no celular)
+            if (window.innerWidth <= 768) {
+                toggleSidebar();
+            }
+        }
+
+        // ==========================================
+        // GERADOR DE LINKS AUTOMÁTICOS
+        // ==========================================
+        function copiarLinkOBS(viewName) {
+            let baseUrl = window.location.href.split('?')[0];
+            const user = localStorage.getItem('rdm_user_tiktok') || localStorage.getItem('rdm_user') || 'visitante';
+            let linkFinal = "";
+
+            if (viewName.startsWith('pote')) {
+                // Se for pote, aponta para o NOVO arquivo potes.html que criamos
+                let pastaBase = baseUrl.substring(0, baseUrl.lastIndexOf("/"));
+                const num = viewName.replace('pote', '');
+                linkFinal = `${pastaBase}/potes.html?pote=${num}`;
+            } else {
+                // Se for ranking, mídia ou letreiro, usa o Index.html normalmente
+                linkFinal = `${baseUrl}?u=${user}&p=pro&view=${viewName}`;
+            }
+
+            navigator.clipboard.writeText(linkFinal).then(() => {
+                alert(`✅ Link copiado com sucesso!\nCole no TikTok Studio e ative o fundo verde.\n\nLink: ${linkFinal}`);
+            }).catch(err => {
+                alert('Erro ao copiar link: ', err);
+            });
+        }
+
+        // 1. Lógica de Validação da RDM Studio
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('u') && urlParams.has('p')) {
+            localStorage.setItem('rdm_user', urlParams.get('u'));
+            localStorage.setItem('rdm_perfil', urlParams.get('p'));
+        }
+
+        window.rdmUser = localStorage.getItem('rdm_user_tiktok') || localStorage.getItem('rdm_user');
+        window.rdmPerfil = localStorage.getItem('rdm_perfil');
+
+        function verificarAcesso() {
+            if (!window.rdmUser || !window.rdmPerfil) {
+                document.body.innerHTML = `
+                    <div style='display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; background:#000;'>
+                        <h1 style='color:#ef4444; text-shadow:0 0 20px #ef4444;'>ACESSO NEGADO</h1>
+                        <p style='color:#ccc; font-size:20px;'>Você precisa estar logado na RDM Studio para usar o Painel Host.</p>
+                    </div>`;
+                window.stop();
+                return false;
+            }
+            return true;
+        }
+
+        // ⏱️ CHECAGEM DE LICENÇA EM TEMPO REAL RDM
+        setInterval(() => {
+            if (window.rdmPerfil === "gratuito" || window.rdmPerfil === "plus premium") {
+                let horaAtual = Date.now();
+                if (!window.rdmSessaoIniciada) window.rdmSessaoIniciada = horaAtual;
+
+                let tempoDecorridoMs = horaAtual - window.rdmSessaoIniciada;
+                let limiteMs = (window.rdmPerfil === "gratuito") ? (2 * 60 * 60 * 1000) : (42 * 60 * 60 * 1000);
+
+                if (tempoDecorridoMs >= limiteMs) {
+                    let blockScreen = document.getElementById('rdm-block-screen');
+                    if (!blockScreen) {
+                        blockScreen = document.createElement('div');
+                        blockScreen.id = 'rdm-block-screen';
+                        blockScreen.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.95); z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center;';
+                        blockScreen.innerHTML = `<h1 style='color:#facc15; font-size:40px; text-shadow:0 0 20px #facc15;'>⏱️ TEMPO ESGOTADO!</h1><p style='color:white; font-size:20px;'>A carga de horas do seu plano atual chegou ao fim. Faça um upgrade no site RDM Studio.</p>`;
+                        document.body.appendChild(blockScreen);
+                        if (typeof wsNuvem !== 'undefined' && wsNuvem) wsNuvem.close();
+                        if (typeof wsTikfinity !== 'undefined' && wsTikfinity) wsTikfinity.close();
+                    }
+                }
+            }
+        }, 5000);
+
+        // ==========================================
+        // MOTOR DE VOZ (NARRADOR DO NAVEGADOR)
+        // ==========================================
+        let narradorPausado = false;
+        let vozesFiltradas = []; // Nova lista que guarda apenas PT e EN
+
+        function carregarVozes() {
+            const vozesBrutas = window.speechSynthesis.getVoices();
+            const seletor = document.getElementById('seletor-vozes');
+            seletor.innerHTML = '';
+            vozesFiltradas = [];
+
+            vozesBrutas.forEach((voz) => {
+                // Puxa o máximo de vozes possíveis que começam com 'pt' (Português) ou 'en' (Inglês)
+                if (voz.lang.startsWith('pt') || voz.lang.startsWith('en')) {
+                    vozesFiltradas.push(voz);
+                    const option = document.createElement('option');
+                    option.value = vozesFiltradas.length - 1; // Salva a posição correta
+
+                    // Tenta colocar um emoji para ajudar a identificar o gênero pelo nome da voz
+                    const nomeLower = voz.name.toLowerCase();
+                    let emoji = '👤';
+                    if (nomeLower.includes('female') || nomeLower.includes('zira') || nomeLower.includes('maria') || nomeLower.includes('francisca') || nomeLower.includes('leila') || nomeLower.includes('yara') || nomeLower.includes('brenda') || nomeLower.includes('elza')) {
+                        emoji = '👩';
+                    } else if (nomeLower.includes('male') || nomeLower.includes('david') || nomeLower.includes('antonio') || nomeLower.includes('fabio') || nomeLower.includes('julio') || nomeLower.includes('donato')) {
+                        emoji = '👨';
+                    }
+
+                    option.textContent = `${emoji} ${voz.name} (${voz.lang})`;
+                    seletor.appendChild(option);
+                }
+            });
+        }
+
+        // O navegador às vezes demora um tempinho para baixar a lista de vozes
+        carregarVozes();
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = carregarVozes;
+        }
+
+        function togglePausarNarrador() {
+            narradorPausado = !narradorPausado;
+            const btn = document.getElementById('btn-pausar-narrador');
+            if (narradorPausado) {
+                btn.innerText = '▶️ Retomar Narrador';
+                btn.style.background = '#27ae60';
+                window.speechSynthesis.cancel(); // Manda calar a boca na hora
+            } else {
+                btn.innerText = '⏸️ Pausar Narrador';
+                btn.style.background = '#e74c3c';
+            }
+        }
+
+        function falar(texto) {
+            if (narradorPausado) return;
+
+            const utterThis = new SpeechSynthesisUtterance(texto);
+            const seletor = document.getElementById('seletor-vozes');
+            const vozDinamica = document.getElementById('voz-dinamica').checked;
+
+            if (vozDinamica && vozesFiltradas.length > 0) {
+                // A Voz Dinâmica agora sorteia entre todas as vozes PT e EN que o PC tiver!
+                const vozAleatoria = vozesFiltradas[Math.floor(Math.random() * vozesFiltradas.length)];
+                utterThis.voice = vozAleatoria;
+            } else {
+                // Usa a voz principal escolhida na caixinha
+                const vozSelecionada = vozesFiltradas[seletor.value];
+                if (vozSelecionada) {
+                    utterThis.voice = vozSelecionada;
+                }
+            }
+
+            window.speechSynthesis.speak(utterThis);
+        }
+
+        function verificaPalavrao(texto) {
+            const campoPalavroes = document.getElementById('palavroes').value;
+            const listaProibida = campoPalavroes.split(',').map(p => p.trim().toLowerCase()).filter(p => p);
+            const textoLower = texto.toLowerCase();
+
+            for (let palavra of listaProibida) {
+                if (textoLower.includes(palavra)) return true;
+            }
+            return false;
+        }
+
+        // ⚡ DESPERTADOR DA API (Acorda o servidor Render)
+        fetch("https://torre-de-controle-rdm.onrender.com/", { mode: 'no-cors' }).catch(() => {});
+
+        // 2. Conexão Híbrida Inteligente (TikFinity Local -> API Nuvem)
+        let conexaoNuvemEstabelecida = false;
+        let wsNuvem = null;
+        let wsTikfinity = null;
+        let lastTiktokUser = "";
+
+        function conectarNuvem() {
+            let targetUser = window.rdmUser;
+            if (!targetUser || targetUser === "visitante") return;
+
+            if (conexaoNuvemEstabelecida && lastTiktokUser === targetUser) return;
+            if (wsNuvem && wsNuvem.readyState === WebSocket.CONNECTING) return;
+
+            if (wsNuvem) wsNuvem.close();
+
+            lastTiktokUser = targetUser;
+            console.log(`☁️ Tentando Nuvem para: @${targetUser}...`);
+
+            wsNuvem = new WebSocket("wss://torre-de-controle-rdm.onrender.com:443/");
+
+            wsNuvem.onopen = () => {
+                conexaoNuvemEstabelecida = true;
+                console.log(`✅ NUVEM CONECTADA! Escutando: @${targetUser}`);
+                wsNuvem.send(JSON.stringify({ action: "connect", tiktok_user: targetUser }));
+            };
+
+            wsNuvem.onmessage = (event) => {
+                try { processarEventoTikTok(JSON.parse(event.data)); } catch(e) {}
+            };
+
+            wsNuvem.onclose = () => { conexaoNuvemEstabelecida = false; wsNuvem = null; };
+        }
+
+        function verificarEConectar() {
+            // Tenta priorizar o TikFinity Local
+            if (!wsTikfinity || wsTikfinity.readyState === WebSocket.CLOSED) {
+                wsTikfinity = new WebSocket("ws://127.0.0.1:21213/");
+
+                wsTikfinity.onopen = () => {
+                    console.log("✅ TikFinity Local Conectado!");
+                    // Desliga a Nuvem se o local funcionou (evita dados duplicados)
+                    if (wsNuvem) { wsNuvem.close(); wsNuvem = null; conexaoNuvemEstabelecida = false; }
+                };
+
+                wsTikfinity.onmessage = (event) => {
+                    try { processarEventoTikTok(JSON.parse(event.data)); } catch(e) {}
+                };
+
+                wsTikfinity.onerror = () => {
+                    // Se o TikFinity falhar/estiver fechado, pede socorro à Nuvem!
+                    conectarNuvem();
+                };
+
+                wsTikfinity.onclose = () => { wsTikfinity = null; };
+            } else if (wsTikfinity.readyState === WebSocket.OPEN) {
+                if (wsNuvem) { wsNuvem.close(); wsNuvem = null; conexaoNuvemEstabelecida = false; }
+            }
+        }
+
+        // ==========================================
+        // DADOS E MEMÓRIA RESTRUTURADA (COM AUDITÓRIO)
+        // ==========================================
+        let usuariosVIP = new Set();
+        let usuariosMutados = new Set();
+        let usuariosAtivosLive = new Set(); // Auditório do Painel
+
+        // Inicializa a lista estável de Maiores Presentes isolados (Top 20)
+        let maioresPresentes = JSON.parse(localStorage.getItem('diretoria_maiores_presentes')) || [];
+
+        // Estrutura Base dos Rankings Consistentes
+        function carregarBancoRankings() {
+            const dbSalvo = localStorage.getItem('diretoria_rankings');
+            return dbSalvo ? JSON.parse(dbSalvo) : {
+                diario: { id: '', gifters: {}, likes: {} },
+                semanal: { id: '', gifters: {}, likes: {} },
+                mensal: { id: '', gifters: {}, likes: {} },
+                semestral: { id: '', gifters: {}, likes: {} },
+                anual: { id: '', gifters: {}, likes: {} },
+                geral: { id: 'geral', gifters: {}, likes: {} }
+            };
+        }
+        let bancoRankings = carregarBancoRankings();
+
+        function obterIdentificadoresDeTempo() {
+            const d = new Date();
+            const ano = d.getFullYear();
+            const mes = String(d.getMonth() + 1).padStart(2, '0');
+            const dia = String(d.getDate()).padStart(2, '0');
+
+            const idDiario = `${ano}-${mes}-${dia}`;
+            const idMensal = `${ano}-${mes}`;
+            const idAnual = `${ano}`;
+            const idSemestral = `${ano}-S${d.getMonth() < 6 ? 1 : 2}`;
+
+            const d0 = new Date(ano, 0, 1);
+            const numeroSemana = Math.ceil((((d - d0) / 86400000) + d0.getDay() + 1) / 7);
+            const idSemanal = `${ano}-W${numeroSemana}`;
+
+            return { diario: idDiario, semanal: idSemanal, mensal: idMensal, semestral: idSemestral, anual: idAnual, geral: 'geral' };
+        }
+
+        let rankingPrecisaAtualizar = false;
+
+        function somarPontoRanking(categoria, user, avatar, valor) {
+            const periodos = obterIdentificadoresDeTempo();
+
+            for (const [per, id] of Object.entries(periodos)) {
+                if (bancoRankings[per].id !== id) {
+                    bancoRankings[per] = { id: id, gifters: {}, likes: {} };
+                }
+                if (!bancoRankings[per][categoria][user]) {
+                    bancoRankings[per][categoria][user] = { avatar: avatar, pontos: 0 };
+                }
+                bancoRankings[per][categoria][user].pontos += valor;
+            }
+            rankingPrecisaAtualizar = true; // Marca que a RAM foi alterada
+        }
+
+        function renderizarRankings() {
+            const perSelect = document.getElementById('periodo-ranking').value;
+            const dadosAtuais = bancoRankings[perSelect];
+
+            const divGifters = document.getElementById('lista-ranking-gifters');
+            const divLikes = document.getElementById('lista-ranking-likes');
+            if(!divGifters || !divLikes) return;
+
+            divGifters.innerHTML = ''; divLikes.innerHTML = '';
+
+            const arrayGifters = Object.entries(dadosAtuais.gifters).sort((a, b) => b[1].pontos - a[1].pontos);
+            arrayGifters.forEach((item, index) => {
+                const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
+                divGifters.innerHTML += `
+                    <div style="display: flex; align-items: center; background: #333; padding: 10px; border-radius: 6px; border-left: 4px solid ${cor};">
+                        <strong style="color: ${cor}; width: 30px; font-size: 16px;">#${index + 1}</strong>
+                        <img src="${item[1].avatar}" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; object-fit: cover;">
+                        <span style="flex: 1; color: white; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item[0]}</span>
+                        <span style="color: gold; font-weight: bold; margin-right: 10px;">💎 ${item[1].pontos}</span>
+                        <button onclick="adicionarAoLetreiro('${item[0]}', '${item[1].avatar}')" style="background: #9b59b6; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px; font-weight: bold;" title="Adicionar ao Letreiro">✨ Add</button>
+                    </div>`;
+            });
+
+            const arrayLikes = Object.entries(dadosAtuais.likes).sort((a, b) => b[1].pontos - a[1].pontos);
+            arrayLikes.forEach((item, index) => {
+                const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
+                divLikes.innerHTML += `
+                    <div style="display: flex; align-items: center; background: #333; padding: 10px; border-radius: 6px; border-left: 4px solid ${cor};">
+                        <strong style="color: ${cor}; width: 30px; font-size: 16px;">#${index + 1}</strong>
+                        <img src="${item[1].avatar}" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; object-fit: cover;">
+                        <span style="flex: 1; color: white; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item[0]}</span>
+                        <span style="color: #ff4757; font-weight: bold; margin-right: 10px;">❤️ ${item[1].pontos}</span>
+                        <button onclick="adicionarAoLetreiro('${item[0]}', '${item[1].avatar}')" style="background: #9b59b6; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px; font-weight: bold;" title="Adicionar ao Letreiro">✨ Add</button>
+                    </div>`;
+            });
+        }
+
+        setTimeout(renderizarRankings, 500);
+
+        // MOTOR DE ALÍVIO DO RANKING (Salva o arquivo e pisca a tela só 1x a cada 2 segs)
+        setInterval(() => {
+            if (rankingPrecisaAtualizar) {
+                localStorage.setItem('diretoria_rankings', JSON.stringify(bancoRankings));
+                if (!window.location.search.includes('view=')) {
+                    renderizarRankings();
+                }
+                rankingPrecisaAtualizar = false;
+            }
+        }, 2000);
+
+        // ==========================================
+        // CONTROLES DE INTERFACE (VIP / MUTE / CHAT)
+        // ==========================================
+        function toggleVIP(user) {
+            if (usuariosVIP.has(user)) { usuariosVIP.delete(user); } else { usuariosVIP.add(user); usuariosMutados.delete(user); }
+            document.getElementById(`btn-vip-${user}`).style.background = usuariosVIP.has(user) ? '#27ae60' : '#444';
+            document.getElementById(`btn-mute-${user}`).style.background = '#444';
+        }
+
+        function toggleMute(user) {
+            if (usuariosMutados.has(user)) { usuariosMutados.delete(user); } else { usuariosMutados.add(user); usuariosVIP.delete(user); }
+            document.getElementById(`btn-mute-${user}`).style.background = usuariosMutados.has(user) ? '#e74c3c' : '#444';
+            document.getElementById(`btn-vip-${user}`).style.background = '#444';
+        }
+
+        function atualizarChatUI(user, msg, avatarUrl) {
+            const chatBox = document.getElementById('chat-box');
+            if(!chatBox) return;
+
+            const div = document.createElement('div');
+            div.style.cssText = "display: flex; align-items: center; margin-bottom: 10px; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px;";
+
+            div.innerHTML = `
+                <img src="${avatarUrl}" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; object-fit: cover;">
+                <div style="flex: 1;">
+                    <strong style="color: #00f2fe; font-size: 14px;">${user}</strong>
+                    <span style="color: white; font-size: 14px; margin-left: 5px;">${msg}</span>
+                </div>
+                <div style="display: flex; gap: 5px;">
+                    <button onclick="toggleVIP('${user}')" id="btn-vip-${user}" style="background: ${usuariosVIP.has(user)?'#27ae60':'#444'}; color: white; border:none; border-radius:4px; padding:4px 8px; cursor:pointer;" title="Liberar Leitura">🎙️</button>
+                    <button onclick="toggleMute('${user}')" id="btn-mute-${user}" style="background: ${usuariosMutados.has(user)?'#e74c3c':'#444'}; color: white; border:none; border-radius:4px; padding:4px 8px; cursor:pointer;" title="Bloquear Leitura">🔇</button>
+                </div>
+            `;
+            chatBox.appendChild(div);
+            if (chatBox.children.length > 50) chatBox.removeChild(chatBox.firstChild);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // ==========================================
+        // CACHE DE ALTA VELOCIDADE EM RAM (ANTI-LAG)
+        // ==========================================
+        let cacheSys = { midias: [], vips: [], metaGift: { atual: 0, alvo: 100, presente: "" }, metaLike: { atual: 0, alvo: 10000 } };
+        let ramData = {
+            ativosObj: JSON.parse(localStorage.getItem('diretoria_ativos_obj')) || {},
+            vistos: JSON.parse(localStorage.getItem('diretoria_vistos_hj')) || { data: new Date().toLocaleDateString(), users: [] },
+            rastreioSorteio: JSON.parse(localStorage.getItem('diretoria_rastreio_sorteio')) || {},
+            filaPotes: JSON.parse(localStorage.getItem('diretoria_fila_potes')) || []
+        };
+        let memDirty = { ativos: false, vistos: false, rastreio: false, potes: false, metaG: false, metaL: false, maiores: false };
+
+        // Mantém as configurações síncronas de tempos em tempos sem engasgar
+        setInterval(() => {
+            cacheSys.midias = JSON.parse(localStorage.getItem('diretoria_midias_config')) || [];
+            cacheSys.vips = JSON.parse(localStorage.getItem('diretoria_vips_config')) || [];
+            cacheSys.metaGift = JSON.parse(localStorage.getItem('diretoria_meta_gift')) || { atual: 0, alvo: 100, presente: "" };
+            cacheSys.metaLike = JSON.parse(localStorage.getItem('diretoria_meta_like')) || { atual: 0, alvo: 10000 };
+        }, 2000);
+
+        // Puxada rápida da primeira vez
+        cacheSys.midias = JSON.parse(localStorage.getItem('diretoria_midias_config')) || [];
+        cacheSys.vips = JSON.parse(localStorage.getItem('diretoria_vips_config')) || [];
+
+        function processarEventoTikTok(jsonData) {
+            const event = jsonData.event;
+            const data = jsonData.data;
+            if (!data) return;
+
+            const user = data.nickname || data.uniqueId || "User";
+            const avatarUrl = data.profilePictureUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${user}`;
+
+            if (!usuariosAtivosLive.has(user)) {
+                usuariosAtivosLive.add(user);
+                localStorage.setItem('diretoria_ativos', JSON.stringify(Array.from(usuariosAtivosLive)));
+            }
+
+            if (!ramData.ativosObj[user]) {
+                ramData.ativosObj[user] = avatarUrl;
+                memDirty.ativos = true;
+            }
+
+            let dataHoje = new Date().toLocaleDateString();
+            if (ramData.vistos.data !== dataHoje) { ramData.vistos = { data: dataHoje, users: [] }; memDirty.vistos = true; }
+
+            const idUsuario = (data.uniqueId || data.nickname || "").toLowerCase().trim();
+
+            if (idUsuario !== "" && !ramData.vistos.users.includes(idUsuario)) {
+                ramData.vistos.users.push(idUsuario);
+                memDirty.vistos = true;
+
+                const vipEncontrado = cacheSys.vips.find(v => v.nome && v.nome.toLowerCase().trim() === idUsuario);
+                if (vipEncontrado && vipEncontrado.url) {
+                    localStorage.setItem('diretoria_midia_disparo', JSON.stringify({ id: Date.now(), tipo: vipEncontrado.tipo, url: vipEncontrado.url }));
+                }
+            }
+
+            if (event === "chat") {
+                const msg = data.comment || "";
+                const msgLimpa = msg.toLowerCase().trim();
+
+                cacheSys.midias.forEach(m => {
+                    if (m.gatilhoChat && m.url && msgLimpa === m.gatilhoChat.toLowerCase().trim()) {
+                        localStorage.setItem('diretoria_midia_disparo', JSON.stringify({ id: Date.now(), tipo: m.tipo, url: m.url }));
+                    }
+                });
+
+                atualizarChatUI(user, msg, avatarUrl);
+
+                if (usuariosMutados.has(user) || narradorPausado) return;
+
+                const lerChatAtivo = document.getElementById('ler-chat').checked;
+                const moedasMinimas = parseInt(document.getElementById('moedas-minimas').value) || 0;
+
+                let podeFalar = false;
+                if (usuariosVIP.has(user)) podeFalar = true;
+                else {
+                    const moedasGastas = bancoRankings['geral'].gifters[user]?.pontos || 0;
+                    if (moedasGastas >= moedasMinimas) podeFalar = true;
+                }
+
+                if (lerChatAtivo && podeFalar && !verificaPalavrao(msg)) {
+                    let textoLimpo = msg.replace(/😂|🤣/g, " rindo ").replace(/❤️|😍/g, " coração ");
+                    const regexEmoji = /[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu;
+                    let nomeSemEmoji = user.replace(regexEmoji, '').trim();
+                    textoLimpo = textoLimpo.replace(regexEmoji, '').trim();
+
+                    if (nomeSemEmoji === "") nomeSemEmoji = "Usuário";
+                    if (textoLimpo !== "") falar(`${nomeSemEmoji} disse: ${textoLimpo}`);
+                }
+            }
+            else if (event === "gift") {
+                const giftName = data.giftName || "Presente";
+                const repeatCount = parseInt(data.repeatCount || 1);
+                const unitDiamond = parseInt(data.diamondCount || 1);
+                const totalDiamonds = unitDiamond * repeatCount;
+                const giftPictureUrl = data.giftPictureUrl || "";
+
+                if (!ramData.rastreioSorteio[user]) ramData.rastreioSorteio[user] = [];
+                ramData.rastreioSorteio[user].push(giftName.toLowerCase().trim());
+                memDirty.rastreio = true;
+
+                ramData.filaPotes.push({ id: Date.now() + Math.random(), url: giftPictureUrl, coins: unitDiamond });
+                if (ramData.filaPotes.length > 100) ramData.filaPotes.shift();
+                memDirty.potes = true;
+
+                const isFinished = data.repeatEnd !== false;
+
+                if (typeof window.cacheCatalogoGlobal === 'undefined') {
+                    window.cacheCatalogoGlobal = JSON.parse(localStorage.getItem('diretoria_catalogo_presentes')) || {};
+                }
+                if (!window.cacheCatalogoGlobal[giftName] && giftPictureUrl) {
+                    window.cacheCatalogoGlobal[giftName] = { nome_original: giftName, nome_limpo: giftName.toLowerCase().trim(), moedas: unitDiamond, url: giftPictureUrl };
+                    localStorage.setItem('diretoria_catalogo_presentes', JSON.stringify(window.cacheCatalogoGlobal));
+                }
+
+                if (!isFinished) return;
+
+                let somarGift = false;
+                if (!cacheSys.metaGift.presente || cacheSys.metaGift.presente.trim() === "") somarGift = true;
+                else if (giftName.toLowerCase().includes(cacheSys.metaGift.presente.toLowerCase().trim())) somarGift = true;
+
+                if (somarGift) {
+                    cacheSys.metaGift.atual += repeatCount;
+                    memDirty.metaG = true;
+                    if (document.getElementById('meta-gift-atual')) document.getElementById('meta-gift-atual').value = cacheSys.metaGift.atual;
+                }
+
+                const giftLimpo = giftName.toLowerCase().trim();
+                cacheSys.midias.forEach(m => {
+                    if (m.gatilhoPres && m.url && giftLimpo.includes(m.gatilhoPres.toLowerCase().trim())) {
+                        localStorage.setItem('diretoria_midia_disparo', JSON.stringify({ id: Date.now(), tipo: m.tipo, url: m.url }));
+                    }
+                });
+
+                somarPontoRanking('gifters', user, avatarUrl, totalDiamonds);
+
+                maioresPresentes.push({ user: user, gift: `${repeatCount}x ${giftName}`, coins: totalDiamonds, avatar: avatarUrl });
+                maioresPresentes.sort((a, b) => b.coins - a.coins);
+                maioresPresentes = maioresPresentes.slice(0, 20);
+                memDirty.maiores = true;
+
+                if (document.getElementById('ler-presentes').checked && !narradorPausado && !usuariosMutados.has(user)) {
+                    falar(`Muito obrigado ${user} por enviar ${repeatCount} ${giftName}`);
+                }
+            }
+            else if (event === "like") {
+                const likeCount = parseInt(data.likeCount || 1);
+                somarPontoRanking('likes', user, avatarUrl, likeCount);
+
+                cacheSys.metaLike.atual += likeCount;
+                memDirty.metaL = true;
+                if (document.getElementById('meta-like-atual')) document.getElementById('meta-like-atual').value = cacheSys.metaLike.atual;
+
+                if (document.getElementById('ler-likes').checked && !narradorPausado && !usuariosMutados.has(user)) {
+                    falar(`Muito obrigado ${user} pelas curtidas!`);
+                }
+            }
+        }
+
+        // ESVAZIADOR DO BUFFER (Salva a RAM no HD a cada 1.5s pra não explodir o disco)
+        setInterval(() => {
+            if (memDirty.ativos) { localStorage.setItem('diretoria_ativos_obj', JSON.stringify(ramData.ativosObj)); memDirty.ativos = false; }
+            if (memDirty.vistos) { localStorage.setItem('diretoria_vistos_hj', JSON.stringify(ramData.vistos)); memDirty.vistos = false; }
+            if (memDirty.rastreio) { localStorage.setItem('diretoria_rastreio_sorteio', JSON.stringify(ramData.rastreioSorteio)); memDirty.rastreio = false; }
+            if (memDirty.potes) { localStorage.setItem('diretoria_fila_potes', JSON.stringify(ramData.filaPotes)); memDirty.potes = false; }
+            if (memDirty.metaG) { localStorage.setItem('diretoria_meta_gift', JSON.stringify(cacheSys.metaGift)); memDirty.metaG = false; }
+            if (memDirty.metaL) { localStorage.setItem('diretoria_meta_like', JSON.stringify(cacheSys.metaLike)); memDirty.metaL = false; }
+            if (memDirty.maiores) { localStorage.setItem('diretoria_maiores_presentes', JSON.stringify(maioresPresentes)); memDirty.maiores = false; }
+        }, 1500);
+
+        // ==========================================
+        // SISTEMA DO LETREIRO ANIMADO (COM FOTO)
+        // ==========================================
+        function carregarInterfaceLetreiro() {
+            const dados = JSON.parse(localStorage.getItem('diretoria_letreiro')) || { itens: [], sep: "⭐", vel: 60 };
+            document.getElementById('letreiro-separador').value = dados.sep;
+            document.getElementById('letreiro-velocidade').value = dados.vel;
+
+            const listaDiv = document.getElementById('lista-nomes-letreiro');
+            listaDiv.innerHTML = '';
+
+            if (dados.itens.length === 0) {
+                listaDiv.innerHTML = '<span style="color: #666; font-size: 13px; text-align: center; margin-top: 10px;">Letreiro vazio. Adicione um nome pelo Ranking.</span>';
+                return;
+            }
+
+            dados.itens.forEach((item, index) => {
+                // Adaptação caso haja nomes antigos salvos apenas como texto na memória
+                const nome = typeof item === 'string' ? item : item.nome;
+                const avatar = typeof item === 'string' ? `https://api.dicebear.com/7.x/bottts/svg?seed=${nome}` : item.avatar;
+
+                listaDiv.innerHTML += `
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: #333; padding: 6px 10px; border-radius: 4px;">
+                        <div style="display: flex; align-items: center; overflow: hidden;">
+                            <img src="${avatar}" style="width: 25px; height: 25px; border-radius: 50%; margin-right: 10px; object-fit: cover;">
+                            <span style="color: white; font-weight: bold; font-size: 14px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${nome}</span>
+                        </div>
+                        <button onclick="removerNomeLetreiro(${index})" style="background: transparent; color: #ff4757; border: none; cursor: pointer; font-size: 16px;">✖</button>
+                    </div>`;
+            });
+        }
+
+        function salvarConfigLetreiro() {
+            let dados = JSON.parse(localStorage.getItem('diretoria_letreiro')) || { itens: [], sep: "⭐", vel: 60 };
+            dados.sep = document.getElementById('letreiro-separador').value;
+            dados.vel = document.getElementById('letreiro-velocidade').value;
+            localStorage.setItem('diretoria_letreiro', JSON.stringify(dados));
+        }
+
+        // Função conectada aos botões de Ranking
+        function adicionarAoLetreiro(nome, avatar) {
+            let dados = JSON.parse(localStorage.getItem('diretoria_letreiro')) || { itens: [], sep: "⭐", vel: 60 };
+
+            // Verifica se a pessoa já está na lista
+            if (!dados.itens.some(i => (typeof i === 'string' ? i : i.nome) === nome)) {
+                dados.itens.push({ nome: nome, avatar: avatar });
+                localStorage.setItem('diretoria_letreiro', JSON.stringify(dados));
+
+                // Se a aba estiver montada, recarrega visual
+                if (document.getElementById('lista-nomes-letreiro')) {
+                    carregarInterfaceLetreiro();
+                }
+            } else {
+                alert(`⚠️ O usuário ${nome} já está rodando no Letreiro!`);
+            }
+        }
+
+        // Adicionar pela caixinha manual
+        function adicionarNomeLetreiro() {
+            const input = document.getElementById('input-nome-letreiro');
+            const nome = input.value.trim();
+            if (nome) {
+                const avatarPadrao = `https://api.dicebear.com/7.x/bottts/svg?seed=${nome}`;
+                adicionarAoLetreiro(nome, avatarPadrao);
+                input.value = '';
+            }
+        }
+
+        function removerNomeLetreiro(index) {
+            let dados = JSON.parse(localStorage.getItem('diretoria_letreiro')) || { itens: [], sep: "⭐", vel: 60 };
+            dados.itens.splice(index, 1);
+            localStorage.setItem('diretoria_letreiro', JSON.stringify(dados));
+            carregarInterfaceLetreiro();
+        }
+
+        function limparLetreiro() {
+            if(confirm("Deseja apagar todos os nomes do letreiro?")) {
+                let dados = JSON.parse(localStorage.getItem('diretoria_letreiro')) || { itens: [], sep: "⭐", vel: 60 };
+                dados.itens = [];
+                localStorage.setItem('diretoria_letreiro', JSON.stringify(dados));
+                carregarInterfaceLetreiro();
+            }
+        }
+
+        // --- INICIALIZAÇÃO ---
+        window.onload = () => {
+            if (verificarAcesso()) {
+                console.log("✅ Acesso RDM Validado.");
+                setInterval(verificarEConectar, 2000); // Inicia o monitoramento da conexão Híbrida
+                carregarInterfaceLetreiro();
+            }
+        };
+
+        // ==========================================
+        // ROTEADOR DE WIDGETS PARA OBS / TIKTOK STUDIO
+        // ==========================================
+        function iniciarModoOBS(viewMode) {
+            // Desliga a estrutura do painel de controle e injeta o Chroma Key Verde
+            document.getElementById('sidebar').style.display = 'none';
+            document.getElementById('main-content').style.display = 'none';
+            document.body.style.backgroundColor = '#00ff00';
+            document.body.style.overflow = 'hidden';
+
+            const obsContainer = document.createElement('div');
+            obsContainer.id = 'obs-container';
+            obsContainer.style.padding = '20px';
+            document.body.appendChild(obsContainer);
+
+            // Estilos visuais idênticos aos rankings do jogo antigo
+            const estiloRanking = `
+                <style>
+                    .widget-title { font-size: 24px; font-weight: bold; color: #ff0050; text-shadow: 2px 2px 4px black; margin-bottom: 15px; text-align: center; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 10px; font-family: sans-serif;}
+                    .ranking-item { display: flex; align-items: center; background: linear-gradient(90deg, rgba(30,30,30,0.9) 0%, rgba(50,50,50,0.7) 100%); margin-bottom: 10px; padding: 10px; border-radius: 15px; border-left: 5px solid #00f2fe; box-shadow: 2px 2px 10px rgba(0,0,0,0.5); font-family: sans-serif;}
+                    .pos { font-size: 20px; font-weight: bold; margin-right: 15px; width: 30px; text-align: center; }
+                    .avatar { width: 45px; height: 45px; border-radius: 50%; margin-right: 15px; border: 2px solid white; object-fit: cover; }
+                    .info { display: flex; flex-direction: column; flex-grow: 1; }
+                    .name { font-size: 16px; font-weight: bold; color: white; }
+                    .gift-name { font-size: 12px; color: #aaa; }
+                    .coins { font-size: 16px; font-weight: bold; color: #00f2fe; text-align: right; }
+                </style>
+            `;
+            document.head.insertAdjacentHTML('beforeend', estiloRanking);
+
+            // Loop estável de atualização de 1 segundo lendo a memória local compartilhada
+            setInterval(() => {
+                let html = '';
+                const topLimit = 5;
+
+                const rankData = JSON.parse(localStorage.getItem('diretoria_rankings')) || bancoRankings;
+                const dbHoje = rankData['diario'];
+
+                if (viewMode === 'ranking_gifters') {
+                    html += `<div class="widget-title">🏆 Top Presenteadores (Hoje)</div>`;
+                    const arr = Object.entries(dbHoje.gifters).sort((a, b) => b[1].pontos - a[1].pontos).slice(0, topLimit);
+                    arr.forEach((item, index) => {
+                        const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
+                        html += `
+                            <div class="ranking-item" style="border-left-color: ${cor};">
+                                <div class="pos" style="color: ${cor}">#${index + 1}</div>
+                                <img class="avatar" src="${item[1].avatar}">
+                                <div class="info"><div class="name">${item[0]}</div></div>
+                                <div class="coins">💎 ${item[1].pontos}</div>
+                            </div>`;
+                    });
+                }
+                else if (viewMode === 'ranking_gifts') {
+                    html += `<div class="widget-title">🔥 Maior Presente Isolado</div>`;
+                    const maiores = JSON.parse(localStorage.getItem('diretoria_maiores_presentes')) || [];
+                    maiores.slice(0, topLimit).forEach((item, index) => {
+                        const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
+                        html += `
+                            <div class="ranking-item" style="border-left-color: ${cor};">
+                                <div class="pos" style="color: ${cor}">#${index + 1}</div>
+                                <img class="avatar" src="${item.avatar}">
+                                <div class="info">
+                                    <div class="name">${item.user}</div>
+                                    <div class="gift-name">${item.gift}</div>
+                                </div>
+                                <div class="coins">💎 ${item.coins}</div>
+                            </div>`;
+                    });
+                }
+                else if (viewMode === 'ranking_likes') {
+                    html += `<div class="widget-title">❤️ Top Tap Tap (Hoje)</div>`;
+                    const arr = Object.entries(dbHoje.likes).sort((a, b) => b[1].pontos - a[1].pontos).slice(0, topLimit);
+                    arr.forEach((item, index) => {
+                        const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
+                        html += `
+                            <div class="ranking-item" style="border-left-color: ${cor};">
+                                <div class="pos" style="color: ${cor}">#${index + 1}</div>
+                                <img class="avatar" src="${item[1].avatar}">
+                                <div class="info"><div class="name">${item[0]}</div></div>
+                                <div class="coins" style="color: #ff4757;">❤️ ${item[1].pontos}</div>
+                            </div>`;
+                    });
+                }
+                else if (viewMode === 'ativos') {
+                    html += `<div class="widget-title">🟢 Auditório (Pessoas Ativas na Live)</div>`;
+                    const ativos = JSON.parse(localStorage.getItem('diretoria_ativos')) || [];
+                    html += `<div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; font-family: sans-serif;">`;
+                    ativos.slice(-25).reverse().forEach(nome => {
+                        html += `<span style="background: rgba(0,0,0,0.85); color: white; padding: 6px 16px; border-radius: 20px; font-weight: bold; border: 1px solid #00f2fe; font-size:14px;">${nome}</span>`;
+                    });
+                    html += `</div>`;
+                }
+                else if (viewMode === 'meta_gift') {
+                    const mGift = JSON.parse(localStorage.getItem('diretoria_meta_gift')) || { alvo: 100, atual: 0, presente: "" };
+                    const porcentagem = Math.min((mGift.atual / Math.max(mGift.alvo, 1)) * 100, 100).toFixed(1);
+                    const nomeMeta = mGift.presente ? `META DE ${mGift.presente.toUpperCase()}` : "META DE PRESENTES";
+
+                    html += `
+                        <div style="width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center;">
+                            <div style="width: 100%; max-width: 600px; background: rgba(0,0,0,0.8); padding: 20px; border-radius: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.7); font-family: 'Arial Black', sans-serif; border: 3px solid #00f2fe;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 15px; color: white; font-size: 22px; text-transform: uppercase; text-shadow: 2px 2px 4px black;">
+                                    <span>🎯 ${nomeMeta}</span>
+                                    <span style="color: #00f2fe; text-shadow: 0 0 10px #00f2fe;">${mGift.atual} / ${mGift.alvo}</span>
+                                </div>
+                                <div style="width: 100%; height: 35px; background: #222; border-radius: 20px; overflow: hidden; border: 2px solid #444; box-shadow: inset 0 0 10px black;">
+                                    <div style="width: ${porcentagem}%; height: 100%; background: linear-gradient(90deg, #0088ff, #00f2fe); transition: width 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 0 15px #00f2fe;"></div>
+                                </div>
+                                <div style="text-align: right; color: #fff; font-size: 18px; margin-top: 8px; text-shadow: 2px 2px 4px black;">${porcentagem}%</div>
+                            </div>
+                        </div>
+                    `;
+                }
+                else if (viewMode === 'meta_like') {
+                    const mLike = JSON.parse(localStorage.getItem('diretoria_meta_like')) || { alvo: 10000, atual: 0 };
+                    const porcentagem = Math.min((mLike.atual / Math.max(mLike.alvo, 1)) * 100, 100).toFixed(1);
+
+                    html += `
+                        <div style="width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center;">
+                            <div style="width: 100%; max-width: 600px; background: rgba(0,0,0,0.8); padding: 20px; border-radius: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.7); font-family: 'Arial Black', sans-serif; border: 3px solid #ff4757;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 15px; color: white; font-size: 22px; text-transform: uppercase; text-shadow: 2px 2px 4px black;">
+                                    <span>❤️ META DE TAP TAP</span>
+                                    <span style="color: #ff4757; text-shadow: 0 0 10px #ff4757;">${mLike.atual} / ${mLike.alvo}</span>
+                                </div>
+                                <div style="width: 100%; height: 35px; background: #222; border-radius: 20px; overflow: hidden; border: 2px solid #444; box-shadow: inset 0 0 10px black;">
+                                    <div style="width: ${porcentagem}%; height: 100%; background: linear-gradient(90deg, #ff4757, #ff6b81); transition: width 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 0 15px #ff4757;"></div>
+                                </div>
+                                <div style="text-align: right; color: #fff; font-size: 18px; margin-top: 8px; text-shadow: 2px 2px 4px black;">${porcentagem}%</div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Bloqueia a sobreposição caso a view atual seja mídia, potes, letreiro, gerador ou sorteio
+                if (viewMode !== 'midia' && !viewMode.startsWith('pote') && viewMode !== 'gerador' && viewMode !== 'letreiro' && viewMode !== 'sorteio') {
+                    document.getElementById('obs-container').innerHTML = html;
+                }
+            }, 1000);
+
+            // ===================================
+            // SISTEMA DE SORTEIO/ROLETA ANIMADA (OBS) - COM FOTOS
+            // ===================================
+            if (viewMode === 'sorteio') {
+                const estiloSorteio = `<style>
+                    @keyframes dropIn { 0% { transform: translateY(-100px) scale(0.5); opacity: 0; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+                    @keyframes winnerPulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 20px gold; } 50% { transform: scale(1.05); box-shadow: 0 0 40px #ff0050; border-color: #ff0050; } }
+                    .sorteio-container { width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
+                    .sorteio-box { background: rgba(20, 20, 20, 0.95); border: 3px solid #9b59b6; border-radius: 20px; padding: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); text-align: center; font-family: 'Arial Black', sans-serif; width: 600px; animation: dropIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+                    .sorteio-title { font-size: 28px; color: white; margin-bottom: 25px; text-shadow: 2px 2px 0px #9b59b6; text-transform: uppercase; }
+                    .sorteio-nome { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; font-size: 35px; color: gold; text-shadow: 2px 2px 5px black; padding: 25px 30px; background: #111; border-radius: 12px; border: 2px dashed #555; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; min-width: 350px;}
+                    .sorteio-avatar { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 4px solid gold; box-shadow: 2px 2px 10px black; }
+                    .ganhador-highlight { animation: winnerPulse 0.5s infinite alternate !important; background: rgba(255,215,0,0.15) !important; border: 3px solid gold !important; color: #fff !important; text-shadow: 0 0 15px gold, 2px 2px 5px black !important;}
+                </style>`;
+                document.head.insertAdjacentHTML('beforeend', estiloSorteio);
+                document.getElementById('obs-container').innerHTML = `<div id="sorteio-area" class="sorteio-container"></div>`;
+
+                let lastSorteioId = 0;
+                setInterval(() => {
+                    const disparo = JSON.parse(localStorage.getItem('diretoria_sorteio_disparo'));
+                    if (disparo && disparo.id !== lastSorteioId) {
+                        lastSorteioId = disparo.id;
+                        const area = document.getElementById('sorteio-area');
+
+                        area.innerHTML = `
+                            <div class="sorteio-box">
+                                <div class="sorteio-title" id="st-title">🎟️ Sorteando Espectador...</div>
+                                <div id="sorteio-rolagem" class="sorteio-nome">
+                                    <span>PREPARANDO...</span>
+                                </div>
+                            </div>`;
+
+                        const rolagem = document.getElementById('sorteio-rolagem');
+                        const titulo = document.getElementById('st-title');
+
+                        let embaralhar = disparo.lista;
+                        if(embaralhar.length < 5) {
+                            // Cria avatares fakes se tiver pouca gente pra dar o efeito visual
+                            embaralhar = embaralhar.concat([
+                                {nome: "Sorteando...", avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=s1"},
+                                {nome: "Quem será?", avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=s2"},
+                                {nome: "Rodando...", avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=s3"}
+                            ]);
+                        }
+
+                        let giros = 0;
+                        const maxGiros = 40;
+                        let delayMs = 30;
+
+                        function rodarRoleta() {
+                            if (giros < maxGiros) {
+                                const pessoa = embaralhar[Math.floor(Math.random() * embaralhar.length)];
+                                rolagem.innerHTML = `<img src="${pessoa.avatar}" class="sorteio-avatar"><span style="margin-top: -5px;">${pessoa.nome}</span>`;
+                                giros++;
+                                delayMs += 6;
+                                setTimeout(rodarRoleta, delayMs);
+                            } else {
+                                // PARA NO GANHADOR DEFINITIVO!
+                                titulo.innerText = "🏆 PARABÉNS AO GANHADOR!";
+                                titulo.style.color = "gold";
+                                titulo.style.textShadow = "2px 2px 0px #ff0050";
+
+                                rolagem.innerHTML = `<img src="${disparo.ganhador.avatar}" class="sorteio-avatar"><span style="margin-top: -5px;">${disparo.ganhador.nome}</span>`;
+                                rolagem.classList.add('ganhador-highlight');
+
+                                setTimeout(() => { area.innerHTML = ''; }, 15000);
+                            }
+                        }
+                        rodarRoleta();
+                    }
+                }, 500);
+            }
+
+            // ===================================
+            // LETREIRO ANIMADO (OBS) - LISO E SEM PISCAR
+            // ===================================
+            if (viewMode === 'letreiro') {
+                let memoriaLetreiro = ""; // CAIXA DE MEMÓRIA (Evita piscar a tela)
+
+                // 1. Injeta o CSS do letreiro UMA ÚNICA VEZ
+                const styleLetreiro = `
+                    <style id="css-letreiro">
+                        .ticker-container { width: 100vw; border-top: 3px solid #00ffff; border-bottom: 3px solid #00ffff; overflow: hidden; white-space: nowrap; position: absolute; bottom: 0; left: 0; padding: 10px 0; background: rgba(0,0,0,0.85); box-shadow: 0 0 15px #00ffff; display: flex; align-items: center; }
+                        .ticker-text { display: inline-flex; align-items: center; white-space: nowrap; font-size: 26px; color: #ffd700; text-shadow: 2px 2px 4px #000; text-transform: uppercase; font-family: 'Arial Black', sans-serif;}
+                        .char-item { margin: 0 20px; display: inline-flex; align-items: center; color: white; }
+                        .char-avatar { width: 35px; height: 35px; border-radius: 50%; border: 2px solid #ffd700; margin-right: 12px; object-fit: cover; }
+                        .separador { color: #00ffff; font-size: 20px; text-shadow: 0 0 10px #00ffff; display: inline-flex; align-items: center; margin: 0 5px;}
+                        @keyframes scroll-left { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+                    </style>
+                `;
+                document.head.insertAdjacentHTML('beforeend', styleLetreiro);
+
+                // 2. Cria a estrutura base do letreiro UMA ÚNICA VEZ
+                document.getElementById('obs-container').innerHTML = `
+                    <div class="ticker-container" id="caixa-letreiro" style="justify-content: center;">
+                        <div class="ticker-text" id="texto-letreiro">
+                            AGUARDANDO APOIADORES...
+                        </div>
+                    </div>`;
+
+                // 3. Atualizador Inteligente (Ouve as mudanças sem destruir a animação)
+                setInterval(() => {
+                    const dados = JSON.parse(localStorage.getItem('diretoria_letreiro')) || { itens: [], sep: "⭐", vel: 60 };
+                    const estadoAtual = JSON.stringify(dados);
+
+                    // SE NINGUÉM FOI ADICIONADO OU REMOVIDO, ELE NÃO FAZ NADA!
+                    if (memoriaLetreiro === estadoAtual) return;
+                    memoriaLetreiro = estadoAtual;
+
+                    const caixa = document.getElementById('caixa-letreiro');
+                    const texto = document.getElementById('texto-letreiro');
+
+                    if (dados.itens && dados.itens.length > 0) {
+                        let textoBase = dados.itens.map(item => {
+                            let nome = typeof item === 'string' ? item : item.nome;
+                            let avatar = typeof item === 'string' ? `https://api.dicebear.com/7.x/bottts/svg?seed=${nome}` : item.avatar;
+                            return `<div class="char-item"><img src="${avatar}" class="char-avatar"> ${nome}</div>`;
+                        }).join(`<div class="separador">${dados.sep}</div>`);
+
+                        // Duplica o texto para fazer o loop infinito sem buracos
+                        const textoDuplicado = textoBase + `<div class="separador">${dados.sep}</div>` + textoBase;
+
+                        caixa.style.justifyContent = 'flex-start';
+                        // Remove a animação temporariamente para injetar o nome novo
+                        texto.style.animation = 'none';
+                        texto.innerHTML = textoDuplicado;
+
+                        // Devolve a animação instantaneamente sem engasgar
+                        setTimeout(() => {
+                            texto.style.animation = `scroll-left ${dados.vel}s linear infinite`;
+                        }, 50);
+
+                    } else {
+                        caixa.style.justifyContent = 'center';
+                        texto.style.animation = 'none';
+                        texto.innerHTML = "AGUARDANDO APOIADORES...";
+                    }
+                }, 1000);
+            }
+
+            // ===================================
+            // PLAYER DE MÍDIA ISOLADO (OBS) - COM DESTRUIÇÃO AUTOMÁTICA
+            // ===================================
+            if (viewMode === 'midia') {
+                const estiloPopup = `<style> @keyframes popupAnim { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } } </style>`;
+                document.head.insertAdjacentHTML('beforeend', estiloPopup);
+
+                document.getElementById('obs-container').innerHTML = `<div id="midia-player" style="width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; background: transparent;"></div>`;
+
+                let lastDisparoId = 0;
+                setInterval(() => {
+                    const disparo = JSON.parse(localStorage.getItem('diretoria_midia_disparo'));
+                    if (disparo && disparo.id !== lastDisparoId) {
+                        lastDisparoId = disparo.id;
+                        const container = document.getElementById('midia-player');
+                        container.innerHTML = ''; // Limpa a tela
+
+                        if (disparo.tipo === 'video') {
+                            // A mágica acontece no onended="this.remove()"
+                            container.innerHTML = `<video src="${disparo.url}" autoplay onended="this.remove()" style="max-width: 100%; max-height: 100%; filter: drop-shadow(0 0 20px rgba(0,0,0,0.8)); animation: popupAnim 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);"></video>`;
+                        } else if (disparo.tipo === 'image') {
+                            container.innerHTML = `<img id="img-temp-${disparo.id}" src="${disparo.url}" style="max-width: 100%; max-height: 100%; filter: drop-shadow(0 0 20px rgba(0,0,0,0.8)); animation: popupAnim 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">`;
+                            setTimeout(() => {
+                                const img = document.getElementById(`img-temp-${disparo.id}`);
+                                if (img) img.remove(); // Remove a imagem após 8 segundos cravados
+                            }, 8000);
+                        } else if (disparo.tipo === 'audio') {
+                            container.innerHTML = `<audio src="${disparo.url}" autoplay onended="this.remove()"></audio>`;
+                        }
+                    }
+                }, 500);
+            }
+
+
+
+
+            // ===================================
+            // GERADOR PRO MULTITELAS (OBS)
+            // ===================================
+            if (viewMode === 'gerador') {
+                const idGerador = urlParams.get('id') || '1';
+                const config = JSON.parse(localStorage.getItem(`diretoria_gerador_${idGerador}`));
+
+                if (!config) {
+                    document.getElementById('obs-container').innerHTML = `<h1 style="color:white; text-align:center;">Gerador ${idGerador} vazio.<br>Salve configurações no Painel Host.</h1>`;
+                    return;
+                }
+
+                // Remove da memória os slots que estão 100% vazios para não renderizar buracos
+                const itensValidos = config.itens.filter(i => i.img || i.txt);
+                if (itensValidos.length === 0) return;
+
+                const speedMs = config.speed * 1000;
+                let displayFlex = config.layout === 'horizontal' ? 'row' : 'column';
+
+                // Injeta a base do CSS e todas as opções de animação
+                let styleAnim = `<style>
+                    .gerador-container { display: flex; flex-direction: ${displayFlex}; gap: 30px; align-items: center; justify-content: center; width: 100vw; height: 100vh; }
+                    .g-item { display: flex; flex-direction: ${displayFlex}; align-items: center; gap: 15px; text-align: center; }
+                    .g-img { width: 120px; height: 120px; object-fit: contain; filter: drop-shadow(2px 2px 5px rgba(0,0,0,0.6)); }
+                    .g-txt { font-weight: bold; text-shadow: 2px 2px 4px black, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; font-family: 'Arial Black', sans-serif;}
+
+                    @keyframes fade { 0%, 100% { opacity: 0; } 10%, 90% { opacity: 1; } }
+                    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+                    @keyframes slideH { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100vw); } }
+                    @keyframes slideV { 0% { transform: translateY(100vh); } 100% { transform: translateY(-100vh); } }
+                </style>`;
+                document.head.insertAdjacentHTML('beforeend', styleAnim);
+
+                let htmlBase = `<div class="gerador-container" id="g-container">`;
+
+                if (config.anim === 'none' || config.anim === 'pulse') {
+                    // FIXO OU PULSAR (Mostra todos os itens ao mesmo tempo na tela)
+                    itensValidos.forEach(item => {
+                        let animClass = config.anim === 'pulse' ? `animation: pulse ${config.speed}s infinite;` : '';
+                        htmlBase += `
+                            <div class="g-item" style="${animClass}">
+                                ${item.img ? `<img src="${item.img}" class="g-img">` : ''}
+                                ${item.txt ? `<div class="g-txt" style="color: ${item.cor}; font-size: ${item.tam}px;">${item.txt}</div>` : ''}
+                            </div>`;
+                    });
+                    htmlBase += `</div>`;
+                    document.getElementById('obs-container').innerHTML = htmlBase;
+                }
+                else if (config.anim === 'slide') {
+                    // LETREIRO DESLIZANTE
+                    let slideName = config.layout === 'horizontal' ? 'slideH' : 'slideV';
+                    htmlBase += `<div style="display:flex; flex-direction:${displayFlex}; gap:50px; animation: ${slideName} ${config.speed * 5}s linear infinite;">`;
+                    itensValidos.forEach(item => {
+                        htmlBase += `
+                            <div class="g-item">
+                                ${item.img ? `<img src="${item.img}" class="g-img">` : ''}
+                                ${item.txt ? `<div class="g-txt" style="color: ${item.cor}; font-size: ${item.tam}px;">${item.txt}</div>` : ''}
+                            </div>`;
+                    });
+                    htmlBase += `</div></div>`;
+                    document.getElementById('obs-container').innerHTML = htmlBase;
+                }
+                else if (config.anim === 'fade' || config.anim === 'one-by-one') {
+                    // PISCAR OU UM DE CADA VEZ (Ciclo Javascript trocando o HTML)
+                    document.getElementById('obs-container').innerHTML = htmlBase + `</div>`;
+                    let currentIndex = 0;
+
+                    function mostrarProximoItem() {
+                        let item = itensValidos[currentIndex];
+                        let extraAnim = config.anim === 'fade' ? `animation: fade ${config.speed}s infinite;` : '';
+
+                        document.getElementById('g-container').innerHTML = `
+                            <div class="g-item" style="${extraAnim}">
+                                ${item.img ? `<img src="${item.img}" class="g-img">` : ''}
+                                ${item.txt ? `<div class="g-txt" style="color: ${item.cor}; font-size: ${item.tam}px;">${item.txt}</div>` : ''}
+                            </div>`;
+
+                        currentIndex = (currentIndex + 1) % itensValidos.length;
+                    }
+
+                    mostrarProximoItem(); // Renderiza o primeiro
+                    setInterval(mostrarProximoItem, speedMs); // Gira o loop
+                }
+            }
+
+            // ===================================
+            // POTES COM MOTOR FÍSICO 2D (Matter.js)
+            // ===================================
+            if (viewMode.startsWith('pote')) {
+                const numPote = viewMode.replace('pote', ''); // 1, 2 ou 3
+
+                // Configuração Dinâmica: Molde invisível para abraçar a imagem corretamente
+                // Configuração Dinâmica (MEDIDAS ATUALIZADAS E CALIBRADAS)
+                let cfgPote = {
+                    img: 'pote_vidro_realista.webp', w: 400, h: 550, dropX: 200,
+                    bodies: [
+                        { x: 200, y: 540, w: 320, h: 40, a: 0 }, // Fundo
+                        { x: 30, y: 300, w: 20, h: 450, a: 0 },  // Esquerda
+                        { x: 370, y: 300, w: 20, h: 450, a: 0 }  // Direita
+                    ]
+                };
+
+                if (numPote === '2') {
+                    cfgPote = {
+                        img: 'pote_legal.png', w: 450, h: 900, dropX: 225,
+                        bodies: [
+                            { x: 225, y: 700, w: 480, h: 40, a: 0 }, // Fundo levantado
+                            { x: 30, y: 420, w: 20, h: 550, a: 0 },  // Esquerda empurrada
+                            { x: 405, y: 420, w: 20, h: 550, a: 0 }  // Direita empurrada
+                        ]
+                    };
+                } else if (numPote === '3') {
+                    cfgPote = {
+                        img: 'pote_aberto.png', w: 600, h: 700, dropX: 250,
+                        bodies: [
+                            { x: 290, y: 560, w: 390, h: 40, a: 0 }, // Fundo levantado
+                            { x: 40, y: 398, w: 20, h: 320, a: -0.5 }, // Parede inclinada (\)
+                            { x: 555, y: 398, w: 20, h: 320, a: 0.5 }  // Parede inclinada (/)
+                        ]
+                    };
+                }
+
+                document.body.innerHTML = `
+                    <style>
+                        body { overflow: hidden; background-color: #00ff00; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+                        #jar { position: relative; width: ${cfgPote.w}px; height: ${cfgPote.h}px; background-color: rgba(0, 0, 0, 0.4); border: 3px solid rgba(255, 255, 255, 0.3); border-top: none; border-bottom-left-radius: 40px; border-bottom-right-radius: 40px; background-image: url('${cfgPote.img}'); background-size: cover; background-position: center; z-index: 1;}
+                        .gift-item { position: absolute; transform-origin: center; display: flex; align-items: center; justify-content: center; z-index: 10; pointer-events: none; }
+                        .gift-item img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5)); }
+                    </style>
+                    <div id="jar"></div>
+                `;
+
+                const script = document.createElement('script');
+                script.src = "https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js";
+                script.onload = () => {
+                    const Engine = Matter.Engine, Runner = Matter.Runner, Bodies = Matter.Bodies, Composite = Matter.Composite, Events = Matter.Events;
+                    const engine = Engine.create({ enableSleeping: false }); // Desativa o sono físico (evita bug de voar)
+                    const jar = document.getElementById('jar');
+
+                    const ground = Bodies.rectangle(cfgPote.bodies[0].x, cfgPote.bodies[0].y, cfgPote.bodies[0].w, cfgPote.bodies[0].h, { isStatic: true, angle: cfgPote.bodies[0].a });
+                    const leftWall = Bodies.rectangle(cfgPote.bodies[1].x, cfgPote.bodies[1].y, cfgPote.bodies[1].w, cfgPote.bodies[1].h, { isStatic: true, angle: cfgPote.bodies[1].a });
+                    const rightWall = Bodies.rectangle(cfgPote.bodies[2].x, cfgPote.bodies[2].y, cfgPote.bodies[2].w, cfgPote.bodies[2].h, { isStatic: true, angle: cfgPote.bodies[2].a });
+                    const leftRamp = Bodies.rectangle(-30, -50, 200, 20, { isStatic: true, angle: -Math.PI / 4 });
+                    const rightRamp = Bodies.rectangle(cfgPote.w + 30, -50, 200, 20, { isStatic: true, angle: Math.PI / 4 });
+
+                    Composite.add(engine.world, [ground, leftWall, rightWall, leftRamp, rightRamp]);
+                    Runner.run(Runner.create(), engine);
+
+                    const giftsMap = {};
+                    const bodyIds = []; // 📌 RASTREADOR DE FILA REAL (Impede o buraco fantasma)
+
+                    Events.on(engine, 'afterUpdate', function() {
+                        for (let id in giftsMap) {
+                            const body = giftsMap[id].body; const el = giftsMap[id].el; const r = giftsMap[id].r;
+                            el.style.transform = `translate(${body.position.x - r}px, ${body.position.y - r}px) rotate(${body.angle}rad)`;
+                            if (body.position.y > cfgPote.h + 100) {
+                                Composite.remove(engine.world, body); el.remove(); delete giftsMap[id];
+                                const idx = bodyIds.indexOf(parseInt(id));
+                                if(idx > -1) bodyIds.splice(idx, 1);
+                            }
+                        }
+                    });
+
+                    let lastPoteId = 0;
+                    setInterval(() => {
+                        let fila = JSON.parse(localStorage.getItem('diretoria_fila_potes')) || [];
+                        fila.forEach(item => {
+                            if (item.id > lastPoteId) {
+                                lastPoteId = item.id;
+                                let dropCount = Math.min(item.qtd, 30);
+                                let moedas = item.coins || 1;
+
+                                let raioDinamico = Math.max(14, Math.min(80, 14 + Math.sqrt(moedas) * 1.5));
+                                let quique = Math.max(0.1, 0.6 - (moedas * 0.0005));
+
+                                for(let i=0; i<dropCount; i++) {
+                                    setTimeout(() => {
+                                        const startX = cfgPote.dropX + (Math.random() * 60 - 30);
+                                        const body = Bodies.circle(startX, -100, raioDinamico, { restitution: quique, friction: 0.5 });
+                                        Composite.add(engine.world, body);
+
+                                        const el = document.createElement('div'); el.className = 'gift-item';
+                                        el.style.width = (raioDinamico * 2) + 'px'; el.style.height = (raioDinamico * 2) + 'px';
+                                        el.innerHTML = item.url ? `<img src="${item.url}">` : '🎁';
+                                        jar.appendChild(el);
+
+                                        giftsMap[body.id] = { body: body, el: el, r: raioDinamico };
+                                        bodyIds.push(body.id);
+
+                                        // Auto-limpeza Rígida (Destroi corpo físico + imagem)
+                                        if(bodyIds.length > 250) {
+                                            const oldestId = bodyIds.shift();
+                                            if (giftsMap[oldestId]) {
+                                                Composite.remove(engine.world, giftsMap[oldestId].body);
+                                                giftsMap[oldestId].el.remove();
+                                                delete giftsMap[oldestId];
+                                            }
+                                        }
+                                    }, i * 150);
+                                }
+                            }
+                        });
+                    }, 1000);
+                };
+                document.head.appendChild(script);
+            }
+
+           // ===================================
+                // GERADOR PRO MULTITELAS (OBS) - REAL-TIME E SEM BURACOS
+                // ===================================
+                else if (viewMode === 'gerador') {
+                    const idGerador = urlParams.get('id') || '1';
+                    let memoriaGerador = ""; // Evita que a tela pisque à toa
+                    let intervalGerador = null; // Guarda o ciclo do piscar/fade
+
+                    setInterval(() => {
+                        const config = JSON.parse(localStorage.getItem(`diretoria_gerador_${idGerador}`));
+
+                        if (!config) {
+                            document.getElementById('obs-container').innerHTML = `<h1 style="color:white; text-align:center;">Gerador ${idGerador} vazio.<br>Configure e salve no Painel Host.</h1>`;
+                            return;
+                        }
+
+                        // Só atualiza a tela do OBS se você clicou em "Salvar" lá no painel!
+                        const estadoAtual = JSON.stringify(config);
+                        if (memoriaGerador === estadoAtual) return;
+                        memoriaGerador = estadoAtual;
+
+                        if (intervalGerador) clearInterval(intervalGerador); // Reseta a animação anterior
+
+                        const itensValidos = config.itens.filter(i => i.img || i.txt);
+                        if (itensValidos.length === 0) {
+                            document.getElementById('obs-container').innerHTML = "";
+                            return;
+                        }
+
+                        const speedMs = config.speed * 1000;
+                        let displayFlex = config.layout === 'horizontal' ? 'row' : 'column';
+
+                        // Injeta o CSS (Atualiza dinamicamente se mudar pra horizontal/vertical)
+                        const cssContent = `
+                            .gerador-container { display: flex; flex-direction: ${displayFlex}; align-items: center; justify-content: flex-start; width: 100vw; height: 100vh; overflow: hidden; }
+                            .g-item { display: flex; flex-direction: ${displayFlex}; align-items: center; gap: 15px; text-align: center; white-space: nowrap; padding: 0 30px; }
+                            .g-img { width: 120px; height: 120px; object-fit: contain; filter: drop-shadow(2px 2px 5px rgba(0,0,0,0.6)); }
+                            .g-txt { font-weight: bold; text-shadow: 2px 2px 4px black, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; font-family: 'Arial Black', sans-serif;}
+                            .seamless-wrapper { display: flex; flex-direction: ${displayFlex}; }
+
+                            @keyframes fade { 0%, 100% { opacity: 0; } 10%, 90% { opacity: 1; } }
+                            @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+                            /* Magia do Loop Infinito (Move exatos 50% da div clonada) */
+                            @keyframes slideH-seamless { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+                            @keyframes slideV-seamless { 0% { transform: translateY(0); } 100% { transform: translateY(-50%); } }
+                        `;
+
+                        if (!document.getElementById('css-gerador')) {
+                            document.head.insertAdjacentHTML('beforeend', `<style id="css-gerador">${cssContent}</style>`);
+                        } else {
+                            document.getElementById('css-gerador').innerHTML = cssContent;
+                        }
+
+                        // Monta o miolo dos itens visualmente
+                        let htmlItens = '';
+                        itensValidos.forEach(item => {
+                            htmlItens += `
+                                <div class="g-item">
+                                    ${item.img ? `<img src="${item.img}" class="g-img">` : ''}
+                                    ${item.txt ? `<div class="g-txt" style="color: ${item.cor}; font-size: ${item.tam}px;">${item.txt}</div>` : ''}
+                                </div>`;
+                        });
+
+                        let htmlBase = `<div class="gerador-container" id="g-container" style="justify-content: ${config.anim === 'slide' ? 'flex-start' : 'center'};">`;
+
+                        if (config.anim === 'none' || config.anim === 'pulse') {
+                            let animClass = config.anim === 'pulse' ? `animation: pulse ${config.speed}s infinite;` : '';
+                            document.getElementById('obs-container').innerHTML = htmlBase + `
+                                <div class="seamless-wrapper" style="${animClass}">
+                                    ${htmlItens}
+                                </div>
+                            </div>`;
+                        }
+                        else if (config.anim === 'slide') {
+                            // LETREIRO DESLIZANTE (Com Loop Perfeito)
+                            let slideName = config.layout === 'horizontal' ? 'slideH-seamless' : 'slideV-seamless';
+                            let conteudoDuplicado = htmlItens + htmlItens; // Clona a lista para cobrir o buraco
+
+                            document.getElementById('obs-container').innerHTML = htmlBase + `
+                                <div class="seamless-wrapper" style="animation: ${slideName} ${config.speed * 5}s linear infinite;">
+                                    ${conteudoDuplicado}
+                                </div>
+                            </div>`;
+                        }
+                        else if (config.anim === 'fade' || config.anim === 'one-by-one') {
+                            // UM POR VEZ OU PISCAR
+                            document.getElementById('obs-container').innerHTML = htmlBase + `</div>`;
+                            let currentIndex = 0;
+
+                            function mostrarProximoItem() {
+                                let item = itensValidos[currentIndex];
+                                let extraAnim = config.anim === 'fade' ? `animation: fade ${config.speed}s infinite;` : '';
+
+                                document.getElementById('g-container').innerHTML = `
+                                    <div class="g-item" style="${extraAnim}; justify-content: center; width: 100%;">
+                                        ${item.img ? `<img src="${item.img}" class="g-img">` : ''}
+                                        ${item.txt ? `<div class="g-txt" style="color: ${item.cor}; font-size: ${item.tam}px;">${item.txt}</div>` : ''}
+                                    </div>`;
+
+                                currentIndex = (currentIndex + 1) % itensValidos.length;
+                            }
+
+                            mostrarProximoItem();
+                            intervalGerador = setInterval(mostrarProximoItem, speedMs);
+                        }
+                    }, 1000); // Vigia o painel a cada 1 segundo
+                }
+        }
+        // Modifica a inicialização padrão para capturar a rota de transmissão do OBS
+        const viewModeParam = urlParams.get('view');
+        if (viewModeParam) {
+            iniciarModoOBS(viewModeParam);
+            // Inicia o motor de conexão no OBS também para as animações rodarem sozinhas
+            setInterval(verificarEConectar, 2000);
+        }
+
+    </script>
+
+    <!-- Integração Firebase (Sincronização futura) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB2LNWktWEwYLuZxwr8oc9NpcjFz3GU5qc",
+            authDomain: "authrdm-a82a6.firebaseapp.com",
+            databaseURL: "https://authrdm-a82a6-default-rtdb.firebaseio.com",
+            projectId: "authrdm-a82a6"
+        };
+
+        try {
+            const app = initializeApp(firebaseConfig);
+            const db = getDatabase(app);
+            window.firebaseDb = db;
+            console.log("🔥 Firebase inicializado com sucesso.");
+        } catch (error) {
+            console.error("Erro ao inicializar Firebase:", error);
+        }
+    </script>
+</body>
+</html>
