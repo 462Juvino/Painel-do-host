@@ -1472,13 +1472,19 @@
                 const repeatCount = parseInt(data.repeatCount || 1);
                 const unitDiamond = parseInt(data.diamondCount || 1);
                 const totalDiamonds = unitDiamond * repeatCount;
-                const giftPictureUrl = data.giftPictureUrl || "";
+
+                // Puxa a imagem oficial do catálogo caso o TikFinity esqueça de mandar!
+                let giftPictureUrl = data.giftPictureUrl || "";
+                if (!giftPictureUrl && typeof window.catalogoGlobal !== 'undefined' && window.catalogoGlobal[giftName]) {
+                    giftPictureUrl = window.catalogoGlobal[giftName].url || "";
+                }
 
                 if (!ramData.rastreioSorteio[user]) ramData.rastreioSorteio[user] = [];
                 ramData.rastreioSorteio[user].push(giftName.toLowerCase().trim());
                 memDirty.rastreio = true;
 
-                ramData.filaPotes.push({ id: Date.now() + Math.random(), url: giftPictureUrl, coins: unitDiamond });
+                // AGORA SIM! Salvando a QTD e a URL corretas na fila para não cair genérico
+                ramData.filaPotes.push({ id: Date.now() + Math.random(), url: giftPictureUrl, coins: unitDiamond, qtd: repeatCount });
                 if (ramData.filaPotes.length > 100) ramData.filaPotes.shift();
                 memDirty.potes = true;
 
@@ -2045,33 +2051,32 @@
             if (viewMode.startsWith('pote')) {
                 const numPote = viewMode.replace('pote', ''); // 1, 2 ou 3
 
-                // Configuração Dinâmica: Molde invisível para abraçar a imagem corretamente
-                // Configuração Dinâmica (MEDIDAS ATUALIZADAS E CALIBRADAS)
+                // Configuração Dinâmica Restaurada: Medidas perfeitas originais
                 let cfgPote = {
-                    img: 'pote_vidro_realista.webp', w: 400, h: 550, dropX: 200,
+                    img: 'pote_vidro_realista.webp', w: 360, h: 550, dropX: 180,
                     bodies: [
-                        { x: 200, y: 540, w: 320, h: 40, a: 0 }, // Fundo
-                        { x: 30, y: 300, w: 20, h: 450, a: 0 },  // Esquerda
-                        { x: 370, y: 300, w: 20, h: 450, a: 0 }  // Direita
+                        { x: 180, y: 540, w: 320, h: 40, a: 0 }, // Fundo
+                        { x: 10, y: 360, w: 20, h: 380, a: 0 },  // Esquerda
+                        { x: 350, y: 360, w: 20, h: 380, a: 0 }  // Direita
                     ]
                 };
 
                 if (numPote === '2') {
                     cfgPote = {
-                        img: 'pote_legal.png', w: 450, h: 900, dropX: 225,
+                        img: 'pote_legal.png', w: 440, h: 780, dropX: 220,
                         bodies: [
-                            { x: 225, y: 700, w: 480, h: 40, a: 0 }, // Fundo levantado
-                            { x: 30, y: 420, w: 20, h: 550, a: 0 },  // Esquerda empurrada
-                            { x: 405, y: 420, w: 20, h: 550, a: 0 }  // Direita empurrada
+                            { x: 220, y: 460, w: 380, h: 40, a: 0 }, // Fundo largo
+                            { x: 20, y: 280, w: 20, h: 380, a: 0 },  // Esquerda
+                            { x: 420, y: 280, w: 20, h: 380, a: 0 }  // Direita
                         ]
                     };
                 } else if (numPote === '3') {
                     cfgPote = {
-                        img: 'pote_aberto.png', w: 600, h: 700, dropX: 250,
+                        img: 'pote_aberto.png', w: 480, h: 320, dropX: 240,
                         bodies: [
-                            { x: 290, y: 560, w: 390, h: 40, a: 0 }, // Fundo levantado
-                            { x: 40, y: 398, w: 20, h: 320, a: -0.5 }, // Parede inclinada (\)
-                            { x: 555, y: 398, w: 20, h: 320, a: 0.5 }  // Parede inclinada (/)
+                            { x: 240, y: 300, w: 260, h: 40, a: 0 }, // Fundo estreito
+                            { x: 80, y: 180, w: 20, h: 250, a: -0.4 }, // Esquerda (inclinada pra dentro \)
+                            { x: 400, y: 180, w: 20, h: 250, a: 0.4 }  // Direita (inclinada pra dentro /)
                         ]
                     };
                 }
