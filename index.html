@@ -1023,20 +1023,12 @@
         function copiarLinkOBS(viewName) {
             let baseUrl = window.location.href.split('?')[0];
             const user = localStorage.getItem('rdm_user_tiktok') || localStorage.getItem('rdm_user') || 'visitante';
-            let linkFinal = "";
 
-            if (viewName.startsWith('pote')) {
-                // Se for pote, aponta para o NOVO arquivo potes.html que criamos
-                let pastaBase = baseUrl.substring(0, baseUrl.lastIndexOf("/"));
-                const num = viewName.replace('pote', '');
-                linkFinal = `${pastaBase}/potes.html?pote=${num}`;
-            } else {
-                // Se for ranking, mídia ou letreiro, usa o Index.html normalmente
-                linkFinal = `${baseUrl}?u=${user}&p=pro&view=${viewName}`;
-            }
+            // Agora TODOS os links (incluindo os potes) usam o motor ultra-rápido e transparente do próprio Index
+            let linkFinal = `${baseUrl}?u=${user}&p=pro&view=${viewName}`;
 
             navigator.clipboard.writeText(linkFinal).then(() => {
-                alert(`✅ Link copiado com sucesso!\nCole direto no TikTok Studio/OBS como Fonte de Navegador (Fundo já é transparente).\n\nLink: ${linkFinal}`);
+                alert(`✅ Link copiado com sucesso!\nCole direto no TikTok Studio/OBS como Fonte de Navegador (O fundo já vai nativamente transparente).\n\nLink: ${linkFinal}`);
             }).catch(err => {
                 alert('Erro ao copiar link: ', err);
             });
