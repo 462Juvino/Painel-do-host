@@ -2079,13 +2079,12 @@
                 document.body.innerHTML = `
                     <style>
                         body { overflow: hidden; background-color: transparent; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-                        #jar { position: relative; width: ${cfgPote.w}px; height: ${cfgPote.h}px; background-color: rgba(0, 0, 0, 0.4); border: 3px solid rgba(255, 255, 255, 0.3); border-top: none; border-bottom-left-radius: 40px; border-bottom-right-radius: 40px; background-image: url('${cfgPote.img}'); background-size: cover; background-position: center; z-index: 1;}
+                        #jar { position: relative; width: ${cfgPote.w}px; height: ${cfgPote.h}px; background-color: transparent; background-image: url('${cfgPote.img}'); background-size: 100% 100%; background-repeat: no-repeat; background-position: center; z-index: 1;}
                         .gift-item { position: absolute; transform-origin: center; display: flex; align-items: center; justify-content: center; z-index: 10; pointer-events: none; }
                         .gift-item img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5)); }
                     </style>
                     <div id="jar"></div>
                 `;
-
                 const script = document.createElement('script');
                 script.src = "https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js";
                 script.onload = () => {
@@ -2118,12 +2117,15 @@
                     });
 
                     let lastPoteId = 0;
+                    // Rodando a 200ms para sugar os presentes rapidamente e não engasgar
                     setInterval(() => {
                         let fila = JSON.parse(localStorage.getItem('diretoria_fila_potes')) || [];
                         fila.forEach(item => {
                             if (item.id > lastPoteId) {
                                 lastPoteId = item.id;
-                                let dropCount = Math.min(item.qtd, 30);
+
+                                // O BUG ESTAVA AQUI: Se 'qtd' não existisse, agora ele assume '1' por padrão!
+                                let dropCount = Math.min(item.qtd || 1, 30);
                                 let moedas = item.coins || 1;
 
                                 let raioDinamico = Math.max(14, Math.min(80, 14 + Math.sqrt(moedas) * 1.5));
@@ -2143,7 +2145,7 @@
                                         giftsMap[body.id] = { body: body, el: el, r: raioDinamico };
                                         bodyIds.push(body.id);
 
-                                        // Auto-limpeza Rígida (Destroi corpo físico + imagem)
+                                        // Auto-limpeza Rígida
                                         if(bodyIds.length > 250) {
                                             const oldestId = bodyIds.shift();
                                             if (giftsMap[oldestId]) {
@@ -2156,7 +2158,7 @@
                                 }
                             }
                         });
-                    }, 1000);
+                    }, 200);
                 };
                 document.head.appendChild(script);
             }
