@@ -202,6 +202,12 @@
                 <!-- Coluna do Narrador (Direita) -->
                 <div class="card" style="flex: 1; margin-bottom: 0; background: #222; border: 1px solid #444;">
                     <h3 style="color: #00f2fe; margin-top: 0;">🎙️ Narrador</h3>
+
+                    <!-- BOTÃO DO SEGUNDO PLANO -->
+                    <button id="btn-segundo-plano" onclick="ativarSegundoPlano()" style="width: 100%; background: #27ae60; color: white; border: none; padding: 12px; border-radius: 5px; font-weight: bold; cursor: pointer; margin-bottom: 10px; transition: 0.2s; box-shadow: 0 0 10px rgba(39, 174, 96, 0.4);">📱 Ativar 2º Plano (Pode Minimizar)</button>
+                    <!-- ÁUDIO FANTASMA EM BASE64 -->
+                    <audio id="audio-silencioso" loop src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA"></audio>
+
                     <button id="btn-pausar-narrador" onclick="togglePausarNarrador()" style="width: 100%; background: #e74c3c; color: white; border: none; padding: 12px; border-radius: 5px; font-weight: bold; cursor: pointer; margin-bottom: 20px; transition: 0.2s;">⏸️ Pausar Narrador</button>
 
                     <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; margin-bottom: 15px;">
@@ -1173,6 +1179,24 @@
                 if (textoLower.includes(palavra)) return true;
             }
             return false;
+        }
+
+        // ==========================================
+        // HACK DE SEGUNDO PLANO (ÁUDIO FANTASMA)
+        // ==========================================
+        function ativarSegundoPlano() {
+            const audioFantasma = document.getElementById('audio-silencioso');
+            const btn = document.getElementById('btn-segundo-plano');
+
+            // O navegador obriga o usuário a clicar em algo antes de tocar qualquer áudio
+            audioFantasma.play().then(() => {
+                btn.innerText = '✅ Rodando em 2º Plano!';
+                btn.style.background = '#8e44ad';
+                btn.style.boxShadow = '0 0 15px rgba(142, 68, 173, 0.6)';
+                alert("Mágica ativada! O celular agora acha que este painel é um reprodutor de música. Você pode minimizar o navegador e abrir o TikTok que o Narrador não vai parar.");
+            }).catch(e => {
+                alert("⚠️ Erro: Clique em qualquer lugar da tela antes de ativar.");
+            });
         }
 
         // ⚡ DESPERTADOR DA API (Acorda o servidor Render)
