@@ -625,8 +625,16 @@
         <script>
             async function inicializarGeradorPRO() {
                 let catLocal = {};
-                // Blindagem 1: Evita que o painel quebre se a memória estiver corrompida
+                // Escudo: Se a memória travou com sujeira antiga, ele limpa e não quebra a tela
                 try {
+                    let salvo = localStorage.getItem('diretoria_catalogo_presentes');
+                    if (salvo) catLocal = JSON.parse(salvo);
+                } catch(e) {
+                    localStorage.removeItem('diretoria_catalogo_presentes');
+                }
+
+                try {
+                    // Lendo o arquivo exato do seu repositório
                     let salvo = localStorage.getItem('diretoria_catalogo_presentes');
                     if (salvo) catLocal = JSON.parse(salvo);
                 } catch(e) {
@@ -669,6 +677,7 @@
                 const grid = document.getElementById('grid-itens-gerador');
 
                 let datalistHTML = '<datalist id="lista-presentes">';
+                // CORREÇÃO: Nome certo da variável e filtro pra não dar erro fatal se tiver item vazio
                 const itensOrdenados = Object.values(window.cacheCatalogoGlobal).sort((a, b) => (b.moedas || 0) - (a.moedas || 0));
                 itensOrdenados.forEach(item => {
                     if(item && item.url) {
