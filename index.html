@@ -244,30 +244,49 @@
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 15px; margin-bottom: 20px;">
                     <div>
-                        <h3 style="margin: 0; color: #f39c12;">🏆 Rankings de Engajamento</h3>
-                        <p style="margin: 5px 0 0 0; font-size: 13px;">Os rankings ficam salvos automaticamente. Troque o período para ver o histórico.</p>
+                        <h3 style="margin: 0; color: #f39c12;">🏆 Central de Espectadores e Fãs</h3>
+                        <p style="margin: 5px 0 0 0; font-size: 13px;">Monitore o nível de engajamento do seu público em tempo real.</p>
                     </div>
-                    <select id="periodo-ranking" onchange="renderizarRankings()" style="padding: 10px; background: #111; color: #00ffcc; border: 1px solid #00ffcc; border-radius: 5px; font-weight: bold; cursor: pointer; outline: none;">
-                        <option value="diario">📅 Diário (Hoje)</option>
-                        <option value="semanal">📆 Semanal</option>
-                        <option value="mensal">🗓️ Mensal</option>
-                        <option value="semestral">🌗 Semestral</option>
-                        <option value="anual">🌍 Anual</option>
-                        <option value="geral">♾️ Geral (Histórico Completo)</option>
-                    </select>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="copiarLinkOBS('podio_fas')" style="background: #0088ff; color: white; border: none; padding: 10px 15px; border-radius: 5px; font-weight: bold; cursor: pointer;">📋 OBS: Pódio de Fãs</button>
+                        <select id="periodo-ranking" onchange="renderizarRankings()" style="padding: 10px; background: #111; color: #00ffcc; border: 1px solid #00ffcc; border-radius: 5px; font-weight: bold; cursor: pointer; outline: none;">
+                            <option value="diario">📅 Diário (Hoje)</option>
+                            <option value="semanal">📆 Semanal</option>
+                            <option value="mensal">🗓️ Mensal</option>
+                            <option value="geral">♾️ Histórico</option>
+                        </select>
+                    </div>
                 </div>
 
-                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-                    <!-- Tabela de Presentes -->
-                    <div style="flex: 1; background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444; min-width: 300px;">
+                <!-- LINHA 1 -->
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px;">
+                    <div style="flex: 1; background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444; min-width: 250px;">
                         <h4 style="color: gold; margin-top: 0; text-align: center; border-bottom: 1px dashed #555; padding-bottom: 10px;">💎 Top Presenteadores</h4>
-                        <div id="lista-ranking-gifters" style="display: flex; flex-direction: column; gap: 8px; height: 350px; overflow-y: auto; padding-right: 5px;"></div>
+                        <div id="lista-ranking-gifters" style="height: 250px; overflow-y: auto;"></div>
                     </div>
+                    <div style="flex: 1; background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444; min-width: 250px;">
+                        <h4 style="color: #00f2fe; margin-top: 0; text-align: center; border-bottom: 1px dashed #555; padding-bottom: 10px;">⭐ Ranking do Fã-Clube (Nível)</h4>
+                        <div id="lista-ranking-fas" style="height: 250px; overflow-y: auto;"></div>
+                    </div>
+                    <div style="flex: 1; background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444; min-width: 250px;">
+                        <h4 style="color: #f39c12; margin-top: 0; text-align: center; border-bottom: 1px dashed #555; padding-bottom: 10px;">🎁 Nível Geral de Gifter</h4>
+                        <div id="lista-ranking-gifterlevel" style="height: 250px; overflow-y: auto;"></div>
+                    </div>
+                </div>
 
-                    <!-- Tabela de Likes -->
-                    <div style="flex: 1; background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444; min-width: 300px;">
+                <!-- LINHA 2 -->
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <div style="flex: 1; background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444; min-width: 250px;">
                         <h4 style="color: #ff4757; margin-top: 0; text-align: center; border-bottom: 1px dashed #555; padding-bottom: 10px;">❤️ Top Tap Tap (Likes)</h4>
-                        <div id="lista-ranking-likes" style="display: flex; flex-direction: column; gap: 8px; height: 350px; overflow-y: auto; padding-right: 5px;"></div>
+                        <div id="lista-ranking-likes" style="height: 200px; overflow-y: auto;"></div>
+                    </div>
+                    <div style="flex: 1; background: rgba(231, 76, 60, 0.1); padding: 15px; border-radius: 8px; border: 1px solid #e74c3c; min-width: 250px;">
+                        <h4 style="color: #e74c3c; margin-top: 0; text-align: center; border-bottom: 1px dashed #e74c3c; padding-bottom: 10px;">👀 Auditório: Não Seguem</h4>
+                        <div id="lista-nao-seguidores" style="height: 200px; overflow-y: auto;"></div>
+                    </div>
+                    <div style="flex: 1; background: rgba(52, 152, 219, 0.1); padding: 15px; border-radius: 8px; border: 1px solid #3498db; min-width: 250px;">
+                        <h4 style="color: #3498db; margin-top: 0; text-align: center; border-bottom: 1px dashed #3498db; padding-bottom: 10px;">👻 Auditório: Seguem mas não doam</h4>
+                        <div id="lista-seguidor-sem-presente" style="height: 200px; overflow-y: auto;"></div>
                     </div>
                 </div>
             </div>
@@ -714,7 +733,14 @@
                     });
                 }
                 localStorage.setItem(`diretoria_gerador_${idGerador}`, JSON.stringify(config));
-                alert(`✅ Gerador ${idGerador} salvo com sucesso!`);
+
+                // SINCRONIZA COM A NUVEM PARA O TIKTOK STUDIO LER
+                if (window.firebaseDb && window.firebaseSet && window.firebaseRef) {
+                    const rdmUser = localStorage.getItem('rdm_user_tiktok') || localStorage.getItem('rdm_user') || 'visitante';
+                    window.firebaseSet(window.firebaseRef(window.firebaseDb, `usuarios/${rdmUser}/diretoria_gerador_${idGerador}`), config);
+                }
+
+                alert(`✅ Gerador ${idGerador} salvo e enviado para a nuvem com sucesso!`);
             }
 
             function carregarGerador() {
@@ -1356,38 +1382,65 @@
         function renderizarRankings() {
             const perSelect = document.getElementById('periodo-ranking').value;
             const dadosAtuais = bancoRankings[perSelect];
+            const metaLocal = JSON.parse(localStorage.getItem('diretoria_users_meta')) || {};
 
             const divGifters = document.getElementById('lista-ranking-gifters');
             const divLikes = document.getElementById('lista-ranking-likes');
-            if(!divGifters || !divLikes) return;
+            const divFas = document.getElementById('lista-ranking-fas');
+            const divGifterLevel = document.getElementById('lista-ranking-gifterlevel');
+            const divNaoSeguidores = document.getElementById('lista-nao-seguidores');
+            const divSeguidoresSemGift = document.getElementById('lista-seguidor-sem-presente');
 
-            divGifters.innerHTML = ''; divLikes.innerHTML = '';
+            if(divGifters) {
+                divGifters.innerHTML = '';
+                Object.entries(dadosAtuais.gifters).sort((a, b) => b[1].pontos - a[1].pontos).forEach((item, index) => {
+                    const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
+                    divGifters.innerHTML += `<div style="display: flex; align-items: center; background: #333; padding: 10px; border-radius: 6px; border-left: 4px solid ${cor}; margin-bottom: 8px;"><strong style="color: ${cor}; width: 30px;">#${index + 1}</strong><img src="${item[1].avatar}" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; object-fit: cover;"><span style="flex: 1; color: white; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item[0]}</span><span style="color: gold; font-weight: bold; margin-right: 10px;">💎 ${item[1].pontos}</span><button onclick="adicionarAoLetreiro('${item[0]}', '${item[1].avatar}')" style="background: #9b59b6; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px; font-weight: bold;">✨ Add</button></div>`;
+                });
+            }
 
-            const arrayGifters = Object.entries(dadosAtuais.gifters).sort((a, b) => b[1].pontos - a[1].pontos);
-            arrayGifters.forEach((item, index) => {
-                const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
-                divGifters.innerHTML += `
-                    <div style="display: flex; align-items: center; background: #333; padding: 10px; border-radius: 6px; border-left: 4px solid ${cor};">
-                        <strong style="color: ${cor}; width: 30px; font-size: 16px;">#${index + 1}</strong>
-                        <img src="${item[1].avatar}" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; object-fit: cover;">
-                        <span style="flex: 1; color: white; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item[0]}</span>
-                        <span style="color: gold; font-weight: bold; margin-right: 10px;">💎 ${item[1].pontos}</span>
-                        <button onclick="adicionarAoLetreiro('${item[0]}', '${item[1].avatar}')" style="background: #9b59b6; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px; font-weight: bold;" title="Adicionar ao Letreiro">✨ Add</button>
-                    </div>`;
-            });
+            if(divLikes) {
+                divLikes.innerHTML = '';
+                Object.entries(dadosAtuais.likes).sort((a, b) => b[1].pontos - a[1].pontos).forEach((item, index) => {
+                    const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
+                    divLikes.innerHTML += `<div style="display: flex; align-items: center; background: #333; padding: 10px; border-radius: 6px; border-left: 4px solid ${cor}; margin-bottom: 8px;"><strong style="color: ${cor}; width: 30px;">#${index + 1}</strong><img src="${item[1].avatar}" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; object-fit: cover;"><span style="flex: 1; color: white; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item[0]}</span><span style="color: #ff4757; font-weight: bold; margin-right: 10px;">❤️ ${item[1].pontos}</span><button onclick="adicionarAoLetreiro('${item[0]}', '${item[1].avatar}')" style="background: #9b59b6; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px; font-weight: bold;">✨ Add</button></div>`;
+                });
+            }
 
-            const arrayLikes = Object.entries(dadosAtuais.likes).sort((a, b) => b[1].pontos - a[1].pontos);
-            arrayLikes.forEach((item, index) => {
-                const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
-                divLikes.innerHTML += `
-                    <div style="display: flex; align-items: center; background: #333; padding: 10px; border-radius: 6px; border-left: 4px solid ${cor};">
-                        <strong style="color: ${cor}; width: 30px; font-size: 16px;">#${index + 1}</strong>
-                        <img src="${item[1].avatar}" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; object-fit: cover;">
-                        <span style="flex: 1; color: white; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item[0]}</span>
-                        <span style="color: #ff4757; font-weight: bold; margin-right: 10px;">❤️ ${item[1].pontos}</span>
-                        <button onclick="adicionarAoLetreiro('${item[0]}', '${item[1].avatar}')" style="background: #9b59b6; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px; font-weight: bold;" title="Adicionar ao Letreiro">✨ Add</button>
-                    </div>`;
-            });
+            // NOVOS RANKINGS DE METADADOS
+            const ativos = JSON.parse(localStorage.getItem('diretoria_ativos')) || [];
+
+            if(divFas) {
+                divFas.innerHTML = '';
+                Object.entries(metaLocal).sort((a, b) => b[1].fLevel - a[1].fLevel).filter(u => u[1].fLevel > 0).forEach((item, index) => {
+                    divFas.innerHTML += `<div style="display: flex; align-items: center; background: #333; padding: 10px; border-radius: 6px; border-left: 4px solid #00f2fe; margin-bottom: 8px;"><strong style="color: #00f2fe; width: 30px;">#${index + 1}</strong><img src="${item[1].avatar}" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; object-fit: cover;"><span style="flex: 1; color: white; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item[0]}</span><span style="background: #ff0050; padding: 2px 8px; border-radius: 10px; font-weight: bold; font-size: 12px; color: white;">Lvl ${item[1].fLevel}</span></div>`;
+                });
+            }
+
+            if(divGifterLevel) {
+                divGifterLevel.innerHTML = '';
+                Object.entries(metaLocal).sort((a, b) => b[1].gLevel - a[1].gLevel).filter(u => u[1].gLevel > 0).forEach((item, index) => {
+                    divGifterLevel.innerHTML += `<div style="display: flex; align-items: center; background: #333; padding: 10px; border-radius: 6px; border-left: 4px solid #f39c12; margin-bottom: 8px;"><strong style="color: #f39c12; width: 30px;">#${index + 1}</strong><img src="${item[1].avatar}" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; object-fit: cover;"><span style="flex: 1; color: white; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item[0]}</span><span style="background: #f39c12; padding: 2px 8px; border-radius: 10px; font-weight: bold; font-size: 12px; color: black;">Lvl ${item[1].gLevel}</span></div>`;
+                });
+            }
+
+            if(divNaoSeguidores) {
+                divNaoSeguidores.innerHTML = '';
+                ativos.forEach(nome => {
+                    if (metaLocal[nome] && !metaLocal[nome].isFollower) {
+                        divNaoSeguidores.innerHTML += `<div style="display: flex; align-items: center; background: rgba(231, 76, 60, 0.2); padding: 8px; border-radius: 6px; border: 1px solid #e74c3c; margin-bottom: 5px;"><img src="${metaLocal[nome].avatar}" style="width: 25px; height: 25px; border-radius: 50%; margin-right: 10px;"><span style="color: #e74c3c; font-weight: bold;">${nome}</span></div>`;
+                    }
+                });
+            }
+
+            if(divSeguidoresSemGift) {
+                divSeguidoresSemGift.innerHTML = '';
+                ativos.forEach(nome => {
+                    if (metaLocal[nome] && metaLocal[nome].isFollower && !metaLocal[nome].hasGifts) {
+                        divSeguidoresSemGift.innerHTML += `<div style="display: flex; align-items: center; background: rgba(52, 152, 219, 0.2); padding: 8px; border-radius: 6px; border: 1px solid #3498db; margin-bottom: 5px;"><img src="${metaLocal[nome].avatar}" style="width: 25px; height: 25px; border-radius: 50%; margin-right: 10px;"><span style="color: #3498db; font-weight: bold;">${nome}</span></div>`;
+                    }
+                });
+            }
         }
 
         setTimeout(renderizarRankings, 500);
@@ -1441,19 +1494,16 @@
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        // ==========================================
-        // CACHE DE ALTA VELOCIDADE EM RAM (ANTI-LAG)
-        // ==========================================
         let cacheSys = { midias: [], vips: [], metaGift: { atual: 0, alvo: 100, presente: "" }, metaLike: { atual: 0, alvo: 10000 } };
         let ramData = {
             ativosObj: JSON.parse(localStorage.getItem('diretoria_ativos_obj')) || {},
             vistos: JSON.parse(localStorage.getItem('diretoria_vistos_hj')) || { data: new Date().toLocaleDateString(), users: [] },
             rastreioSorteio: JSON.parse(localStorage.getItem('diretoria_rastreio_sorteio')) || {},
-            filaPotes: JSON.parse(localStorage.getItem('diretoria_fila_potes')) || []
+            filaPotes: JSON.parse(localStorage.getItem('diretoria_fila_potes')) || [],
+            usersMeta: JSON.parse(localStorage.getItem('diretoria_users_meta')) || {}
         };
-        let memDirty = { ativos: false, vistos: false, rastreio: false, potes: false, metaG: false, metaL: false, maiores: false };
+        let memDirty = { ativos: false, vistos: false, rastreio: false, potes: false, metaG: false, metaL: false, maiores: false, meta: false };
 
-        // Mantém as configurações síncronas de tempos em tempos sem engasgar
         setInterval(() => {
             cacheSys.midias = JSON.parse(localStorage.getItem('diretoria_midias_config')) || [];
             cacheSys.vips = JSON.parse(localStorage.getItem('diretoria_vips_config')) || [];
@@ -1461,7 +1511,6 @@
             cacheSys.metaLike = JSON.parse(localStorage.getItem('diretoria_meta_like')) || { atual: 0, alvo: 10000 };
         }, 2000);
 
-        // Puxada rápida da primeira vez
         cacheSys.midias = JSON.parse(localStorage.getItem('diretoria_midias_config')) || [];
         cacheSys.vips = JSON.parse(localStorage.getItem('diretoria_vips_config')) || [];
 
@@ -1482,6 +1531,19 @@
                 ramData.ativosObj[user] = avatarUrl;
                 memDirty.ativos = true;
             }
+
+            // EXTRAÇÃO DE METADADOS (Níveis, Seguidor, Doador)
+            if (!ramData.usersMeta[user]) {
+                ramData.usersMeta[user] = { avatar: avatarUrl, fLevel: 0, gLevel: 0, isFollower: false, hasGifts: false };
+            }
+            if (data.teamMemberLevel) ramData.usersMeta[user].fLevel = Math.max(ramData.usersMeta[user].fLevel, parseInt(data.teamMemberLevel));
+            if (data.gifterLevel) ramData.usersMeta[user].gLevel = Math.max(ramData.usersMeta[user].gLevel, parseInt(data.gifterLevel));
+            if (data.userIdentity) {
+                if (data.userIdentity.isFollowerOfAnchor) ramData.usersMeta[user].isFollower = true;
+                if (data.userIdentity.isGiftGiverOfAnchor) ramData.usersMeta[user].hasGifts = true;
+            }
+            if (event === "gift") ramData.usersMeta[user].hasGifts = true; // Confirmação extra
+            memDirty.meta = true;
 
             let dataHoje = new Date().toLocaleDateString();
             if (ramData.vistos.data !== dataHoje) { ramData.vistos = { data: dataHoje, users: [] }; memDirty.vistos = true; }
@@ -1616,8 +1678,8 @@
             if (memDirty.metaG) { localStorage.setItem('diretoria_meta_gift', JSON.stringify(cacheSys.metaGift)); memDirty.metaG = false; }
             if (memDirty.metaL) { localStorage.setItem('diretoria_meta_like', JSON.stringify(cacheSys.metaLike)); memDirty.metaL = false; }
             if (memDirty.maiores) { localStorage.setItem('diretoria_maiores_presentes', JSON.stringify(maioresPresentes)); memDirty.maiores = false; }
+            if (memDirty.meta) { localStorage.setItem('diretoria_users_meta', JSON.stringify(ramData.usersMeta)); memDirty.meta = false; }
         }, 1500);
-
         // ==========================================
         // SISTEMA DO LETREIRO ANIMADO (COM FOTO)
         // ==========================================
@@ -1841,6 +1903,36 @@
                             </div>
                         </div>
                     `;
+                }
+
+                else if (viewMode === 'podio_fas') {
+                    const metaL = JSON.parse(localStorage.getItem('diretoria_users_meta')) || {};
+                    const topFas = Object.entries(metaL).sort((a,b) => b[1].fLevel - a[1].fLevel).filter(u => u[1].fLevel > 0).slice(0, 3);
+
+                    if (topFas.length > 0) {
+                        const stylePodio = `
+                            <style>
+                                .podium-wrapper { display: flex; align-items: flex-end; justify-content: center; gap: 15px; height: 100vh; font-family: 'Arial Black', sans-serif;}
+                                .podium-place { display: flex; flex-direction: column; align-items: center; }
+                                .podium-step { width: 140px; display: flex; flex-direction: column; align-items: center; padding-top: 15px; font-weight: bold; color: white; text-shadow: 2px 2px 4px black; border-top-left-radius: 15px; border-top-right-radius: 15px; box-shadow: inset 0 5px 15px rgba(255,255,255,0.3), 0 10px 20px rgba(0,0,0,0.5);}
+                                .place-1 .podium-step { height: 220px; background: linear-gradient(to top, #b8860b, #ffd700); }
+                                .place-2 .podium-step { height: 160px; background: linear-gradient(to top, #696969, #e0e0e0); }
+                                .place-3 .podium-step { height: 120px; background: linear-gradient(to top, #5c3a21, #cd7f32); }
+                                .avatar-podio { width: 90px; height: 90px; border-radius: 50%; border: 5px solid white; object-fit: cover; margin-bottom: -45px; z-index: 2; box-shadow: 0 5px 15px rgba(0,0,0,0.8);}
+                                .place-1 .avatar-podio { width: 110px; height: 110px; border-color: gold; margin-bottom: -55px; }
+                                .name-badge { background: rgba(0,0,0,0.85); color: white; padding: 6px 12px; border-radius: 15px; margin-bottom: 15px; z-index: 3; border: 2px solid #fff; font-size: 16px; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
+                                .level-badge { background: #ff0050; color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; margin-bottom: 5px; box-shadow: 0 0 15px #ff0050, 0 5px 10px rgba(0,0,0,0.5); z-index: 4; position: relative; top: -15px; left: 40px;}
+                                .place-1 .level-badge { width: 50px; height: 50px; font-size: 22px; left: 50px; }
+                            </style>
+                        `;
+
+                        // Pódio 2 (Esquerda), Pódio 1 (Centro), Pódio 3 (Direita)
+                        const p2 = topFas[1] ? `<div class="podium-place place-2"><div class="level-badge">${topFas[1][1].fLevel}</div><img src="${topFas[1][1].avatar}" class="avatar-podio"><div class="name-badge">${topFas[1][0]}</div><div class="podium-step">2º LUGAR</div></div>` : `<div class="podium-place place-2" style="opacity:0.3"><div class="podium-step">VAGA</div></div>`;
+                        const p1 = topFas[0] ? `<div class="podium-place place-1"><div class="level-badge">${topFas[0][1].fLevel}</div><img src="${topFas[0][1].avatar}" class="avatar-podio"><div class="name-badge">${topFas[0][0]}</div><div class="podium-step">1º LUGAR</div></div>` : ``;
+                        const p3 = topFas[2] ? `<div class="podium-place place-3"><div class="level-badge">${topFas[2][1].fLevel}</div><img src="${topFas[2][1].avatar}" class="avatar-podio"><div class="name-badge">${topFas[2][0]}</div><div class="podium-step">3º LUGAR</div></div>` : `<div class="podium-place place-3" style="opacity:0.3"><div class="podium-step">VAGA</div></div>`;
+
+                        html += stylePodio + `<div class="podium-wrapper">${p2}${p1}${p3}</div>`;
+                    }
                 }
 
                 // Bloqueia a sobreposição caso a view atual seja mídia, potes, letreiro, gerador ou sorteio
@@ -2377,7 +2469,7 @@
 
     </script>
 
-    <!-- Integração Firebase (Sincronização futura) -->
+    <!-- Integração Firebase (Sincronização Ativa) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -2393,7 +2485,27 @@
             const app = initializeApp(firebaseConfig);
             const db = getDatabase(app);
             window.firebaseDb = db;
+            window.firebaseSet = set;
+            window.firebaseRef = ref;
             console.log("🔥 Firebase inicializado com sucesso.");
+
+            // ==========================================
+            // ESCUTA A NUVEM NO TIKTOK STUDIO (OBS)
+            // ==========================================
+            const urlParams = new URLSearchParams(window.location.search);
+            const viewMode = urlParams.get('view');
+            const rdmUser = urlParams.get('u') || localStorage.getItem('rdm_user_tiktok') || localStorage.getItem('rdm_user') || 'visitante';
+
+            if (viewMode === 'gerador') {
+                const idGerador = urlParams.get('id') || '1';
+                onValue(ref(db, `usuarios/${rdmUser}/diretoria_gerador_${idGerador}`), (snapshot) => {
+                    if (snapshot.exists()) {
+                        // Atualiza a memória local do TTK Studio e a tela renderiza automaticamente
+                        localStorage.setItem(`diretoria_gerador_${idGerador}`, JSON.stringify(snapshot.val()));
+                    }
+                });
+            }
+
         } catch (error) {
             console.error("Erro ao inicializar Firebase:", error);
         }
