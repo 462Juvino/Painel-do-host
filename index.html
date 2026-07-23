@@ -622,7 +622,6 @@
             </div>
         </div>
 
-        <!-- SCRIPT GERADOR PRO OTIMIZADO -->
         <script>
             async function inicializarGeradorPRO() {
                 let catLocal = JSON.parse(localStorage.getItem('diretoria_catalogo_presentes')) || {};
@@ -661,7 +660,7 @@
                 const grid = document.getElementById('grid-itens-gerador');
 
                 let datalistHTML = '<datalist id="lista-presentes">';
-                const itensOrdenados = Object.values(window.catalogoGlobal).sort((a, b) => b.moedas - a.moedas);
+                const itensOrdenados = Object.values(window.cacheCatalogoGlobal).sort((a, b) => b.moedas - a.moedas);
                 itensOrdenados.forEach(item => {
                     if(item.url) {
                         datalistHTML += `<option value="${item.nome_original}">🪙 ${item.moedas} moedas</option>`;
@@ -671,8 +670,8 @@
 
                 // Função ultrarrápida para injetar a imagem ao pesquisar
                 window.selecionarPresente = function(nomePesquisado, idItem) {
-                    if (window.catalogoGlobal[nomePesquisado]) {
-                        document.getElementById('img-gerador-' + idItem).value = window.catalogoGlobal[nomePesquisado].url;
+                    if (window.cacheCatalogoGlobal[nomePesquisado]) {
+                        document.getElementById('img-gerador-' + idItem).value = window.cacheCatalogoGlobal[nomePesquisado].url;
                     }
                 };
 
@@ -2106,94 +2105,6 @@
                         }
                     }
                 }, 500);
-            }
-
-
-
-
-            // ===================================
-            // GERADOR PRO MULTITELAS (OBS)
-            // ===================================
-            if (viewMode === 'gerador') {
-                const idGerador = urlParams.get('id') || '1';
-                const config = JSON.parse(localStorage.getItem(`diretoria_gerador_${idGerador}`));
-
-                if (!config) {
-                    document.getElementById('obs-container').innerHTML = `<h1 style="color:white; text-align:center;">Gerador ${idGerador} vazio.<br>Salve configurações no Painel Host.</h1>`;
-                    return;
-                }
-
-                // Remove da memória os slots que estão 100% vazios para não renderizar buracos
-                const itensValidos = config.itens.filter(i => i.img || i.txt);
-                if (itensValidos.length === 0) return;
-
-                const speedMs = config.speed * 1000;
-                let displayFlex = config.layout === 'horizontal' ? 'row' : 'column';
-
-                // Injeta a base do CSS e todas as opções de animação
-                let styleAnim = `<style>
-                    .gerador-container { display: flex; flex-direction: ${displayFlex}; gap: 30px; align-items: center; justify-content: center; width: 100vw; height: 100vh; }
-                    .g-item { display: flex; flex-direction: ${displayFlex}; align-items: center; gap: 15px; text-align: center; }
-                    .g-img { width: 120px; height: 120px; object-fit: contain; filter: drop-shadow(2px 2px 5px rgba(0,0,0,0.6)); }
-                    .g-txt { font-weight: bold; text-shadow: 2px 2px 4px black, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; font-family: 'Arial Black', sans-serif;}
-
-                    @keyframes fade { 0%, 100% { opacity: 0; } 10%, 90% { opacity: 1; } }
-                    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-                    @keyframes slideH { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100vw); } }
-                    @keyframes slideV { 0% { transform: translateY(100vh); } 100% { transform: translateY(-100vh); } }
-                </style>`;
-                document.head.insertAdjacentHTML('beforeend', styleAnim);
-
-                let htmlBase = `<div class="gerador-container" id="g-container">`;
-
-                if (config.anim === 'none' || config.anim === 'pulse') {
-                    // FIXO OU PULSAR (Mostra todos os itens ao mesmo tempo na tela)
-                    itensValidos.forEach(item => {
-                        let animClass = config.anim === 'pulse' ? `animation: pulse ${config.speed}s infinite;` : '';
-                        htmlBase += `
-                            <div class="g-item" style="${animClass}">
-                                ${item.img ? `<img src="${item.img}" class="g-img">` : ''}
-                                ${item.txt ? `<div class="g-txt" style="color: ${item.cor}; font-size: ${item.tam}px;">${item.txt}</div>` : ''}
-                            </div>`;
-                    });
-                    htmlBase += `</div>`;
-                    document.getElementById('obs-container').innerHTML = htmlBase;
-                }
-                else if (config.anim === 'slide') {
-                    // LETREIRO DESLIZANTE
-                    let slideName = config.layout === 'horizontal' ? 'slideH' : 'slideV';
-                    htmlBase += `<div style="display:flex; flex-direction:${displayFlex}; gap:50px; animation: ${slideName} ${config.speed * 5}s linear infinite;">`;
-                    itensValidos.forEach(item => {
-                        htmlBase += `
-                            <div class="g-item">
-                                ${item.img ? `<img src="${item.img}" class="g-img">` : ''}
-                                ${item.txt ? `<div class="g-txt" style="color: ${item.cor}; font-size: ${item.tam}px;">${item.txt}</div>` : ''}
-                            </div>`;
-                    });
-                    htmlBase += `</div></div>`;
-                    document.getElementById('obs-container').innerHTML = htmlBase;
-                }
-                else if (config.anim === 'fade' || config.anim === 'one-by-one') {
-                    // PISCAR OU UM DE CADA VEZ (Ciclo Javascript trocando o HTML)
-                    document.getElementById('obs-container').innerHTML = htmlBase + `</div>`;
-                    let currentIndex = 0;
-
-                    function mostrarProximoItem() {
-                        let item = itensValidos[currentIndex];
-                        let extraAnim = config.anim === 'fade' ? `animation: fade ${config.speed}s infinite;` : '';
-
-                        document.getElementById('g-container').innerHTML = `
-                            <div class="g-item" style="${extraAnim}">
-                                ${item.img ? `<img src="${item.img}" class="g-img">` : ''}
-                                ${item.txt ? `<div class="g-txt" style="color: ${item.cor}; font-size: ${item.tam}px;">${item.txt}</div>` : ''}
-                            </div>`;
-
-                        currentIndex = (currentIndex + 1) % itensValidos.length;
-                    }
-
-                    mostrarProximoItem(); // Renderiza o primeiro
-                    setInterval(mostrarProximoItem, speedMs); // Gira o loop
-                }
             }
 
             // ===================================
