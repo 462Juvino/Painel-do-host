@@ -2396,26 +2396,24 @@
 
     </script>
 
-    <!-- Integração Firebase (Sincronização Ativa) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
-        // Banco de Dados Dedicado do Painel (Configuração Blindada)
+    <!-- Integração Firebase (Modo Clássico p/ Navegador do TTK Studio) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script>
         const firebaseConfig = {
-            apiKey: "PUBLIC_KEY_NOT_NEEDED",
-            authDomain: "painel-do-host.firebaseapp.com",
             databaseURL: "https://painel-do-host-default-rtdb.firebaseio.com",
             projectId: "painel-do-host"
         };
 
         try {
-            const app = initializeApp(firebaseConfig);
-            const db = getDatabase(app);
-            window.firebaseDb = db;
-            window.firebaseSet = set;
-            window.firebaseRef = ref;
-            console.log("🔥 Firebase inicializado com sucesso.");
+            firebase.initializeApp(firebaseConfig);
+
+            // Adaptador para o botão "Salvar Tela" do Chrome funcionar nativamente
+            window.firebaseDb = firebase.database();
+            window.firebaseRef = (db, path) => path;
+            window.firebaseSet = (path, config) => firebase.database().ref(path).set(config);
+
+            console.log("🔥 Firebase (Modo TTK Studio) inicializado!");
 
             // ==========================================
             // ESCUTA A NUVEM NO TIKTOK STUDIO (OBS)
@@ -2426,14 +2424,13 @@
 
             if (viewMode === 'gerador') {
                 const idGerador = urlParams.get('id') || '1';
-                onValue(ref(db, `usuarios/${rdmUser}/diretoria_gerador_${idGerador}`), (snapshot) => {
+                firebase.database().ref(`usuarios/${rdmUser}/diretoria_gerador_${idGerador}`).on('value', (snapshot) => {
                     if (snapshot.exists()) {
-                        // Atualiza a memória local do TTK Studio e a tela renderiza automaticamente
+                        // O TTK Studio recebe os dados e pisca a tela na mesma hora
                         localStorage.setItem(`diretoria_gerador_${idGerador}`, JSON.stringify(snapshot.val()));
                     }
                 });
             }
-
         } catch (error) {
             console.error("Erro ao inicializar Firebase:", error);
         }
