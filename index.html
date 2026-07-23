@@ -1073,11 +1073,21 @@
             let baseUrl = window.location.href.split('?')[0];
             const user = localStorage.getItem('rdm_user_tiktok') || localStorage.getItem('rdm_user') || 'visitante';
 
-            // Agora TODOS os links (incluindo os potes) usam o motor ultra-rápido e transparente do próprio Index
             let linkFinal = `${baseUrl}?u=${user}&p=pro&view=${viewName}`;
 
+            // SEGREDO PARA O TTK STUDIO: Embutir os dados do Gerador direto no Link!
+            if (viewName.startsWith('gerador')) {
+                const idG = viewName.split('=')[1] || '1';
+                const config = localStorage.getItem(`diretoria_gerador_${idG}`);
+                if (config) {
+                    // Converte a configuração em um código blindado para viajar na URL
+                    const cfgEncoded = encodeURIComponent(btoa(unescape(encodeURIComponent(config))));
+                    linkFinal += `&cfg=${cfgEncoded}`;
+                }
+            }
+
             navigator.clipboard.writeText(linkFinal).then(() => {
-                alert(`✅ Link copiado com sucesso!\nCole direto no TikTok Studio/OBS como Fonte de Navegador (O fundo já vai nativamente transparente).\n\nLink: ${linkFinal}`);
+                alert(`✅ Link copiado com sucesso!\nCole direto no TikTok Studio/OBS como Fonte de Navegador (O fundo já vai transparente).\n\nLink: ${linkFinal}`);
             }).catch(err => {
                 alert('Erro ao copiar link: ', err);
             });
@@ -2352,27 +2362,39 @@
             }
 
            // ===================================
-                // GERADOR PRO MULTITELAS (OBS) - REAL-TIME E SEM BURACOS
-                // ===================================
-                else if (viewMode === 'gerador') {
-                    const idGerador = urlParams.get('id') || '1';
-                    let memoriaGerador = ""; // Evita que a tela pisque à toa
-                    let intervalGerador = null; // Guarda o ciclo do piscar/fade
+            // GERADOR PRO MULTITELAS (OBS) - REAL-TIME E SEM BURACOS
+            // ===================================
+            else if (viewMode === 'gerador') {
+                const idGerador = urlParams.get('id') || '1';
+                const cfgUrl = urlParams.get('cfg'); // Puxa os dados que viajaram escondidos no link
 
-                    setInterval(() => {
-                        const config = JSON.parse(localStorage.getItem(`diretoria_gerador_${idGerador}`));
+                let memoriaGerador = "";
+                let intervalGerador = null;
 
-                        if (!config) {
-                            document.getElementById('obs-container').innerHTML = `<h1 style="color:white; text-align:center;">Gerador ${idGerador} vazio.<br>Configure e salve no Painel Host.</h1>`;
-                            return;
-                        }
+                setInterval(() => {
+                    let config = null;
 
-                        // Só atualiza a tela do OBS se você clicou em "Salvar" lá no painel!
-                        const estadoAtual = JSON.stringify(config);
-                        if (memoriaGerador === estadoAtual) return;
-                        memoriaGerador = estadoAtual;
+                    // 1º Tenta extrair os dados da própria URL (Isso burla o bloqueio de memória do TTK Studio)
+                    if (cfgUrl) {
+                        try { config = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(cfgUrl))))); } catch(e) {}
+                    }
 
-                        if (intervalGerador) clearInterval(intervalGerador); // Reseta a animação anterior
+                    // 2º Se não tiver na URL, tenta puxar do Chrome normal
+                    if (!config) {
+                        config = JSON.parse(localStorage.getItem(`diretoria_gerador_${idGerador}`));
+                    }
+
+                    if (!config) {
+                        document.getElementById('obs-container').innerHTML = `<h1 style="color:white; text-align:center;">Gerador ${idGerador} vazio.<br>Configure e salve no Painel Host.</h1>`;
+                        return;
+                    }
+
+                    // Só atualiza a tela do OBS se você clicou em "Salvar" lá no painel!
+                    const estadoAtual = JSON.stringify(config);
+                    if (memoriaGerador === estadoAtual) return;
+                    memoriaGerador = estadoAtual;
+
+                    if (intervalGerador) clearInterval(intervalGerador); // Reseta a animação anterior
 
                         const itensValidos = config.itens.filter(i => i.img || i.txt);
                         if (itensValidos.length === 0) {
