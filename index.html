@@ -624,7 +624,16 @@
 
         <script>
             async function inicializarGeradorPRO() {
-                let catLocal = JSON.parse(localStorage.getItem('diretoria_catalogo_presentes')) || {};
+                let catLocal = {};
+                // Blindagem 1: Evita que o painel quebre se a memória estiver corrompida
+                try {
+                    let salvo = localStorage.getItem('diretoria_catalogo_presentes');
+                    if (salvo) catLocal = JSON.parse(salvo);
+                } catch(e) {
+                    console.log("Memória do catálogo corrompida. Resetando...");
+                    localStorage.removeItem('diretoria_catalogo_presentes');
+                }
+
                 try {
                     // Lendo o arquivo exato do seu repositório
                     const res = await fetch('catalogo_presentes_live.json');
@@ -660,9 +669,9 @@
                 const grid = document.getElementById('grid-itens-gerador');
 
                 let datalistHTML = '<datalist id="lista-presentes">';
-                const itensOrdenados = Object.values(window.cacheCatalogoGlobal).sort((a, b) => b.moedas - a.moedas);
+                const itensOrdenados = Object.values(window.cacheCatalogoGlobal).sort((a, b) => (b.moedas || 0) - (a.moedas || 0));
                 itensOrdenados.forEach(item => {
-                    if(item.url) {
+                    if(item && item.url) {
                         datalistHTML += `<option value="${item.nome_original}">🪙 ${item.moedas} moedas</option>`;
                     }
                 });
@@ -718,6 +727,13 @@
 
             function salvarGerador() {
                 const idGerador = document.getElementById('seletor-gerador').value;
+
+                // Blindagem 2: Se as opções ainda não apareceram, impede o botão de travar a tela.
+                if (!document.getElementById('img-gerador-1')) {
+                    alert("⚠️ A tela de opções ainda está carregando. Tente novamente em 2 segundos.");
+                    return;
+                }
+
                 const config = {
                     layout: document.getElementById('config-layout').value,
                     anim: document.getElementById('config-anim').value,
@@ -746,7 +762,11 @@
 
             function carregarGerador() {
                 const idGerador = document.getElementById('seletor-gerador').value;
-                const config = JSON.parse(localStorage.getItem(`diretoria_gerador_${idGerador}`));
+                let config = null;
+                // Blindagem 3: Trata a leitura dos geradores também
+                try {
+                    config = JSON.parse(localStorage.getItem(`diretoria_gerador_${idGerador}`));
+                } catch(e) {}
 
                 const baseUrl = window.location.href.split('?')[0];
                 const user = localStorage.getItem('rdm_user_tiktok') || localStorage.getItem('rdm_user') || 'visitante';
@@ -757,7 +777,7 @@
                     document.getElementById('config-anim').value = config.anim || 'none';
                     document.getElementById('config-speed').value = config.speed || 3;
                     for (let i = 1; i <= 10; i++) {
-                        if(config.itens[i-1]) {
+                        if(config.itens[i-1] && document.getElementById(`img-gerador-${i}`)) {
                             document.getElementById(`img-gerador-${i}`).value = config.itens[i-1].img || '';
                             document.getElementById(`txt-gerador-${i}`).value = config.itens[i-1].txt || '';
                             document.getElementById(`cor-gerador-${i}`).value = config.itens[i-1].cor || '#ffffff';
@@ -769,10 +789,12 @@
                     document.getElementById('config-anim').value = 'none';
                     document.getElementById('config-speed').value = 3;
                     for (let i = 1; i <= 10; i++) {
-                        document.getElementById(`img-gerador-${i}`).value = '';
-                        document.getElementById(`txt-gerador-${i}`).value = '';
-                        document.getElementById(`cor-gerador-${i}`).value = '#ffffff';
-                        document.getElementById(`tam-gerador-${i}`).value = 30;
+                        if(document.getElementById(`img-gerador-${i}`)) {
+                            document.getElementById(`img-gerador-${i}`).value = '';
+                            document.getElementById(`txt-gerador-${i}`).value = '';
+                            document.getElementById(`cor-gerador-${i}`).value = '#ffffff';
+                            document.getElementById(`tam-gerador-${i}`).value = 30;
+                        }
                     }
                 }
             }
@@ -1075,17 +1097,6 @@
             const user = localStorage.getItem('rdm_user_tiktok') || localStorage.getItem('rdm_user') || 'visitante';
 
             let linkFinal = `${baseUrl}?u=${user}&p=pro&view=${viewName}`;
-
-            // SEGREDO PARA O TTK STUDIO: Embutir os dados do Gerador direto no Link!
-            if (viewName.startsWith('gerador')) {
-                const idG = viewName.split('=')[1] || '1';
-                const config = localStorage.getItem(`diretoria_gerador_${idG}`);
-                if (config) {
-                    // Converte a configuração em um código blindado para viajar na URL
-                    const cfgEncoded = encodeURIComponent(btoa(unescape(encodeURIComponent(config))));
-                    linkFinal += `&cfg=${cfgEncoded}`;
-                }
-            }
 
             navigator.clipboard.writeText(linkFinal).then(() => {
                 alert(`✅ Link copiado com sucesso!\nCole direto no TikTok Studio/OBS como Fonte de Navegador (O fundo já vai transparente).\n\nLink: ${linkFinal}`);
@@ -2261,23 +2272,13 @@
             // ===================================
             else if (viewMode === 'gerador') {
                 const idGerador = urlParams.get('id') || '1';
-                const cfgUrl = urlParams.get('cfg'); // Puxa os dados que viajaram escondidos no link
 
                 let memoriaGerador = "";
                 let intervalGerador = null;
 
                 setInterval(() => {
-                    let config = null;
-
-                    // 1º Tenta extrair os dados da própria URL (Isso burla o bloqueio de memória do TTK Studio)
-                    if (cfgUrl) {
-                        try { config = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(cfgUrl))))); } catch(e) {}
-                    }
-
-                    // 2º Se não tiver na URL, tenta puxar do Chrome normal
-                    if (!config) {
-                        config = JSON.parse(localStorage.getItem(`diretoria_gerador_${idGerador}`));
-                    }
+                    // Agora ele lê APENAS a memória atualizada magicamente pelo Firebase
+                    let config = JSON.parse(localStorage.getItem(`diretoria_gerador_${idGerador}`));
 
                     if (!config) {
                         document.getElementById('obs-container').innerHTML = `<h1 style="color:white; text-align:center;">Gerador ${idGerador} vazio.<br>Configure e salve no Painel Host.</h1>`;
