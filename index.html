@@ -622,16 +622,18 @@
             </div>
         </div>
 
-        <!-- SCRIPT GERADOR PRO OTIMIZADO (SEM LAG - DATALIST) -->
+        <!-- SCRIPT GERADOR PRO OTIMIZADO -->
         <script>
             async function inicializarGeradorPRO() {
                 let catLocal = JSON.parse(localStorage.getItem('diretoria_catalogo_presentes')) || {};
                 try {
-                    const res = await fetch('catalogo_presentes_live_2.json');
+                    // Lendo o arquivo exato do seu repositório
+                    const res = await fetch('catalogo_presentes_live.json');
                     if (res.ok) {
                         const jsonExterno = await res.json();
                         let atualizou = false;
 
+                        // Varre o arquivo json e adiciona na memória do painel
                         for (const key in jsonExterno) {
                             if (!catLocal[key]) {
                                 const item = jsonExterno[key];
@@ -647,15 +649,15 @@
                         }
                         if (atualizou) {
                             localStorage.setItem('diretoria_catalogo_presentes', JSON.stringify(catLocal));
-                            console.log("✅ Catálogo sincronizado!");
+                            console.log("✅ Catálogo do GitHub sincronizado!");
                         }
                     }
                 } catch (e) {
-                    console.log("Aviso: JSON externo não encontrado. Usando cache.");
+                    console.log("Aviso: JSON do GitHub não encontrado. Usando cache.");
                 }
 
-                // Cria uma lista de dados ÚNICA e invisível para o navegador não travar
-                window.catalogoGlobal = catLocal;
+                // Padroniza a variável para o motor de presentes novos conseguir adicionar mais itens nela
+                window.cacheCatalogoGlobal = catLocal;
                 const grid = document.getElementById('grid-itens-gerador');
 
                 let datalistHTML = '<datalist id="lista-presentes">';
@@ -1570,9 +1572,20 @@
                 }
             }
 
+            // Memória anti-repetição para o Narrador não ler mensagens duplicadas do TikFinity
+            if (!window.ultimasMensagens) window.ultimasMensagens = new Set();
+
             if (event === "chat") {
                 const msg = data.comment || "";
                 const msgLimpa = msg.toLowerCase().trim();
+
+                // Cria um código único para a mensagem. Se já processou nos últimos segundos, ignora!
+                const hashMsg = user + ":" + msgLimpa;
+                if (window.ultimasMensagens.has(hashMsg)) return;
+
+                window.ultimasMensagens.add(hashMsg);
+                // Limpa a memória para não pesar o computador (Guarda só as últimas 50 mensagens)
+                if (window.ultimasMensagens.size > 50) window.ultimasMensagens.delete(window.ultimasMensagens.values().next().value);
 
                 cacheSys.midias.forEach(m => {
                     if (m.gatilhoChat && m.url && msgLimpa === m.gatilhoChat.toLowerCase().trim()) {
@@ -1915,42 +1928,13 @@
                     `;
                 }
 
-                else if (viewMode === 'podio_fas') {
-                    const metaL = JSON.parse(localStorage.getItem('diretoria_users_meta')) || {};
-                    const topFas = Object.entries(metaL).sort((a,b) => b[1].fLevel - a[1].fLevel).filter(u => u[1].fLevel > 0).slice(0, 3);
 
-                    if (topFas.length > 0) {
-                        const stylePodio = `
-                            <style>
-                                .podium-wrapper { display: flex; align-items: flex-end; justify-content: center; gap: 15px; height: 100vh; font-family: 'Arial Black', sans-serif;}
-                                .podium-place { display: flex; flex-direction: column; align-items: center; }
-                                .podium-step { width: 140px; display: flex; flex-direction: column; align-items: center; padding-top: 15px; font-weight: bold; color: white; text-shadow: 2px 2px 4px black; border-top-left-radius: 15px; border-top-right-radius: 15px; box-shadow: inset 0 5px 15px rgba(255,255,255,0.3), 0 10px 20px rgba(0,0,0,0.5);}
-                                .place-1 .podium-step { height: 220px; background: linear-gradient(to top, #b8860b, #ffd700); }
-                                .place-2 .podium-step { height: 160px; background: linear-gradient(to top, #696969, #e0e0e0); }
-                                .place-3 .podium-step { height: 120px; background: linear-gradient(to top, #5c3a21, #cd7f32); }
-                                .avatar-podio { width: 90px; height: 90px; border-radius: 50%; border: 5px solid white; object-fit: cover; margin-bottom: -45px; z-index: 2; box-shadow: 0 5px 15px rgba(0,0,0,0.8);}
-                                .place-1 .avatar-podio { width: 110px; height: 110px; border-color: gold; margin-bottom: -55px; }
-                                .name-badge { background: rgba(0,0,0,0.85); color: white; padding: 6px 12px; border-radius: 15px; margin-bottom: 15px; z-index: 3; border: 2px solid #fff; font-size: 16px; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
-                                .level-badge { background: #ff0050; color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; margin-bottom: 5px; box-shadow: 0 0 15px #ff0050, 0 5px 10px rgba(0,0,0,0.5); z-index: 4; position: relative; top: -15px; left: 40px;}
-                                .place-1 .level-badge { width: 50px; height: 50px; font-size: 22px; left: 50px; }
-                            </style>
-                        `;
-
-                        // Pódio 2 (Esquerda), Pódio 1 (Centro), Pódio 3 (Direita)
-                        const p2 = topFas[1] ? `<div class="podium-place place-2"><div class="level-badge">${topFas[1][1].fLevel}</div><img src="${topFas[1][1].avatar}" class="avatar-podio"><div class="name-badge">${topFas[1][0]}</div><div class="podium-step">2º LUGAR</div></div>` : `<div class="podium-place place-2" style="opacity:0.3"><div class="podium-step">VAGA</div></div>`;
-                        const p1 = topFas[0] ? `<div class="podium-place place-1"><div class="level-badge">${topFas[0][1].fLevel}</div><img src="${topFas[0][1].avatar}" class="avatar-podio"><div class="name-badge">${topFas[0][0]}</div><div class="podium-step">1º LUGAR</div></div>` : ``;
-                        const p3 = topFas[2] ? `<div class="podium-place place-3"><div class="level-badge">${topFas[2][1].fLevel}</div><img src="${topFas[2][1].avatar}" class="avatar-podio"><div class="name-badge">${topFas[2][0]}</div><div class="podium-step">3º LUGAR</div></div>` : `<div class="podium-place place-3" style="opacity:0.3"><div class="podium-step">VAGA</div></div>`;
-
-                        html += stylePodio + `<div class="podium-wrapper">${p2}${p1}${p3}</div>`;
-                    }
-                }
 
                 // Bloqueia a sobreposição caso a view atual seja mídia, potes, letreiro, gerador ou sorteio
                 if (viewMode !== 'midia' && !viewMode.startsWith('pote') && viewMode !== 'gerador' && viewMode !== 'letreiro' && viewMode !== 'sorteio') {
                     document.getElementById('obs-container').innerHTML = html;
                 }
             }, 1000);
-
             // ===================================
             // SISTEMA DE SORTEIO/ROLETA ANIMADA (OBS) - COM FOTOS
             // ===================================
@@ -2496,11 +2480,12 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
+        // Banco de Dados Dedicado do Painel (Configuração Blindada)
         const firebaseConfig = {
-            apiKey: "AIzaSyB2LNWktWEwYLuZxwr8oc9NpcjFz3GU5qc",
-            authDomain: "authrdm-a82a6.firebaseapp.com",
-            databaseURL: "https://authrdm-a82a6-default-rtdb.firebaseio.com",
-            projectId: "authrdm-a82a6"
+            apiKey: "PUBLIC_KEY_NOT_NEEDED",
+            authDomain: "painel-do-host.firebaseapp.com",
+            databaseURL: "https://painel-do-host-default-rtdb.firebaseio.com",
+            projectId: "painel-do-host"
         };
 
         try {
