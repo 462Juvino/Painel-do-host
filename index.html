@@ -1991,44 +1991,74 @@
                 }
                 else if (viewMode === 'podio_fas') {
                     const metaL = JSON.parse(localStorage.getItem('diretoria_users_meta')) || {};
-                    const topFas = Object.entries(metaL).sort((a,b) => b[1].fLevel - a[1].fLevel).filter(u => u[1].fLevel > 0).slice(0, 3);
+                    // Filtra e organiza por Nível. Se empatar, usa ordem alfabética para não piscar!
+                    const topFas = Object.entries(metaL)
+                                         .filter(u => u[1].fLevel > 0)
+                                         .sort((a,b) => (b[1].fLevel - a[1].fLevel) || a[0].localeCompare(b[0]))
+                                         .slice(0, 3);
 
-                    // A Memória do Pódio: Só reescreve a tela se alguém ultrapassar o outro!
-                    const estadoAtual = JSON.stringify(topFas);
+                    // A Memória Perfeita: Verifica se a ORDEM ou o NÍVEL mudaram
+                    const estadoAtual = topFas.map(u => u[0] + u[1].fLevel).join('|');
+
                     if (!window.memoriaPodio) window.memoriaPodio = "";
 
                     if (window.memoriaPodio !== estadoAtual) {
                         window.memoriaPodio = estadoAtual;
 
-                        if (topFas.length > 0) {
+                        // 1. Cria a base invisível UMA ÚNICA VEZ (Isso mata o pisca-pisca de vez!)
+                        if (!document.getElementById('podio-dinamico-wrapper')) {
                             const stylePodio = `
                                 <style>
                                     @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,800;1,900&display=swap');
                                     .podium-wrapper { display: flex; align-items: center; justify-content: center; gap: 40px; height: 100vh; font-family: 'Montserrat', sans-serif;}
-                                    .podium-place { display: flex; flex-direction: column; align-items: center; position: relative; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;}
+                                    .podium-place { display: flex; flex-direction: column; align-items: center; position: relative; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; transition: all 0.3s ease;}
                                     @keyframes popIn { 0% { opacity: 0; transform: scale(0.5); } 100% { opacity: 1; transform: scale(1); } }
 
                                     .level-badge { background: linear-gradient(135deg, #ff0050, #00f2fe); color: white; border-radius: 20px; padding: 4px 16px; font-weight: 900; font-size: 16px; margin-bottom: -15px; z-index: 10; box-shadow: 0 0 15px rgba(255, 0, 80, 0.6); border: 2px solid #fff; text-shadow: 1px 1px 2px #000; letter-spacing: 1px;}
                                     .place-1 .level-badge { font-size: 22px; padding: 6px 20px; background: linear-gradient(135deg, #ffd700, #ff8c00); box-shadow: 0 0 20px rgba(255, 215, 0, 0.8); }
 
-                                    .avatar-podio { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #fff; z-index: 5; box-shadow: 0 10px 20px rgba(0,0,0,0.6); background: #111;}
+                                    .avatar-podio { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #fff; z-index: 5; box-shadow: 0 10px 20px rgba(0,0,0,0.6); background: #111; transition: all 0.3s ease;}
                                     .place-1 .avatar-podio { width: 160px; height: 160px; border-color: #ffd700; box-shadow: 0 0 30px rgba(255, 215, 0, 0.6); }
                                     .place-2 .avatar-podio { border-color: #c0c0c0; box-shadow: 0 0 20px rgba(192, 192, 192, 0.4);}
                                     .place-3 .avatar-podio { border-color: #cd7f32; box-shadow: 0 0 20px rgba(205, 127, 50, 0.4);}
 
-                                    .name-badge { background: rgba(15, 15, 20, 0.95); color: #fff; padding: 8px 20px; border-radius: 8px; font-size: 16px; font-weight: 800; margin-top: -15px; z-index: 10; border: 1px solid #444; box-shadow: 0 5px 15px rgba(0,0,0,0.8); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-transform: uppercase; }
+                                    .name-badge { background: rgba(15, 15, 20, 0.95); color: #fff; padding: 8px 20px; border-radius: 8px; font-size: 16px; font-weight: 800; margin-top: -15px; z-index: 10; border: 1px solid #444; box-shadow: 0 5px 15px rgba(0,0,0,0.8); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-transform: uppercase; transition: all 0.3s ease;}
                                     .place-1 .name-badge { font-size: 18px; border-color: #ffd700; color: #ffd700; max-width: 160px;}
                                 </style>
                             `;
+                            document.getElementById('obs-container').innerHTML = stylePodio + `
+                                <div id="msg-vazia" style="display:none; color:white; text-align:center; font-family: sans-serif; font-size: 20px; width:100%; position:absolute; top:50%; transform:translateY(-50%);">Aguardando Fãs...</div>
+                                <div id="podio-dinamico-wrapper" class="podium-wrapper">
+                                    <div id="p-pos-2" class="podium-place place-2"></div>
+                                    <div id="p-pos-1" class="podium-place place-1"></div>
+                                    <div id="p-pos-3" class="podium-place place-3"></div>
+                                </div>
+                            `;
+                        }
 
-                            // Caixas de foto limpas, sem a barra de degrau por baixo
-                            const p2 = topFas[1] ? `<div class="podium-place place-2"><div class="level-badge">LVL ${topFas[1][1].fLevel}</div><img src="${topFas[1][1].avatar}" class="avatar-podio"><div class="name-badge">${topFas[1][0]}</div></div>` : `<div class="podium-place place-2" style="opacity:0.3"><div class="avatar-podio" style="background:#333; display:flex; align-items:center; justify-content:center; color:#666;">VAGA</div></div>`;
-                            const p1 = topFas[0] ? `<div class="podium-place place-1"><div class="level-badge">LVL ${topFas[0][1].fLevel}</div><img src="${topFas[0][1].avatar}" class="avatar-podio"><div class="name-badge">${topFas[0][0]}</div></div>` : ``;
-                            const p3 = topFas[2] ? `<div class="podium-place place-3"><div class="level-badge">LVL ${topFas[2][1].fLevel}</div><img src="${topFas[2][1].avatar}" class="avatar-podio"><div class="name-badge">${topFas[2][0]}</div></div>` : `<div class="podium-place place-3" style="opacity:0.3"><div class="avatar-podio" style="background:#333; display:flex; align-items:center; justify-content:center; color:#666;">VAGA</div></div>`;
+                        // Função para preencher SÓ o recheio (sem destruir a Div)
+                        const atualizarBox = (id, dados) => {
+                            const el = document.getElementById(id);
+                            if (!el) return;
+                            if (dados) {
+                                el.style.opacity = '1';
+                                el.innerHTML = `<div class="level-badge">LVL ${dados[1].fLevel}</div><img src="${dados[1].avatar}" class="avatar-podio"><div class="name-badge">${dados[0]}</div>`;
+                            } else {
+                                el.style.opacity = '0.3';
+                                el.innerHTML = `<div class="avatar-podio" style="background:#333; display:flex; align-items:center; justify-content:center; color:#666;">VAGA</div>`;
+                            }
+                        };
 
-                            document.getElementById('obs-container').innerHTML = stylePodio + `<div class="podium-wrapper">${p2}${p1}${p3}</div>`;
+                        // Esconde/mostra a mensagem e preenche o pódio
+                        if (topFas.length > 0) {
+                            document.getElementById('msg-vazia').style.display = 'none';
+                            document.getElementById('podio-dinamico-wrapper').style.display = 'flex';
+                            atualizarBox('p-pos-1', topFas[0]);
+                            atualizarBox('p-pos-2', topFas[1]);
+                            atualizarBox('p-pos-3', topFas[2]);
                         } else {
-                            document.getElementById('obs-container').innerHTML = `<div style="color:white; text-align:center; font-family: sans-serif; margin-top: 50px; font-size: 20px;">Aguardando Fãs...</div>`;
+                            document.getElementById('msg-vazia').style.display = 'block';
+                            document.getElementById('podio-dinamico-wrapper').style.display = 'none';
                         }
                     }
                 }
