@@ -2593,19 +2593,19 @@
         const viewModeParam = urlParams.get('view');
         if (viewModeParam) {
             iniciarModoOBS(viewModeParam);
-            // Inicia o motor de conexão no OBS também para as animações rodarem sozinhas
-            setInterval(verificarEConectar, 2000);
+            // ❌ REMOVIDO: O OBS NÃO CONECTA MAIS NO TIKFINITY LOCAL!
+            // Agora ele é um terminal 100% "escravo" do Firebase.
         }
 
         // ==========================================
-        // O GRANDE MOTOR DE SINCRONIZAÇÃO GLOBAL
+        // O GRANDE MOTOR DE SINCRONIZAÇÃO GLOBAL (API DO PAINEL)
         // ==========================================
         const userGlobal = localStorage.getItem('rdm_user_tiktok') || localStorage.getItem('rdm_user') || 'visitante';
         const userGLimpo = userGlobal.replace(/[.#$[\]]/g, '_');
         const urlSync = `https://painel-do-host-default-rtdb.firebaseio.com/usuarios/${userGLimpo}/sync_global.json`;
 
         if (!viewModeParam) {
-            // MODO CHROME: Envia todas as configurações (Letreiro, Metas, Rankings, Disparos) para a nuvem
+            // MODO CHROME (O CÉREBRO): Processa e envia todas as ordens para a nuvem API
             setInterval(() => {
                 const estadoVisual = {
                     rank: JSON.parse(localStorage.getItem('diretoria_rankings') || '{}'),
@@ -2617,6 +2617,7 @@
                     letr: JSON.parse(localStorage.getItem('diretoria_letreiro') || '{}'),
                     sort: JSON.parse(localStorage.getItem('diretoria_sorteio_disparo') || '{}'),
                     midia: JSON.parse(localStorage.getItem('diretoria_midia_disparo') || '{}'),
+                    potes: JSON.parse(localStorage.getItem('diretoria_fila_potes') || '[]'), // Adicionado para os Potes operarem pela API
                     layout: JSON.parse(localStorage.getItem('diretoria_rank_layout') || '{"gifters":"completo","gifts":"completo","likes":"completo"}')
                 };
                 fetch(urlSync, {
@@ -2624,9 +2625,9 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(estadoVisual)
                 }).catch(()=>{});
-            }, 2500);
+            }, 1500); // Acelerado o envio para 1.5s
         } else {
-            // MODO OBS (TTK STUDIO): Puxa tudo da nuvem e injeta na memória isolada dele
+            // MODO OBS (O ESCRAVO DA API): Puxa da nuvem a cada segundo e reflete na tela
             setInterval(() => {
                 fetch(urlSync)
                 .then(r => r.json())
@@ -2640,12 +2641,13 @@
                         if(st.maiores) localStorage.setItem('diretoria_maiores_presentes', JSON.stringify(st.maiores));
                         if(st.letr) localStorage.setItem('diretoria_letreiro', JSON.stringify(st.letr));
                         if(st.layout) localStorage.setItem('diretoria_rank_layout', JSON.stringify(st.layout));
+                        if(st.potes) localStorage.setItem('diretoria_fila_potes', JSON.stringify(st.potes));
 
                         if(st.sort && st.sort.id) localStorage.setItem('diretoria_sorteio_disparo', JSON.stringify(st.sort));
                         if(st.midia && st.midia.id) localStorage.setItem('diretoria_midia_disparo', JSON.stringify(st.midia));
                     }
                 }).catch(()=>{});
-            }, 2500);
+            }, 1000); // Acelerado a leitura para 1 segundo (Tempo real)
         }
 
     </script>
