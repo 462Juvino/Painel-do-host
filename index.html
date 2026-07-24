@@ -304,15 +304,15 @@
                 <!-- LINHA 1 -->
                 <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px;">
                     <div style="flex: 1; background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444; min-width: 250px;">
-                        <h4 style="color: gold; margin-top: 0; text-align: center; border-bottom: 1px dashed #555; padding-bottom: 10px;">💎 Top Presenteadores</h4>
+                        <h4 id="tit-gifters" style="color: gold; margin-top: 0; text-align: center; border-bottom: 1px dashed #555; padding-bottom: 10px;">💎 Top Presenteadores</h4>
                         <div id="lista-ranking-gifters" style="height: 250px; overflow-y: auto;"></div>
                     </div>
                     <div style="flex: 1; background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444; min-width: 250px;">
-                        <h4 style="color: #00f2fe; margin-top: 0; text-align: center; border-bottom: 1px dashed #555; padding-bottom: 10px;">⭐ Ranking do Fã-Clube (Nível)</h4>
+                        <h4 id="tit-fas" style="color: #00f2fe; margin-top: 0; text-align: center; border-bottom: 1px dashed #555; padding-bottom: 10px;">⭐ Ranking do Fã-Clube</h4>
                         <div id="lista-ranking-fas" style="height: 250px; overflow-y: auto;"></div>
                     </div>
                     <div style="flex: 1; background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444; min-width: 250px;">
-                        <h4 style="color: #f39c12; margin-top: 0; text-align: center; border-bottom: 1px dashed #555; padding-bottom: 10px;">🎁 Nível Geral de Gifter</h4>
+                        <h4 id="tit-gifterlevel" style="color: #f39c12; margin-top: 0; text-align: center; border-bottom: 1px dashed #555; padding-bottom: 10px;">🎁 Nível Geral de Gifter</h4>
                         <div id="lista-ranking-gifterlevel" style="height: 250px; overflow-y: auto;"></div>
                     </div>
                 </div>
@@ -320,15 +320,15 @@
                 <!-- LINHA 2 -->
                 <div style="display: flex; gap: 15px; flex-wrap: wrap;">
                     <div style="flex: 1; background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444; min-width: 250px;">
-                        <h4 style="color: #ff4757; margin-top: 0; text-align: center; border-bottom: 1px dashed #555; padding-bottom: 10px;">❤️ Top Tap Tap (Likes)</h4>
+                        <h4 id="tit-likes" style="color: #ff4757; margin-top: 0; text-align: center; border-bottom: 1px dashed #555; padding-bottom: 10px;">❤️ Top Tap Tap</h4>
                         <div id="lista-ranking-likes" style="height: 200px; overflow-y: auto;"></div>
                     </div>
                     <div style="flex: 1; background: rgba(231, 76, 60, 0.1); padding: 15px; border-radius: 8px; border: 1px solid #e74c3c; min-width: 250px;">
-                        <h4 style="color: #e74c3c; margin-top: 0; text-align: center; border-bottom: 1px dashed #e74c3c; padding-bottom: 10px;">👀 Auditório: Não Seguem</h4>
+                        <h4 id="tit-naoseguem" style="color: #e74c3c; margin-top: 0; text-align: center; border-bottom: 1px dashed #e74c3c; padding-bottom: 10px;">👀 Auditório: Não Seguem</h4>
                         <div id="lista-nao-seguidores" style="height: 200px; overflow-y: auto;"></div>
                     </div>
                     <div style="flex: 1; background: rgba(52, 152, 219, 0.1); padding: 15px; border-radius: 8px; border: 1px solid #3498db; min-width: 250px;">
-                        <h4 style="color: #3498db; margin-top: 0; text-align: center; border-bottom: 1px dashed #3498db; padding-bottom: 10px;">👻 Auditório: Seguem mas não doam</h4>
+                        <h4 id="tit-semgift" style="color: #3498db; margin-top: 0; text-align: center; border-bottom: 1px dashed #3498db; padding-bottom: 10px;">👻 Auditório: Seguem S/Doar</h4>
                         <div id="lista-seguidor-sem-presente" style="height: 200px; overflow-y: auto;"></div>
                     </div>
                 </div>
@@ -1475,18 +1475,22 @@
 
             if(divGifters) {
                 divGifters.innerHTML = '';
-                Object.entries(dadosAtuais.gifters).sort((a, b) => b[1].pontos - a[1].pontos).forEach((item, index) => {
+                const arr = Object.entries(dadosAtuais.gifters).sort((a, b) => b[1].pontos - a[1].pontos);
+                arr.forEach((item, index) => {
                     const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
                     divGifters.innerHTML += `<div style="display: flex; align-items: center; background: #333; padding: 10px; border-radius: 6px; border-left: 4px solid ${cor}; margin-bottom: 8px;"><strong style="color: ${cor}; width: 30px;">#${index + 1}</strong><img src="${item[1].avatar}" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; object-fit: cover;"><span style="flex: 1; color: white; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item[0]}</span><span style="color: gold; font-weight: bold; margin-right: 10px;">💎 ${item[1].pontos}</span><button onclick="adicionarAoLetreiro('${item[0]}', '${item[1].avatar}')" style="background: #9b59b6; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px; font-weight: bold;">✨ Add</button></div>`;
                 });
+                if(document.getElementById('tit-gifters')) document.getElementById('tit-gifters').innerHTML = `💎 Top Presenteadores <span style="background:#555; padding:2px 8px; border-radius:10px; font-size:12px; margin-left:5px;">${arr.length}</span>`;
             }
 
             if(divLikes) {
                 divLikes.innerHTML = '';
-                Object.entries(dadosAtuais.likes).sort((a, b) => b[1].pontos - a[1].pontos).forEach((item, index) => {
+                const arr = Object.entries(dadosAtuais.likes).sort((a, b) => b[1].pontos - a[1].pontos);
+                arr.forEach((item, index) => {
                     const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
                     divLikes.innerHTML += `<div style="display: flex; align-items: center; background: #333; padding: 10px; border-radius: 6px; border-left: 4px solid ${cor}; margin-bottom: 8px;"><strong style="color: ${cor}; width: 30px;">#${index + 1}</strong><img src="${item[1].avatar}" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; object-fit: cover;"><span style="flex: 1; color: white; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item[0]}</span><span style="color: #ff4757; font-weight: bold; margin-right: 10px;">❤️ ${item[1].pontos}</span><button onclick="adicionarAoLetreiro('${item[0]}', '${item[1].avatar}')" style="background: #9b59b6; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px; font-weight: bold;">✨ Add</button></div>`;
                 });
+                if(document.getElementById('tit-likes')) document.getElementById('tit-likes').innerHTML = `❤️ Top Tap Tap <span style="background:#555; padding:2px 8px; border-radius:10px; font-size:12px; margin-left:5px;">${arr.length}</span>`;
             }
 
             // NOVOS RANKINGS DE METADADOS
@@ -1494,34 +1498,38 @@
 
             if(divFas) {
                 divFas.innerHTML = '';
-                Object.entries(metaLocal).sort((a, b) => b[1].fLevel - a[1].fLevel).filter(u => u[1].fLevel > 0).forEach((item, index) => {
+                const arr = Object.entries(metaLocal).sort((a, b) => b[1].fLevel - a[1].fLevel).filter(u => u[1].fLevel > 0);
+                arr.forEach((item, index) => {
                     divFas.innerHTML += `<div style="display: flex; align-items: center; background: #333; padding: 10px; border-radius: 6px; border-left: 4px solid #00f2fe; margin-bottom: 8px;"><strong style="color: #00f2fe; width: 30px;">#${index + 1}</strong><img src="${item[1].avatar}" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; object-fit: cover;"><span style="flex: 1; color: white; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item[0]}</span><span style="background: #ff0050; padding: 2px 8px; border-radius: 10px; font-weight: bold; font-size: 12px; color: white;">Lvl ${item[1].fLevel}</span></div>`;
                 });
+                if(document.getElementById('tit-fas')) document.getElementById('tit-fas').innerHTML = `⭐ Ranking do Fã-Clube <span style="background:#555; padding:2px 8px; border-radius:10px; font-size:12px; margin-left:5px;">${arr.length}</span>`;
             }
 
             if(divGifterLevel) {
                 divGifterLevel.innerHTML = '';
-                Object.entries(metaLocal).sort((a, b) => b[1].gLevel - a[1].gLevel).filter(u => u[1].gLevel > 0).forEach((item, index) => {
+                const arr = Object.entries(metaLocal).sort((a, b) => b[1].gLevel - a[1].gLevel).filter(u => u[1].gLevel > 0);
+                arr.forEach((item, index) => {
                     divGifterLevel.innerHTML += `<div style="display: flex; align-items: center; background: #333; padding: 10px; border-radius: 6px; border-left: 4px solid #f39c12; margin-bottom: 8px;"><strong style="color: #f39c12; width: 30px;">#${index + 1}</strong><img src="${item[1].avatar}" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; object-fit: cover;"><span style="flex: 1; color: white; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item[0]}</span><span style="background: #f39c12; padding: 2px 8px; border-radius: 10px; font-weight: bold; font-size: 12px; color: black;">Lvl ${item[1].gLevel}</span></div>`;
                 });
+                if(document.getElementById('tit-gifterlevel')) document.getElementById('tit-gifterlevel').innerHTML = `🎁 Nível de Gifter <span style="background:#555; padding:2px 8px; border-radius:10px; font-size:12px; margin-left:5px;">${arr.length}</span>`;
             }
 
             if(divNaoSeguidores) {
                 divNaoSeguidores.innerHTML = '';
-                ativos.forEach(nome => {
-                    if (metaLocal[nome] && !metaLocal[nome].isFollower) {
-                        divNaoSeguidores.innerHTML += `<div style="display: flex; align-items: center; background: rgba(231, 76, 60, 0.2); padding: 8px; border-radius: 6px; border: 1px solid #e74c3c; margin-bottom: 5px;"><img src="${metaLocal[nome].avatar}" style="width: 25px; height: 25px; border-radius: 50%; margin-right: 10px;"><span style="color: #e74c3c; font-weight: bold;">${nome}</span></div>`;
-                    }
+                const arr = ativos.filter(nome => metaLocal[nome] && !metaLocal[nome].isFollower);
+                arr.forEach(nome => {
+                    divNaoSeguidores.innerHTML += `<div style="display: flex; align-items: center; background: rgba(231, 76, 60, 0.2); padding: 8px; border-radius: 6px; border: 1px solid #e74c3c; margin-bottom: 5px;"><img src="${metaLocal[nome].avatar}" style="width: 25px; height: 25px; border-radius: 50%; margin-right: 10px;"><span style="color: #e74c3c; font-weight: bold;">${nome}</span></div>`;
                 });
+                if(document.getElementById('tit-naoseguem')) document.getElementById('tit-naoseguem').innerHTML = `👀 Não Seguem <span style="background:rgba(231, 76, 60, 0.8); color:white; padding:2px 8px; border-radius:10px; font-size:12px; margin-left:5px;">${arr.length}</span>`;
             }
 
             if(divSeguidoresSemGift) {
                 divSeguidoresSemGift.innerHTML = '';
-                ativos.forEach(nome => {
-                    if (metaLocal[nome] && metaLocal[nome].isFollower && !metaLocal[nome].hasGifts) {
-                        divSeguidoresSemGift.innerHTML += `<div style="display: flex; align-items: center; background: rgba(52, 152, 219, 0.2); padding: 8px; border-radius: 6px; border: 1px solid #3498db; margin-bottom: 5px;"><img src="${metaLocal[nome].avatar}" style="width: 25px; height: 25px; border-radius: 50%; margin-right: 10px;"><span style="color: #3498db; font-weight: bold;">${nome}</span></div>`;
-                    }
+                const arr = ativos.filter(nome => metaLocal[nome] && metaLocal[nome].isFollower && !metaLocal[nome].hasGifts);
+                arr.forEach(nome => {
+                    divSeguidoresSemGift.innerHTML += `<div style="display: flex; align-items: center; background: rgba(52, 152, 219, 0.2); padding: 8px; border-radius: 6px; border: 1px solid #3498db; margin-bottom: 5px;"><img src="${metaLocal[nome].avatar}" style="width: 25px; height: 25px; border-radius: 50%; margin-right: 10px;"><span style="color: #3498db; font-weight: bold;">${nome}</span></div>`;
                 });
+                if(document.getElementById('tit-semgift')) document.getElementById('tit-semgift').innerHTML = `👻 Seguem S/Doar <span style="background:rgba(52, 152, 219, 0.8); color:white; padding:2px 8px; border-radius:10px; font-size:12px; margin-left:5px;">${arr.length}</span>`;
             }
         }
 
@@ -1652,18 +1660,28 @@
             if (!ramData.usersMeta[user]) {
                 ramData.usersMeta[user] = { avatar: avatarUrl, fLevel: 0, gLevel: 0, isFollower: false, hasGifts: false };
             }
-            if (data.teamMemberLevel) ramData.usersMeta[user].fLevel = Math.max(ramData.usersMeta[user].fLevel, parseInt(data.teamMemberLevel));
-            if (data.gifterLevel) ramData.usersMeta[user].gLevel = Math.max(ramData.usersMeta[user].gLevel, parseInt(data.gifterLevel));
 
-            // NOVA DETECÇÃO ROBUSTA DE SEGUIDOR (Pega todos os formatos escondidos que o TikTok manda)
-            if (data.userIdentity && (data.userIdentity.isFollowerOfAnchor === true || data.userIdentity.isFollowerOfAnchor === 1)) ramData.usersMeta[user].isFollower = true;
-            if (data.isFollower === true || data.followerStatus === 1 || data.followRole === 1 || data.followRole === 2) ramData.usersMeta[user].isFollower = true;
-            if (data.followInfo && (data.followInfo.followerStatus === 1 || data.followInfo.followerStatus === 2)) ramData.usersMeta[user].isFollower = true;
+            // Fã Clube e Gifter Level (Procura em todas as variáveis que o TikFinity pode mandar)
+            let lvlFa = parseInt(data.teamMemberLevel || data.fanClubLevel || data.badgeLevel || 0);
+            let lvlGift = parseInt(data.gifterLevel || data.giftLevel || 0);
+            if (lvlFa > 0) ramData.usersMeta[user].fLevel = Math.max(ramData.usersMeta[user].fLevel, lvlFa);
+            if (lvlGift > 0) ramData.usersMeta[user].gLevel = Math.max(ramData.usersMeta[user].gLevel, lvlGift);
+
+            // DETECÇÃO BLINDADA DE SEGUIDOR
+            let segue = ramData.usersMeta[user].isFollower; // Se já detectou antes, não perde mais
+            if (data.isFollower === true || data.isFollower === "true" || data.followerStatus === 1 || data.followRole === 1 || data.followRole === 2) segue = true;
+            if (data.userIdentity && (data.userIdentity.isFollowerOfAnchor === true || data.userIdentity.isFollowerOfAnchor === 1)) segue = true;
+            if (data.followInfo && (data.followInfo.followerStatus === 1 || data.followInfo.followerStatus === 2)) segue = true;
+
+            // A Lógica Suprema: Se a pessoa tem nível de Fã Clube, ELA SEGUE, independente do que o TikTok diga.
+            if (lvlFa > 0) segue = true;
+
+            ramData.usersMeta[user].isFollower = segue;
 
             if (data.userIdentity && data.userIdentity.isGiftGiverOfAnchor) ramData.usersMeta[user].hasGifts = true;
             if (event === "gift") ramData.usersMeta[user].hasGifts = true; // Confirmação extra
 
-            // O GATILHO QUE ESTAVA FALTANDO! Agora ele salva os dados da pessoa no HD
+            // Gatilho ativado para salvar essa pessoa no disco e enviar para o OBS
             memDirty.meta = true;
 
             let dataHoje = new Date().toLocaleDateString();
@@ -1909,6 +1927,11 @@
         // ROTEADOR DE WIDGETS PARA OBS / TIKTOK STUDIO
         // ==========================================
         function iniciarModoOBS(viewMode) {
+            // === MODO ZUMBI PARA O OBS (Mata o Cache Local) ===
+            // Força o OBS a esquecer qualquer lixo do passado e nascer zerado aguardando o Firebase
+            ['diretoria_rankings', 'diretoria_users_meta', 'diretoria_maiores_presentes', 'diretoria_ativos', 'diretoria_meta_gift', 'diretoria_meta_like', 'diretoria_letreiro'].forEach(k => localStorage.removeItem(k));
+            window.memoriaPodio = "";
+
             // Desliga a estrutura do painel de controle e mantém o fundo transparente
             document.getElementById('sidebar').style.display = 'none';
             document.getElementById('main-content').style.display = 'none';
