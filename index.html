@@ -762,7 +762,9 @@
 
                 // SINCRONIZA COM A NUVEM (Via API Direta e Imparável)
                 const rdmUser = localStorage.getItem('rdm_user_tiktok') || localStorage.getItem('rdm_user') || 'visitante';
-                fetch(`https://painel-do-host-default-rtdb.firebaseio.com/usuarios/${rdmUser}/diretoria_gerador_${idGerador}.json`, {
+                const rdmUserLimpo = rdmUser.replace(/[.#$[\]]/g, '_'); // Tira o maldito ponto do nome!
+
+                fetch(`https://painel-do-host-default-rtdb.firebaseio.com/usuarios/${rdmUserLimpo}/diretoria_gerador_${idGerador}.json`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(config)
@@ -2290,7 +2292,9 @@
                 setInterval(() => {
                     // Puxa os dados diretos da Nuvem via API silenciosa
                     const rdmUser = localStorage.getItem('rdm_user_tiktok') || localStorage.getItem('rdm_user') || 'visitante';
-                    fetch(`https://painel-do-host-default-rtdb.firebaseio.com/usuarios/${rdmUser}/diretoria_gerador_${idGerador}.json`)
+                    const rdmUserLimpo = rdmUser.replace(/[.#$[\]]/g, '_'); // Limpa os pontos do nome igual no salvamento
+
+                    fetch(`https://painel-do-host-default-rtdb.firebaseio.com/usuarios/${rdmUserLimpo}/diretoria_gerador_${idGerador}.json`)
                         .then(res => res.json())
                         .then(dadosNuvem => {
                             if (dadosNuvem) localStorage.setItem(`diretoria_gerador_${idGerador}`, JSON.stringify(dadosNuvem));
