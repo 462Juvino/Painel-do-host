@@ -1751,8 +1751,8 @@
                 let podeFalar = false;
                 if (usuariosVIP.has(user)) podeFalar = true;
                 else {
-                    // BLINDAGEM: O uso de "?." (Optional Chaining) em toda a árvore impede o script de engasgar e morrer caso falte o save!
-                    const moedasGastas = bancoRankings['geral']?.gifters?.[user]?.pontos || 0;
+                    // Agora usa APENAS o ranking DIÁRIO (da live atual) para contar as moedas do Narrador
+                    const moedasGastas = bancoRankings['diario']?.gifters?.[user]?.pontos || 0;
                     if (moedasGastas >= moedasMinimas) podeFalar = true;
                 }
 
