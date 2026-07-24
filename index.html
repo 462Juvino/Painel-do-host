@@ -242,14 +242,14 @@
 
         <div id="aba-rankings" class="tab-section">
             <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 15px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
                     <div>
                         <h3 style="margin: 0; color: #f39c12;">🏆 Central de Espectadores e Fãs</h3>
                         <p style="margin: 5px 0 0 0; font-size: 13px;">Monitore o nível de engajamento do seu público em tempo real.</p>
                     </div>
-                    <div style="display: flex; gap: 10px;">
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button onclick="limparRankings()" style="background: #e74c3c; color: white; border: none; padding: 10px 15px; border-radius: 5px; font-weight: bold; cursor: pointer;">🗑️ ZERAR TUDO</button>
-                        <button onclick="copiarLinkOBS('podio_fas')" style="background: #0088ff; color: white; border: none; padding: 10px 15px; border-radius: 5px; font-weight: bold; cursor: pointer;">📋 OBS: Pódio de Fãs</button>
+                        <button onclick="copiarLinkOBS('podio_fas')" style="background: #0088ff; color: white; border: none; padding: 10px 15px; border-radius: 5px; font-weight: bold; cursor: pointer;">📋 Pódio de Fãs</button>
                         <select id="periodo-ranking" onchange="renderizarRankings()" style="padding: 10px; background: #111; color: #00ffcc; border: 1px solid #00ffcc; border-radius: 5px; font-weight: bold; cursor: pointer; outline: none;">
                             <option value="diario">📅 Diário (Hoje)</option>
                             <option value="semanal">📆 Semanal</option>
@@ -258,6 +258,48 @@
                         </select>
                     </div>
                 </div>
+
+                <!-- CONTROLES VISUAIS DO OBS -->
+                <div style="background: #222; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #0088ff;">
+                    <strong style="color: #00f2fe; display: block; margin-bottom: 10px; font-size: 14px;">🎨 Ajuste de Visual (Telas do OBS):</strong>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                        <label style="color: #ccc; font-size: 13px; display: flex; flex-direction: column;">Top Presenteadores:
+                            <select id="obs-layout-gifters" onchange="salvarLayoutOBS()" style="margin-top: 5px; padding: 6px; background: #111; color: white; border: 1px solid #555; border-radius: 4px;">
+                                <option value="completo">Completo (Foto + Nome)</option>
+                                <option value="foto">Apenas Fotos (Horizontal)</option>
+                            </select>
+                        </label>
+                        <label style="color: #ccc; font-size: 13px; display: flex; flex-direction: column;">Maior Presente:
+                            <select id="obs-layout-gifts" onchange="salvarLayoutOBS()" style="margin-top: 5px; padding: 6px; background: #111; color: white; border: 1px solid #555; border-radius: 4px;">
+                                <option value="completo">Completo (Foto + Nome)</option>
+                                <option value="foto">Apenas Fotos (Horizontal)</option>
+                            </select>
+                        </label>
+                        <label style="color: #ccc; font-size: 13px; display: flex; flex-direction: column;">Top Tap Tap:
+                            <select id="obs-layout-likes" onchange="salvarLayoutOBS()" style="margin-top: 5px; padding: 6px; background: #111; color: white; border: 1px solid #555; border-radius: 4px;">
+                                <option value="completo">Completo (Foto + Nome)</option>
+                                <option value="foto">Apenas Fotos (Horizontal)</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+
+                <script>
+                    function salvarLayoutOBS() {
+                        const cfg = {
+                            gifters: document.getElementById('obs-layout-gifters').value,
+                            gifts: document.getElementById('obs-layout-gifts').value,
+                            likes: document.getElementById('obs-layout-likes').value
+                        };
+                        localStorage.setItem('diretoria_rank_layout', JSON.stringify(cfg));
+                    }
+                    setTimeout(() => {
+                        const cfg = JSON.parse(localStorage.getItem('diretoria_rank_layout')) || {gifters:'completo', gifts:'completo', likes:'completo'};
+                        if(document.getElementById('obs-layout-gifters')) document.getElementById('obs-layout-gifters').value = cfg.gifters;
+                        if(document.getElementById('obs-layout-gifts')) document.getElementById('obs-layout-gifts').value = cfg.gifts;
+                        if(document.getElementById('obs-layout-likes')) document.getElementById('obs-layout-likes').value = cfg.likes;
+                    }, 500);
+                </script>
 
                 <!-- LINHA 1 -->
                 <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px;">
@@ -1487,12 +1529,12 @@
 
         function limparRankings() {
             if(confirm("⚠️ TEM CERTEZA?\nIsso vai apagar TODOS os rankings, tap tap, pódio de fãs e histórico de espectadores acumulados até agora!")) {
-                // Apaga a memória do navegador
-                localStorage.removeItem('diretoria_rankings');
-                localStorage.removeItem('diretoria_users_meta');
-                localStorage.removeItem('diretoria_maiores_presentes');
-                localStorage.removeItem('diretoria_ativos');
-                localStorage.removeItem('diretoria_ativos_obj');
+                // Força os arquivos a ficarem totalmente limpos (Para o OBS receber a limpeza real)
+                localStorage.setItem('diretoria_rankings', JSON.stringify({ diario: { id: '', gifters: {}, likes: {} }, semanal: { id: '', gifters: {}, likes: {} }, mensal: { id: '', gifters: {}, likes: {} }, semestral: { id: '', gifters: {}, likes: {} }, anual: { id: '', gifters: {}, likes: {} }, geral: { id: 'geral', gifters: {}, likes: {} } }));
+                localStorage.setItem('diretoria_users_meta', JSON.stringify({}));
+                localStorage.setItem('diretoria_maiores_presentes', JSON.stringify([]));
+                localStorage.setItem('diretoria_ativos', JSON.stringify([]));
+                localStorage.setItem('diretoria_ativos_obj', JSON.stringify({}));
 
                 // Zera as variáveis que estão rodando na tela
                 bancoRankings = {
@@ -1616,6 +1658,7 @@
             // NOVA DETECÇÃO ROBUSTA DE SEGUIDOR (Pega todos os formatos escondidos que o TikTok manda)
             if (data.userIdentity && (data.userIdentity.isFollowerOfAnchor === true || data.userIdentity.isFollowerOfAnchor === 1)) ramData.usersMeta[user].isFollower = true;
             if (data.isFollower === true || data.followerStatus === 1 || data.followRole === 1 || data.followRole === 2) ramData.usersMeta[user].isFollower = true;
+            if (data.followInfo && (data.followInfo.followerStatus === 1 || data.followInfo.followerStatus === 2)) ramData.usersMeta[user].isFollower = true;
 
             if (data.userIdentity && data.userIdentity.isGiftGiverOfAnchor) ramData.usersMeta[user].hasGifts = true;
             if (event === "gift") ramData.usersMeta[user].hasGifts = true; // Confirmação extra
@@ -1866,6 +1909,7 @@
             // Desliga a estrutura do painel de controle e mantém o fundo transparente
             document.getElementById('sidebar').style.display = 'none';
             document.getElementById('main-content').style.display = 'none';
+            if (document.getElementById('mobile-header')) document.getElementById('mobile-header').style.display = 'none'; // Some com a barra de cima!
             document.body.style.backgroundColor = 'transparent';
             document.body.style.overflow = 'hidden';
 
@@ -1896,51 +1940,59 @@
 
                 const rankData = JSON.parse(localStorage.getItem('diretoria_rankings')) || bancoRankings;
                 const dbHoje = rankData['diario'];
+                const layoutCfg = JSON.parse(localStorage.getItem('diretoria_rank_layout')) || {gifters:'completo', gifts:'completo', likes:'completo'};
 
                 if (viewMode === 'ranking_gifters') {
-                    html += `<div class="widget-title">🏆 Top Presenteadores (Hoje)</div>`;
                     const arr = Object.entries(dbHoje.gifters).sort((a, b) => b[1].pontos - a[1].pontos).slice(0, topLimit);
-                    arr.forEach((item, index) => {
-                        const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
-                        html += `
-                            <div class="ranking-item" style="border-left-color: ${cor};">
-                                <div class="pos" style="color: ${cor}">#${index + 1}</div>
-                                <img class="avatar" src="${item[1].avatar}">
-                                <div class="info"><div class="name">${item[0]}</div></div>
-                                <div class="coins">💎 ${item[1].pontos}</div>
-                            </div>`;
-                    });
+                    if (layoutCfg.gifters === 'foto') {
+                        html += `<div style="display:flex; justify-content:center; align-items:center; gap:15px; padding:15px; background:rgba(0,0,0,0.6); border-radius:20px; box-shadow:0 0 15px rgba(0,0,0,0.5);">`;
+                        arr.forEach((item, index) => {
+                            const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
+                            html += `<div style="position:relative;"><img src="${item[1].avatar}" style="width:55px; height:55px; border-radius:50%; border:3px solid ${cor}; object-fit:cover; box-shadow: 0 0 10px ${cor};"><div style="position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); background:${cor}; color:black; font-size:12px; font-weight:bold; padding:2px 8px; border-radius:10px;">#${index+1}</div></div>`;
+                        });
+                        html += `</div>`;
+                    } else {
+                        html += `<div class="widget-title">🏆 Top Presenteadores (Hoje)</div>`;
+                        arr.forEach((item, index) => {
+                            const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
+                            html += `<div class="ranking-item" style="border-left-color: ${cor};"><div class="pos" style="color: ${cor}">#${index + 1}</div><img class="avatar" src="${item[1].avatar}"><div class="info"><div class="name">${item[0]}</div></div><div class="coins">💎 ${item[1].pontos}</div></div>`;
+                        });
+                    }
                 }
                 else if (viewMode === 'ranking_gifts') {
-                    html += `<div class="widget-title">🔥 Maior Presente Isolado</div>`;
                     const maiores = JSON.parse(localStorage.getItem('diretoria_maiores_presentes')) || [];
-                    maiores.slice(0, topLimit).forEach((item, index) => {
-                        const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
-                        html += `
-                            <div class="ranking-item" style="border-left-color: ${cor};">
-                                <div class="pos" style="color: ${cor}">#${index + 1}</div>
-                                <img class="avatar" src="${item.avatar}">
-                                <div class="info">
-                                    <div class="name">${item.user}</div>
-                                    <div class="gift-name">${item.gift}</div>
-                                </div>
-                                <div class="coins">💎 ${item.coins}</div>
-                            </div>`;
-                    });
+                    const arr = maiores.slice(0, topLimit);
+                    if (layoutCfg.gifts === 'foto') {
+                        html += `<div style="display:flex; justify-content:center; align-items:center; gap:15px; padding:15px; background:rgba(0,0,0,0.6); border-radius:20px; box-shadow:0 0 15px rgba(0,0,0,0.5);">`;
+                        arr.forEach((item, index) => {
+                            const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
+                            html += `<div style="position:relative;"><img src="${item.avatar}" style="width:55px; height:55px; border-radius:50%; border:3px solid ${cor}; object-fit:cover; box-shadow: 0 0 10px ${cor};"><div style="position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); background:${cor}; color:black; font-size:12px; font-weight:bold; padding:2px 8px; border-radius:10px;">#${index+1}</div></div>`;
+                        });
+                        html += `</div>`;
+                    } else {
+                        html += `<div class="widget-title">🔥 Maior Presente Isolado</div>`;
+                        arr.forEach((item, index) => {
+                            const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
+                            html += `<div class="ranking-item" style="border-left-color: ${cor};"><div class="pos" style="color: ${cor}">#${index + 1}</div><img class="avatar" src="${item.avatar}"><div class="info"><div class="name">${item.user}</div><div class="gift-name">${item.gift}</div></div><div class="coins">💎 ${item.coins}</div></div>`;
+                        });
+                    }
                 }
                 else if (viewMode === 'ranking_likes') {
-                    html += `<div class="widget-title">❤️ Top Tap Tap (Hoje)</div>`;
                     const arr = Object.entries(dbHoje.likes).sort((a, b) => b[1].pontos - a[1].pontos).slice(0, topLimit);
-                    arr.forEach((item, index) => {
-                        const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
-                        html += `
-                            <div class="ranking-item" style="border-left-color: ${cor};">
-                                <div class="pos" style="color: ${cor}">#${index + 1}</div>
-                                <img class="avatar" src="${item[1].avatar}">
-                                <div class="info"><div class="name">${item[0]}</div></div>
-                                <div class="coins" style="color: #ff4757;">❤️ ${item[1].pontos}</div>
-                            </div>`;
-                    });
+                    if (layoutCfg.likes === 'foto') {
+                        html += `<div style="display:flex; justify-content:center; align-items:center; gap:15px; padding:15px; background:rgba(0,0,0,0.6); border-radius:20px; box-shadow:0 0 15px rgba(0,0,0,0.5);">`;
+                        arr.forEach((item, index) => {
+                            const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
+                            html += `<div style="position:relative;"><img src="${item[1].avatar}" style="width:55px; height:55px; border-radius:50%; border:3px solid ${cor}; object-fit:cover; box-shadow: 0 0 10px ${cor};"><div style="position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); background:${cor}; color:black; font-size:12px; font-weight:bold; padding:2px 8px; border-radius:10px;">#${index+1}</div></div>`;
+                        });
+                        html += `</div>`;
+                    } else {
+                        html += `<div class="widget-title">❤️ Top Tap Tap (Hoje)</div>`;
+                        arr.forEach((item, index) => {
+                            const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
+                            html += `<div class="ranking-item" style="border-left-color: ${cor};"><div class="pos" style="color: ${cor}">#${index + 1}</div><img class="avatar" src="${item[1].avatar}"><div class="info"><div class="name">${item[0]}</div></div><div class="coins" style="color: #ff4757;">❤️ ${item[1].pontos}</div></div>`;
+                        });
+                    }
                 }
                 else if (viewMode === 'ativos') {
                     html += `<div class="widget-title">🟢 Auditório (Pessoas Ativas na Live)</div>`;
@@ -2538,7 +2590,8 @@
                     maiores: JSON.parse(localStorage.getItem('diretoria_maiores_presentes') || '[]'),
                     letr: JSON.parse(localStorage.getItem('diretoria_letreiro') || '{}'),
                     sort: JSON.parse(localStorage.getItem('diretoria_sorteio_disparo') || '{}'),
-                    midia: JSON.parse(localStorage.getItem('diretoria_midia_disparo') || '{}')
+                    midia: JSON.parse(localStorage.getItem('diretoria_midia_disparo') || '{}'),
+                    layout: JSON.parse(localStorage.getItem('diretoria_rank_layout') || '{"gifters":"completo","gifts":"completo","likes":"completo"}')
                 };
                 fetch(urlSync, {
                     method: 'PUT',
@@ -2560,6 +2613,7 @@
                         if(st.ativos) localStorage.setItem('diretoria_ativos', JSON.stringify(st.ativos));
                         if(st.maiores) localStorage.setItem('diretoria_maiores_presentes', JSON.stringify(st.maiores));
                         if(st.letr) localStorage.setItem('diretoria_letreiro', JSON.stringify(st.letr));
+                        if(st.layout) localStorage.setItem('diretoria_rank_layout', JSON.stringify(st.layout));
 
                         if(st.sort && st.sort.id) localStorage.setItem('diretoria_sorteio_disparo', JSON.stringify(st.sort));
                         if(st.midia && st.midia.id) localStorage.setItem('diretoria_midia_disparo', JSON.stringify(st.midia));
