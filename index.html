@@ -1992,11 +1992,13 @@
                 const topLimit = 5;
 
                 const rankData = JSON.parse(localStorage.getItem('diretoria_rankings')) || bancoRankings;
-                const dbHoje = rankData['diario'];
+                // BLINDAGEM: Garante que os objetos internos existam para não explodir o Javascript e congelar a tela
+                const dbHoje = rankData['diario'] || { gifters: {}, likes: {} };
                 const layoutCfg = JSON.parse(localStorage.getItem('diretoria_rank_layout')) || {gifters:'completo', gifts:'completo', likes:'completo'};
 
                 if (viewMode === 'ranking_gifters') {
-                    const arr = Object.entries(dbHoje.gifters).sort((a, b) => b[1].pontos - a[1].pontos).slice(0, topLimit);
+                    const giftersSeguros = dbHoje.gifters || {};
+                    const arr = Object.entries(giftersSeguros).sort((a, b) => b[1].pontos - a[1].pontos).slice(0, topLimit);
                     if (layoutCfg.gifters === 'foto') {
                         html += `<div style="display:flex; justify-content:center; align-items:center; gap:15px; padding:15px; background:rgba(0,0,0,0.6); border-radius:20px; box-shadow:0 0 15px rgba(0,0,0,0.5);">`;
                         arr.forEach((item, index) => {
@@ -2031,7 +2033,8 @@
                     }
                 }
                 else if (viewMode === 'ranking_likes') {
-                    const arr = Object.entries(dbHoje.likes).sort((a, b) => b[1].pontos - a[1].pontos).slice(0, topLimit);
+                    const likesSeguros = dbHoje.likes || {};
+                    const arr = Object.entries(likesSeguros).sort((a, b) => b[1].pontos - a[1].pontos).slice(0, topLimit);
                     if (layoutCfg.likes === 'foto') {
                         html += `<div style="display:flex; justify-content:center; align-items:center; gap:15px; padding:15px; background:rgba(0,0,0,0.6); border-radius:20px; box-shadow:0 0 15px rgba(0,0,0,0.5);">`;
                         arr.forEach((item, index) => {
@@ -2660,15 +2663,16 @@
                 .then(r => r.json())
                 .then(st => {
                     if (st) {
-                        if(st.rank) localStorage.setItem('diretoria_rankings', JSON.stringify(st.rank));
-                        if(st.metaG) localStorage.setItem('diretoria_meta_gift', JSON.stringify(st.metaG));
-                        if(st.metaL) localStorage.setItem('diretoria_meta_like', JSON.stringify(st.metaL));
-                        if(st.umeta) localStorage.setItem('diretoria_users_meta', JSON.stringify(st.umeta));
-                        if(st.ativos) localStorage.setItem('diretoria_ativos', JSON.stringify(st.ativos));
-                        if(st.maiores) localStorage.setItem('diretoria_maiores_presentes', JSON.stringify(st.maiores));
-                        if(st.letr) localStorage.setItem('diretoria_letreiro', JSON.stringify(st.letr));
-                        if(st.layout) localStorage.setItem('diretoria_rank_layout', JSON.stringify(st.layout));
-                        if(st.potes) localStorage.setItem('diretoria_fila_potes', JSON.stringify(st.potes));
+                        // FORÇA BRUTA: Se o Firebase dropar a chave por estar vazia, o OBS injeta {} e apaga de vez!
+                        localStorage.setItem('diretoria_rankings', JSON.stringify(st.rank || { diario: { id: '', gifters: {}, likes: {} }, semanal: { id: '', gifters: {}, likes: {} }, mensal: { id: '', gifters: {}, likes: {} }, semestral: { id: '', gifters: {}, likes: {} }, anual: { id: '', gifters: {}, likes: {} }, geral: { id: 'geral', gifters: {}, likes: {} } }));
+                        localStorage.setItem('diretoria_meta_gift', JSON.stringify(st.metaG || { alvo: 100, atual: 0, presente: "" }));
+                        localStorage.setItem('diretoria_meta_like', JSON.stringify(st.metaL || { alvo: 10000, atual: 0 }));
+                        localStorage.setItem('diretoria_users_meta', JSON.stringify(st.umeta || {}));
+                        localStorage.setItem('diretoria_ativos', JSON.stringify(st.ativos || []));
+                        localStorage.setItem('diretoria_maiores_presentes', JSON.stringify(st.maiores || []));
+                        localStorage.setItem('diretoria_letreiro', JSON.stringify(st.letr || { itens: [], sep: "⭐", vel: 60 }));
+                        localStorage.setItem('diretoria_rank_layout', JSON.stringify(st.layout || {"gifters":"completo","gifts":"completo","likes":"completo"}));
+                        localStorage.setItem('diretoria_fila_potes', JSON.stringify(st.potes || []));
 
                         if(st.sort && st.sort.id) localStorage.setItem('diretoria_sorteio_disparo', JSON.stringify(st.sort));
                         if(st.midia && st.midia.id) localStorage.setItem('diretoria_midia_disparo', JSON.stringify(st.midia));
