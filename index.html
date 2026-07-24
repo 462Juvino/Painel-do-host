@@ -1663,6 +1663,9 @@
             if (data.userIdentity && data.userIdentity.isGiftGiverOfAnchor) ramData.usersMeta[user].hasGifts = true;
             if (event === "gift") ramData.usersMeta[user].hasGifts = true; // Confirmação extra
 
+            // O GATILHO QUE ESTAVA FALTANDO! Agora ele salva os dados da pessoa no HD
+            memDirty.meta = true;
+
             let dataHoje = new Date().toLocaleDateString();
             if (ramData.vistos.data !== dataHoje) { ramData.vistos = { data: dataHoje, users: [] }; memDirty.vistos = true; }
 
