@@ -1414,8 +1414,11 @@
 
         // Estrutura Base dos Rankings Consistentes
         function carregarBancoRankings() {
-            const dbSalvo = localStorage.getItem('diretoria_rankings');
-            return dbSalvo ? JSON.parse(dbSalvo) : {
+            let dbSalvo = null;
+            try { dbSalvo = JSON.parse(localStorage.getItem('diretoria_rankings')); } catch(e){}
+
+            // BLINDAGEM: Molde perfeito para evitar "tela azul" no Javascript
+            const estruturaPadrao = {
                 diario: { id: '', gifters: {}, likes: {} },
                 semanal: { id: '', gifters: {}, likes: {} },
                 mensal: { id: '', gifters: {}, likes: {} },
@@ -1423,6 +1426,16 @@
                 anual: { id: '', gifters: {}, likes: {} },
                 geral: { id: 'geral', gifters: {}, likes: {} }
             };
+
+            if (!dbSalvo) return estruturaPadrao;
+
+            // Preenche qualquer buraco deixado por saves de versões antigas
+            for (let chave in estruturaPadrao) {
+                if (!dbSalvo[chave]) dbSalvo[chave] = estruturaPadrao[chave];
+                if (!dbSalvo[chave].gifters) dbSalvo[chave].gifters = {};
+                if (!dbSalvo[chave].likes) dbSalvo[chave].likes = {};
+            }
+            return dbSalvo;
         }
         let bancoRankings = carregarBancoRankings();
 
@@ -1450,7 +1463,8 @@
             const periodos = obterIdentificadoresDeTempo();
 
             for (const [per, id] of Object.entries(periodos)) {
-                if (bancoRankings[per].id !== id) {
+                // BLINDAGEM: Verifica com segurança se a pasta existe antes de olhar o ID
+                if (!bancoRankings[per] || bancoRankings[per].id !== id) {
                     bancoRankings[per] = { id: id, gifters: {}, likes: {} };
                 }
                 if (!bancoRankings[per][categoria][user]) {
@@ -1737,7 +1751,8 @@
                 let podeFalar = false;
                 if (usuariosVIP.has(user)) podeFalar = true;
                 else {
-                    const moedasGastas = bancoRankings['geral'].gifters[user]?.pontos || 0;
+                    // BLINDAGEM: O uso de "?." (Optional Chaining) em toda a árvore impede o script de engasgar e morrer caso falte o save!
+                    const moedasGastas = bancoRankings['geral']?.gifters?.[user]?.pontos || 0;
                     if (moedasGastas >= moedasMinimas) podeFalar = true;
                 }
 
