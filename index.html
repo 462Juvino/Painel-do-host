@@ -1211,10 +1211,14 @@
             if (narradorPausado) {
                 btn.innerText = '▶️ Retomar Narrador';
                 btn.style.background = '#27ae60';
-                window.speechSynthesis.cancel(); // Manda calar a boca na hora
+                // Combo mortal para o navegador calar a boca instantaneamente e destruir a fila
+                window.speechSynthesis.pause();
+                window.speechSynthesis.cancel();
             } else {
                 btn.innerText = '⏸️ Pausar Narrador';
                 btn.style.background = '#e74c3c';
+                // Acorda e destrava o motor do navegador para ele voltar a aceitar áudios
+                window.speechSynthesis.resume();
             }
         }
 
@@ -1954,50 +1958,48 @@
                     const metaL = JSON.parse(localStorage.getItem('diretoria_users_meta')) || {};
                     const topFas = Object.entries(metaL).sort((a,b) => b[1].fLevel - a[1].fLevel).filter(u => u[1].fLevel > 0).slice(0, 3);
 
-                    if (topFas.length > 0) {
-                        const stylePodio = `
-                            <style>
-                                @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,800;1,900&display=swap');
-                                .podium-wrapper { display: flex; align-items: flex-end; justify-content: center; gap: 25px; height: 100vh; font-family: 'Montserrat', sans-serif;}
-                                .podium-place { display: flex; flex-direction: column; align-items: center; position: relative; animation: slideUp 1s ease-out forwards; opacity: 0; transform: translateY(50px);}
-                                .place-1 { animation-delay: 0s; }
-                                .place-2 { animation-delay: 0.3s; }
-                                .place-3 { animation-delay: 0.6s; }
-                                @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
+                    // A Memória do Pódio: Só reescreve a tela se alguém ultrapassar o outro!
+                    const estadoAtual = JSON.stringify(topFas);
+                    if (!window.memoriaPodio) window.memoriaPodio = "";
 
-                                .level-badge { background: linear-gradient(135deg, #ff0050, #00f2fe); color: white; border-radius: 20px; padding: 4px 16px; font-weight: 900; font-size: 16px; margin-bottom: -15px; z-index: 10; box-shadow: 0 0 15px rgba(255, 0, 80, 0.6); border: 2px solid #fff; text-shadow: 1px 1px 2px #000; letter-spacing: 1px;}
-                                .place-1 .level-badge { font-size: 22px; padding: 6px 20px; background: linear-gradient(135deg, #ffd700, #ff8c00); box-shadow: 0 0 20px rgba(255, 215, 0, 0.8); }
+                    if (window.memoriaPodio !== estadoAtual) {
+                        window.memoriaPodio = estadoAtual;
 
-                                .avatar-podio { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 4px solid #fff; z-index: 5; box-shadow: 0 10px 20px rgba(0,0,0,0.6); background: #111; position: relative;}
-                                .place-1 .avatar-podio { width: 140px; height: 140px; border-color: #ffd700; box-shadow: 0 0 30px rgba(255, 215, 0, 0.6); }
-                                .place-2 .avatar-podio { border-color: #c0c0c0; box-shadow: 0 0 20px rgba(192, 192, 192, 0.4);}
-                                .place-3 .avatar-podio { border-color: #cd7f32; box-shadow: 0 0 20px rgba(205, 127, 50, 0.4);}
+                        if (topFas.length > 0) {
+                            const stylePodio = `
+                                <style>
+                                    @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,800;1,900&display=swap');
+                                    .podium-wrapper { display: flex; align-items: center; justify-content: center; gap: 40px; height: 100vh; font-family: 'Montserrat', sans-serif;}
+                                    .podium-place { display: flex; flex-direction: column; align-items: center; position: relative; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;}
+                                    @keyframes popIn { 0% { opacity: 0; transform: scale(0.5); } 100% { opacity: 1; transform: scale(1); } }
 
-                                .name-badge { background: rgba(15, 15, 20, 0.95); color: #fff; padding: 8px 20px; border-radius: 8px; font-size: 16px; font-weight: 800; margin-top: -15px; z-index: 10; border: 1px solid #444; box-shadow: 0 5px 15px rgba(0,0,0,0.8); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-transform: uppercase; }
-                                .place-1 .name-badge { font-size: 18px; border-color: #ffd700; color: #ffd700; max-width: 160px;}
+                                    .level-badge { background: linear-gradient(135deg, #ff0050, #00f2fe); color: white; border-radius: 20px; padding: 4px 16px; font-weight: 900; font-size: 16px; margin-bottom: -15px; z-index: 10; box-shadow: 0 0 15px rgba(255, 0, 80, 0.6); border: 2px solid #fff; text-shadow: 1px 1px 2px #000; letter-spacing: 1px;}
+                                    .place-1 .level-badge { font-size: 22px; padding: 6px 20px; background: linear-gradient(135deg, #ffd700, #ff8c00); box-shadow: 0 0 20px rgba(255, 215, 0, 0.8); }
 
-                                .podium-step { width: 160px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 20px; color: rgba(255,255,255,0.8); font-weight: 900; font-size: 30px; border-top-left-radius: 15px; border-top-right-radius: 15px; margin-top: 10px; position: relative; overflow: hidden; }
-                                .podium-step::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.03) 10px, rgba(255,255,255,0.03) 20px); z-index: 1;}
-                                .place-1 .podium-step { height: 280px; width: 190px; background: linear-gradient(180deg, rgba(255,215,0,0.25) 0%, rgba(0,0,0,0.9) 100%); border-top: 5px solid #ffd700; box-shadow: 0 -10px 40px rgba(255,215,0,0.25); }
-                                .place-2 .podium-step { height: 200px; background: linear-gradient(180deg, rgba(192,192,192,0.2) 0%, rgba(0,0,0,0.9) 100%); border-top: 5px solid #c0c0c0; box-shadow: 0 -10px 30px rgba(192,192,192,0.15);}
-                                .place-3 .podium-step { height: 160px; background: linear-gradient(180deg, rgba(205,127,50,0.2) 0%, rgba(0,0,0,0.9) 100%); border-top: 5px solid #cd7f32; box-shadow: 0 -10px 30px rgba(205,127,50,0.15);}
-                                .place-number { font-size: 70px; opacity: 0.1; font-family: 'Arial Black'; position: absolute; bottom: -10px; z-index: 2; text-shadow: 2px 2px 0px rgba(255,255,255,0.5);}
-                                .place-1 .place-number { font-size: 100px; color: #ffd700; opacity: 0.15; bottom: -15px;}
-                            </style>
-                        `;
+                                    .avatar-podio { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #fff; z-index: 5; box-shadow: 0 10px 20px rgba(0,0,0,0.6); background: #111;}
+                                    .place-1 .avatar-podio { width: 160px; height: 160px; border-color: #ffd700; box-shadow: 0 0 30px rgba(255, 215, 0, 0.6); }
+                                    .place-2 .avatar-podio { border-color: #c0c0c0; box-shadow: 0 0 20px rgba(192, 192, 192, 0.4);}
+                                    .place-3 .avatar-podio { border-color: #cd7f32; box-shadow: 0 0 20px rgba(205, 127, 50, 0.4);}
 
-                        const p2 = topFas[1] ? `<div class="podium-place place-2"><div class="level-badge">LVL ${topFas[1][1].fLevel}</div><img src="${topFas[1][1].avatar}" class="avatar-podio"><div class="name-badge">${topFas[1][0]}</div><div class="podium-step"><span class="place-number">2</span></div></div>` : `<div class="podium-place place-2" style="opacity:0.3"><div class="podium-step"><span class="place-number">2</span></div></div>`;
-                        const p1 = topFas[0] ? `<div class="podium-place place-1"><div class="level-badge">LVL ${topFas[0][1].fLevel}</div><img src="${topFas[0][1].avatar}" class="avatar-podio"><div class="name-badge">${topFas[0][0]}</div><div class="podium-step"><span class="place-number">1</span></div></div>` : ``;
-                        const p3 = topFas[2] ? `<div class="podium-place place-3"><div class="level-badge">LVL ${topFas[2][1].fLevel}</div><img src="${topFas[2][1].avatar}" class="avatar-podio"><div class="name-badge">${topFas[2][0]}</div><div class="podium-step"><span class="place-number">3</span></div></div>` : `<div class="podium-place place-3" style="opacity:0.3"><div class="podium-step"><span class="place-number">3</span></div></div>`;
+                                    .name-badge { background: rgba(15, 15, 20, 0.95); color: #fff; padding: 8px 20px; border-radius: 8px; font-size: 16px; font-weight: 800; margin-top: -15px; z-index: 10; border: 1px solid #444; box-shadow: 0 5px 15px rgba(0,0,0,0.8); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-transform: uppercase; }
+                                    .place-1 .name-badge { font-size: 18px; border-color: #ffd700; color: #ffd700; max-width: 160px;}
+                                </style>
+                            `;
 
-                        html += stylePodio + `<div class="podium-wrapper">${p2}${p1}${p3}</div>`;
-                    } else {
-                        html += `<div style="color:white; text-align:center; font-family: sans-serif; margin-top: 50px; font-size: 20px;">Aguardando Fãs...</div>`;
+                            // Caixas de foto limpas, sem a barra de degrau por baixo
+                            const p2 = topFas[1] ? `<div class="podium-place place-2"><div class="level-badge">LVL ${topFas[1][1].fLevel}</div><img src="${topFas[1][1].avatar}" class="avatar-podio"><div class="name-badge">${topFas[1][0]}</div></div>` : `<div class="podium-place place-2" style="opacity:0.3"><div class="avatar-podio" style="background:#333; display:flex; align-items:center; justify-content:center; color:#666;">VAGA</div></div>`;
+                            const p1 = topFas[0] ? `<div class="podium-place place-1"><div class="level-badge">LVL ${topFas[0][1].fLevel}</div><img src="${topFas[0][1].avatar}" class="avatar-podio"><div class="name-badge">${topFas[0][0]}</div></div>` : ``;
+                            const p3 = topFas[2] ? `<div class="podium-place place-3"><div class="level-badge">LVL ${topFas[2][1].fLevel}</div><img src="${topFas[2][1].avatar}" class="avatar-podio"><div class="name-badge">${topFas[2][0]}</div></div>` : `<div class="podium-place place-3" style="opacity:0.3"><div class="avatar-podio" style="background:#333; display:flex; align-items:center; justify-content:center; color:#666;">VAGA</div></div>`;
+
+                            document.getElementById('obs-container').innerHTML = stylePodio + `<div class="podium-wrapper">${p2}${p1}${p3}</div>`;
+                        } else {
+                            document.getElementById('obs-container').innerHTML = `<div style="color:white; text-align:center; font-family: sans-serif; margin-top: 50px; font-size: 20px;">Aguardando Fãs...</div>`;
+                        }
                     }
                 }
 
-                // Bloqueia a sobreposição caso a view atual seja mídia, potes, letreiro, gerador ou sorteio
-                if (viewMode !== 'midia' && !viewMode.startsWith('pote') && viewMode !== 'gerador' && viewMode !== 'letreiro' && viewMode !== 'sorteio') {
+                // Bloqueia a sobreposição caso a view atual seja mídia, potes, letreiro, gerador, sorteio ou podio
+                if (viewMode !== 'midia' && !viewMode.startsWith('pote') && viewMode !== 'gerador' && viewMode !== 'letreiro' && viewMode !== 'sorteio' && viewMode !== 'podio_fas') {
                     document.getElementById('obs-container').innerHTML = html;
                 }
             }, 1000);
