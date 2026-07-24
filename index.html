@@ -1957,10 +1957,11 @@
         // ==========================================
         function iniciarModoOBS(viewMode) {
             // BLINDAGEM DE MEMÓRIA: Impede o link do OBS de corromper o HD do Chrome.
-            // O OBS agora lê os dados apenas da RAM (Nuvem Virtual).
+            window.NUVEM_OBS = {};
             const originalGetItem = localStorage.getItem;
             localStorage.getItem = function(key) {
-                if (window.NUVEM_OBS && window.NUVEM_OBS[key]) return window.NUVEM_OBS[key];
+                // OBS LÊ APENAS A RAM! Nunca toca no HD real do computador!
+                if (key.startsWith('diretoria_')) return window.NUVEM_OBS[key] || null;
                 return originalGetItem.call(localStorage, key);
             };
             window.memoriaPodio = "";
@@ -2663,22 +2664,23 @@
                 }).catch(()=>{});
             }, 1500); // Acelerado o envio para 1.5s
         } else {
-            // MODO OBS (O ESCRAVO DA API): Isolamento Total! Salva apenas na RAM para não criar loop com o painel.
+            // MODO OBS (O ESCRAVO DA API): Isolamento Total!
             window.NUVEM_OBS = {};
             setInterval(() => {
                 fetch(urlSync)
                 .then(r => r.json())
                 .then(st => {
                     if (st) {
-                        if(st.rank) window.NUVEM_OBS['diretoria_rankings'] = JSON.stringify(st.rank);
-                        if(st.metaG) window.NUVEM_OBS['diretoria_meta_gift'] = JSON.stringify(st.metaG);
-                        if(st.metaL) window.NUVEM_OBS['diretoria_meta_like'] = JSON.stringify(st.metaL);
-                        if(st.umeta) window.NUVEM_OBS['diretoria_users_meta'] = JSON.stringify(st.umeta);
-                        if(st.ativos) window.NUVEM_OBS['diretoria_ativos'] = JSON.stringify(st.ativos);
-                        if(st.maiores) window.NUVEM_OBS['diretoria_maiores_presentes'] = JSON.stringify(st.maiores);
-                        if(st.letr) window.NUVEM_OBS['diretoria_letreiro'] = JSON.stringify(st.letr);
-                        if(st.layout) window.NUVEM_OBS['diretoria_rank_layout'] = JSON.stringify(st.layout);
-                        if(st.potes) window.NUVEM_OBS['diretoria_fila_potes'] = JSON.stringify(st.potes);
+                        // FORÇA BRUTA: Se o Firebase omitir a chave (porque estava vazia), o OBS assume {} e não dá erro!
+                        window.NUVEM_OBS['diretoria_rankings'] = JSON.stringify(st.rank || { diario: { id: '', gifters: {}, likes: {} }, semanal: { id: '', gifters: {}, likes: {} }, mensal: { id: '', gifters: {}, likes: {} }, semestral: { id: '', gifters: {}, likes: {} }, anual: { id: '', gifters: {}, likes: {} }, geral: { id: 'geral', gifters: {}, likes: {} } });
+                        window.NUVEM_OBS['diretoria_meta_gift'] = JSON.stringify(st.metaG || { alvo: 100, atual: 0, presente: "" });
+                        window.NUVEM_OBS['diretoria_meta_like'] = JSON.stringify(st.metaL || { alvo: 10000, atual: 0 });
+                        window.NUVEM_OBS['diretoria_users_meta'] = JSON.stringify(st.umeta || {});
+                        window.NUVEM_OBS['diretoria_ativos'] = JSON.stringify(st.ativos || []);
+                        window.NUVEM_OBS['diretoria_maiores_presentes'] = JSON.stringify(st.maiores || []);
+                        window.NUVEM_OBS['diretoria_letreiro'] = JSON.stringify(st.letr || { itens: [], sep: "⭐", vel: 60 });
+                        window.NUVEM_OBS['diretoria_rank_layout'] = JSON.stringify(st.layout || {"gifters":"completo","gifts":"completo","likes":"completo"});
+                        window.NUVEM_OBS['diretoria_fila_potes'] = JSON.stringify(st.potes || []);
 
                         if(st.sort && st.sort.id) window.NUVEM_OBS['diretoria_sorteio_disparo'] = JSON.stringify(st.sort);
                         if(st.midia && st.midia.id) window.NUVEM_OBS['diretoria_midia_disparo'] = JSON.stringify(st.midia);
