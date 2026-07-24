@@ -248,6 +248,7 @@
                         <p style="margin: 5px 0 0 0; font-size: 13px;">Monitore o nível de engajamento do seu público em tempo real.</p>
                     </div>
                     <div style="display: flex; gap: 10px;">
+                        <button onclick="limparRankings()" style="background: #e74c3c; color: white; border: none; padding: 10px 15px; border-radius: 5px; font-weight: bold; cursor: pointer;">🗑️ ZERAR TUDO</button>
                         <button onclick="copiarLinkOBS('podio_fas')" style="background: #0088ff; color: white; border: none; padding: 10px 15px; border-radius: 5px; font-weight: bold; cursor: pointer;">📋 OBS: Pódio de Fãs</button>
                         <select id="periodo-ranking" onchange="renderizarRankings()" style="padding: 10px; background: #111; color: #00ffcc; border: 1px solid #00ffcc; border-radius: 5px; font-weight: bold; cursor: pointer; outline: none;">
                             <option value="diario">📅 Diário (Hoje)</option>
@@ -1484,6 +1485,40 @@
 
         setTimeout(renderizarRankings, 500);
 
+        function limparRankings() {
+            if(confirm("⚠️ TEM CERTEZA?\nIsso vai apagar TODOS os rankings, tap tap, pódio de fãs e histórico de espectadores acumulados até agora!")) {
+                // Apaga a memória do navegador
+                localStorage.removeItem('diretoria_rankings');
+                localStorage.removeItem('diretoria_users_meta');
+                localStorage.removeItem('diretoria_maiores_presentes');
+                localStorage.removeItem('diretoria_ativos');
+                localStorage.removeItem('diretoria_ativos_obj');
+
+                // Zera as variáveis que estão rodando na tela
+                bancoRankings = {
+                    diario: { id: '', gifters: {}, likes: {} },
+                    semanal: { id: '', gifters: {}, likes: {} },
+                    mensal: { id: '', gifters: {}, likes: {} },
+                    semestral: { id: '', gifters: {}, likes: {} },
+                    anual: { id: '', gifters: {}, likes: {} },
+                    geral: { id: 'geral', gifters: {}, likes: {} }
+                };
+
+                if (typeof ramData !== 'undefined') {
+                    ramData.usersMeta = {};
+                    ramData.ativosObj = {};
+                }
+                if (typeof maioresPresentes !== 'undefined') maioresPresentes = [];
+                if (typeof usuariosAtivosLive !== 'undefined') usuariosAtivosLive.clear();
+                if (window.memoriaPodio) window.memoriaPodio = "";
+
+                // Manda reescrever a tela vazia
+                rankingPrecisaAtualizar = true;
+                renderizarRankings();
+                alert("🗑️ Todos os dados de engajamento foram zerados com sucesso!");
+            }
+        }
+
         // MOTOR DE ALÍVIO DO RANKING (Salva o arquivo e pisca a tela só 1x a cada 2 segs)
         setInterval(() => {
             if (rankingPrecisaAtualizar) {
@@ -2239,7 +2274,7 @@
                     // ==========================================
                     // MODO RAIO-X ATIVADO AQUI (Mude para false quando terminar de calibrar)
                     // ==========================================
-                    const MODO_DEBUG = true;
+                    const MODO_DEBUG = false;
 
                     if (MODO_DEBUG) {
                         cfgPote.bodies.forEach(b => {
