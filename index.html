@@ -694,9 +694,11 @@
 
                         // Varre o arquivo json e adiciona na memória do painel
                         for (const key in jsonExterno) {
-                            if (!catLocal[key]) {
-                                const item = jsonExterno[key];
-                                const urlOficial = item.dados_completos && item.dados_completos.giftPictureUrl ? item.dados_completos.giftPictureUrl : "";
+                            const item = jsonExterno[key];
+                            const urlOficial = item.dados_completos && item.dados_completos.giftPictureUrl ? item.dados_completos.giftPictureUrl : "";
+
+                            // A MÁGICA: Atualiza se o presente for novo OU se a foto estiver em branco na memória velha!
+                            if (!catLocal[key] || !catLocal[key].url || catLocal[key].url === "") {
                                 catLocal[key] = {
                                     nome_original: item.nome_original_tiktok || key,
                                     nome_limpo: item.nome_limpo_pro_jogo || key.toLowerCase(),
@@ -1954,9 +1956,13 @@
         // ROTEADOR DE WIDGETS PARA OBS / TIKTOK STUDIO
         // ==========================================
         function iniciarModoOBS(viewMode) {
-            // === MODO ZUMBI PARA O OBS (Mata o Cache Local) ===
-            // Força o OBS a esquecer qualquer lixo do passado e nascer zerado aguardando o Firebase
-            ['diretoria_rankings', 'diretoria_users_meta', 'diretoria_maiores_presentes', 'diretoria_ativos', 'diretoria_meta_gift', 'diretoria_meta_like', 'diretoria_letreiro'].forEach(k => localStorage.removeItem(k));
+            // BLINDAGEM DE MEMÓRIA: Impede o link do OBS de corromper o HD do Chrome.
+            // O OBS agora lê os dados apenas da RAM (Nuvem Virtual).
+            const originalGetItem = localStorage.getItem;
+            localStorage.getItem = function(key) {
+                if (window.NUVEM_OBS && window.NUVEM_OBS[key]) return window.NUVEM_OBS[key];
+                return originalGetItem.call(localStorage, key);
+            };
             window.memoriaPodio = "";
 
             // Desliga a estrutura do painel de controle e mantém o fundo transparente
@@ -2657,28 +2663,28 @@
                 }).catch(()=>{});
             }, 1500); // Acelerado o envio para 1.5s
         } else {
-            // MODO OBS (O ESCRAVO DA API): Puxa da nuvem a cada segundo e reflete na tela
+            // MODO OBS (O ESCRAVO DA API): Isolamento Total! Salva apenas na RAM para não criar loop com o painel.
+            window.NUVEM_OBS = {};
             setInterval(() => {
                 fetch(urlSync)
                 .then(r => r.json())
                 .then(st => {
                     if (st) {
-                        // FORÇA BRUTA: Se o Firebase dropar a chave por estar vazia, o OBS injeta {} e apaga de vez!
-                        localStorage.setItem('diretoria_rankings', JSON.stringify(st.rank || { diario: { id: '', gifters: {}, likes: {} }, semanal: { id: '', gifters: {}, likes: {} }, mensal: { id: '', gifters: {}, likes: {} }, semestral: { id: '', gifters: {}, likes: {} }, anual: { id: '', gifters: {}, likes: {} }, geral: { id: 'geral', gifters: {}, likes: {} } }));
-                        localStorage.setItem('diretoria_meta_gift', JSON.stringify(st.metaG || { alvo: 100, atual: 0, presente: "" }));
-                        localStorage.setItem('diretoria_meta_like', JSON.stringify(st.metaL || { alvo: 10000, atual: 0 }));
-                        localStorage.setItem('diretoria_users_meta', JSON.stringify(st.umeta || {}));
-                        localStorage.setItem('diretoria_ativos', JSON.stringify(st.ativos || []));
-                        localStorage.setItem('diretoria_maiores_presentes', JSON.stringify(st.maiores || []));
-                        localStorage.setItem('diretoria_letreiro', JSON.stringify(st.letr || { itens: [], sep: "⭐", vel: 60 }));
-                        localStorage.setItem('diretoria_rank_layout', JSON.stringify(st.layout || {"gifters":"completo","gifts":"completo","likes":"completo"}));
-                        localStorage.setItem('diretoria_fila_potes', JSON.stringify(st.potes || []));
+                        if(st.rank) window.NUVEM_OBS['diretoria_rankings'] = JSON.stringify(st.rank);
+                        if(st.metaG) window.NUVEM_OBS['diretoria_meta_gift'] = JSON.stringify(st.metaG);
+                        if(st.metaL) window.NUVEM_OBS['diretoria_meta_like'] = JSON.stringify(st.metaL);
+                        if(st.umeta) window.NUVEM_OBS['diretoria_users_meta'] = JSON.stringify(st.umeta);
+                        if(st.ativos) window.NUVEM_OBS['diretoria_ativos'] = JSON.stringify(st.ativos);
+                        if(st.maiores) window.NUVEM_OBS['diretoria_maiores_presentes'] = JSON.stringify(st.maiores);
+                        if(st.letr) window.NUVEM_OBS['diretoria_letreiro'] = JSON.stringify(st.letr);
+                        if(st.layout) window.NUVEM_OBS['diretoria_rank_layout'] = JSON.stringify(st.layout);
+                        if(st.potes) window.NUVEM_OBS['diretoria_fila_potes'] = JSON.stringify(st.potes);
 
-                        if(st.sort && st.sort.id) localStorage.setItem('diretoria_sorteio_disparo', JSON.stringify(st.sort));
-                        if(st.midia && st.midia.id) localStorage.setItem('diretoria_midia_disparo', JSON.stringify(st.midia));
+                        if(st.sort && st.sort.id) window.NUVEM_OBS['diretoria_sorteio_disparo'] = JSON.stringify(st.sort);
+                        if(st.midia && st.midia.id) window.NUVEM_OBS['diretoria_midia_disparo'] = JSON.stringify(st.midia);
                     }
                 }).catch(()=>{});
-            }, 1000); // Acelerado a leitura para 1 segundo (Tempo real)
+            }, 1000);
         }
 
     </script>
