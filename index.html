@@ -1536,23 +1536,25 @@
         setTimeout(renderizarRankings, 500);
 
         function limparRankings() {
-            if(confirm("⚠️ TEM CERTEZA?\nIsso vai apagar TODOS os rankings, tap tap, pódio de fãs e histórico de espectadores acumulados até agora!")) {
-                // Força os arquivos a ficarem totalmente limpos (Para o OBS receber a limpeza real)
-                localStorage.setItem('diretoria_rankings', JSON.stringify({ diario: { id: '', gifters: {}, likes: {} }, semanal: { id: '', gifters: {}, likes: {} }, mensal: { id: '', gifters: {}, likes: {} }, semestral: { id: '', gifters: {}, likes: {} }, anual: { id: '', gifters: {}, likes: {} }, geral: { id: 'geral', gifters: {}, likes: {} } }));
+            if(confirm("⚠️ PREPARAR NOVA LIVE?\nIsso vai limpar a live atual, zerando o ranking DIÁRIO, Pódio e Tap Tap.\nOs históricos Semanal, Mensal e Geral serão PRESERVADOS e salvos na nuvem Firebase!")) {
+
+                // 1. Resgata o histórico completo da memória antes de apagar qualquer coisa
+                let historicoSalvo = JSON.parse(localStorage.getItem('diretoria_rankings')) || bancoRankings;
+
+                // 2. Zera APENAS a aba "diario", mantendo o semanal, mensal e geral blindados
+                historicoSalvo.diario = { id: '', gifters: {}, likes: {} };
+
+                // 3. Salva a memória preservada de volta no HD (O motor global joga pro Firebase)
+                localStorage.setItem('diretoria_rankings', JSON.stringify(historicoSalvo));
+
+                // 4. Limpa apenas as variáveis transitórias da live que acabou (quem tava no chat, pódio, presentes de hoje)
                 localStorage.setItem('diretoria_users_meta', JSON.stringify({}));
                 localStorage.setItem('diretoria_maiores_presentes', JSON.stringify([]));
                 localStorage.setItem('diretoria_ativos', JSON.stringify([]));
                 localStorage.setItem('diretoria_ativos_obj', JSON.stringify({}));
 
-                // Zera as variáveis que estão rodando na tela
-                bancoRankings = {
-                    diario: { id: '', gifters: {}, likes: {} },
-                    semanal: { id: '', gifters: {}, likes: {} },
-                    mensal: { id: '', gifters: {}, likes: {} },
-                    semestral: { id: '', gifters: {}, likes: {} },
-                    anual: { id: '', gifters: {}, likes: {} },
-                    geral: { id: 'geral', gifters: {}, likes: {} }
-                };
+                // 5. Atualiza a variável que roda na tela
+                bancoRankings = historicoSalvo;
 
                 if (typeof ramData !== 'undefined') {
                     ramData.usersMeta = {};
@@ -1562,15 +1564,17 @@
                 if (typeof usuariosAtivosLive !== 'undefined') usuariosAtivosLive.clear();
                 if (window.memoriaPodio) window.memoriaPodio = "";
 
-                // Manda reescrever a tela vazia
+                // Manda reescrever a tela
                 rankingPrecisaAtualizar = true;
                 renderizarRankings();
-                alert("🗑️ Todos os dados de engajamento foram zerados com sucesso!");
+                alert("✅ Live atual encerrada e telão limpo!\nO seu histórico longo (Semanal, Mensal, etc) está seguro no Firebase.");
             }
         }
 
         // MOTOR DE ALÍVIO DO RANKING (Salva o arquivo e pisca a tela só 1x a cada 2 segs)
         setInterval(() => {
+            if (new URLSearchParams(window.location.search).get('view')) return; // OBS PROIBIDO DE SALVAR NO HD DA MÁQUINA!
+
             if (rankingPrecisaAtualizar) {
                 localStorage.setItem('diretoria_rankings', JSON.stringify(bancoRankings));
                 if (!window.location.search.includes('view=')) {
@@ -1639,6 +1643,9 @@
         cacheSys.vips = JSON.parse(localStorage.getItem('diretoria_vips_config')) || [];
 
         function processarEventoTikTok(jsonData) {
+            // BLINDAGEM MÁXIMA: O link do OBS é proibido de processar a live. Ele é apenas uma tela escrava.
+            if (new URLSearchParams(window.location.search).get('view')) return;
+
             const event = jsonData.event;
             const data = jsonData.data;
             if (!data) return;
@@ -1821,6 +1828,8 @@
 
         // ESVAZIADOR DO BUFFER (Salva a RAM no HD a cada 1.5s pra não explodir o disco)
         setInterval(() => {
+            if (new URLSearchParams(window.location.search).get('view')) return; // OBS PROIBIDO DE SALVAR NO HD DA MÁQUINA!
+
             if (memDirty.ativos) { localStorage.setItem('diretoria_ativos_obj', JSON.stringify(ramData.ativosObj)); memDirty.ativos = false; }
             if (memDirty.vistos) { localStorage.setItem('diretoria_vistos_hj', JSON.stringify(ramData.vistos)); memDirty.vistos = false; }
             if (memDirty.rastreio) { localStorage.setItem('diretoria_rastreio_sorteio', JSON.stringify(ramData.rastreioSorteio)); memDirty.rastreio = false; }
@@ -1918,7 +1927,10 @@
         window.onload = () => {
             if (verificarAcesso()) {
                 console.log("✅ Acesso RDM Validado.");
-                setInterval(verificarEConectar, 2000); // Inicia o monitoramento da conexão Híbrida
+                const isOBS = new URLSearchParams(window.location.search).get('view');
+                if (!isOBS) {
+                    setInterval(verificarEConectar, 2000); // O OBS É SURDO. SÓ O PAINEL CONECTA NO TIKFINITY!
+                }
                 carregarInterfaceLetreiro();
             }
         };
