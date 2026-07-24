@@ -1612,12 +1612,13 @@
             }
             if (data.teamMemberLevel) ramData.usersMeta[user].fLevel = Math.max(ramData.usersMeta[user].fLevel, parseInt(data.teamMemberLevel));
             if (data.gifterLevel) ramData.usersMeta[user].gLevel = Math.max(ramData.usersMeta[user].gLevel, parseInt(data.gifterLevel));
-            if (data.userIdentity) {
-                if (data.userIdentity.isFollowerOfAnchor) ramData.usersMeta[user].isFollower = true;
-                if (data.userIdentity.isGiftGiverOfAnchor) ramData.usersMeta[user].hasGifts = true;
-            }
+
+            // NOVA DETECÇÃO ROBUSTA DE SEGUIDOR (Pega todos os formatos escondidos que o TikTok manda)
+            if (data.userIdentity && (data.userIdentity.isFollowerOfAnchor === true || data.userIdentity.isFollowerOfAnchor === 1)) ramData.usersMeta[user].isFollower = true;
+            if (data.isFollower === true || data.followerStatus === 1 || data.followRole === 1 || data.followRole === 2) ramData.usersMeta[user].isFollower = true;
+
+            if (data.userIdentity && data.userIdentity.isGiftGiverOfAnchor) ramData.usersMeta[user].hasGifts = true;
             if (event === "gift") ramData.usersMeta[user].hasGifts = true; // Confirmação extra
-            memDirty.meta = true;
 
             let dataHoje = new Date().toLocaleDateString();
             if (ramData.vistos.data !== dataHoje) { ramData.vistos = { data: dataHoje, users: [] }; memDirty.vistos = true; }
@@ -2525,7 +2526,7 @@
         const userGLimpo = userGlobal.replace(/[.#$[\]]/g, '_');
         const urlSync = `https://painel-do-host-default-rtdb.firebaseio.com/usuarios/${userGLimpo}/sync_global.json`;
 
-                if (!viewModeParam) {
+        if (!viewModeParam) {
             // MODO CHROME: Envia todas as configurações (Letreiro, Metas, Rankings, Disparos) para a nuvem
             setInterval(() => {
                 const estadoVisual = {
@@ -2552,15 +2553,12 @@
                 .then(r => r.json())
                 .then(st => {
                     if (st) {
-                        // Agora ele também zera a memória RAM do OBS para matar os "fantasmas" da live passada
-                        if(st.rank) { localStorage.setItem('diretoria_rankings', JSON.stringify(st.rank)); bancoRankings = st.rank; }
+                        if(st.rank) localStorage.setItem('diretoria_rankings', JSON.stringify(st.rank));
                         if(st.metaG) localStorage.setItem('diretoria_meta_gift', JSON.stringify(st.metaG));
                         if(st.metaL) localStorage.setItem('diretoria_meta_like', JSON.stringify(st.metaL));
-                        
-                        if(st.umeta) { localStorage.setItem('diretoria_users_meta', JSON.stringify(st.umeta)); if(typeof ramData !== 'undefined') ramData.usersMeta = st.umeta; }
-                        if(st.ativos) { localStorage.setItem('diretoria_ativos', JSON.stringify(st.ativos)); if(typeof usuariosAtivosLive !== 'undefined') usuariosAtivosLive = new Set(st.ativos); }
-                        if(st.maiores) { localStorage.setItem('diretoria_maiores_presentes', JSON.stringify(st.maiores)); if(typeof maioresPresentes !== 'undefined') maioresPresentes = st.maiores; }
-                        
+                        if(st.umeta) localStorage.setItem('diretoria_users_meta', JSON.stringify(st.umeta));
+                        if(st.ativos) localStorage.setItem('diretoria_ativos', JSON.stringify(st.ativos));
+                        if(st.maiores) localStorage.setItem('diretoria_maiores_presentes', JSON.stringify(st.maiores));
                         if(st.letr) localStorage.setItem('diretoria_letreiro', JSON.stringify(st.letr));
 
                         if(st.sort && st.sort.id) localStorage.setItem('diretoria_sorteio_disparo', JSON.stringify(st.sort));
