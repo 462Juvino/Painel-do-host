@@ -760,11 +760,13 @@
                 }
                 localStorage.setItem(`diretoria_gerador_${idGerador}`, JSON.stringify(config));
 
-                // SINCRONIZA COM A NUVEM PARA O TIKTOK STUDIO LER
-                if (window.firebaseDb && window.firebaseSet && window.firebaseRef) {
-                    const rdmUser = localStorage.getItem('rdm_user_tiktok') || localStorage.getItem('rdm_user') || 'visitante';
-                    window.firebaseSet(window.firebaseRef(window.firebaseDb, `usuarios/${rdmUser}/diretoria_gerador_${idGerador}`), config);
-                }
+                // SINCRONIZA COM A NUVEM (Via API Direta e Imparável)
+                const rdmUser = localStorage.getItem('rdm_user_tiktok') || localStorage.getItem('rdm_user') || 'visitante';
+                fetch(`https://painel-do-host-default-rtdb.firebaseio.com/usuarios/${rdmUser}/diretoria_gerador_${idGerador}.json`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                }).catch(e => console.log("Erro ao enviar:", e));
 
                 alert(`✅ Gerador ${idGerador} salvo e enviado para a nuvem com sucesso!`);
             }
@@ -2286,7 +2288,15 @@
                 let intervalGerador = null;
 
                 setInterval(() => {
-                    // Agora ele lê APENAS a memória atualizada magicamente pelo Firebase
+                    // Puxa os dados diretos da Nuvem via API silenciosa
+                    const rdmUser = localStorage.getItem('rdm_user_tiktok') || localStorage.getItem('rdm_user') || 'visitante';
+                    fetch(`https://painel-do-host-default-rtdb.firebaseio.com/usuarios/${rdmUser}/diretoria_gerador_${idGerador}.json`)
+                        .then(res => res.json())
+                        .then(dadosNuvem => {
+                            if (dadosNuvem) localStorage.setItem(`diretoria_gerador_${idGerador}`, JSON.stringify(dadosNuvem));
+                        }).catch(() => {});
+
+                    // Lê a memória que acabou de ser atualizada pela nuvem
                     let config = JSON.parse(localStorage.getItem(`diretoria_gerador_${idGerador}`));
 
                     if (!config) {
@@ -2394,46 +2404,6 @@
             setInterval(verificarEConectar, 2000);
         }
 
-    </script>
-
-    <!-- Integração Firebase (Modo Clássico p/ Navegador do TTK Studio) -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-    <script>
-        const firebaseConfig = {
-            databaseURL: "https://painel-do-host-default-rtdb.firebaseio.com",
-            projectId: "painel-do-host"
-        };
-
-        try {
-            firebase.initializeApp(firebaseConfig);
-
-            // Adaptador para o botão "Salvar Tela" do Chrome funcionar nativamente
-            window.firebaseDb = firebase.database();
-            window.firebaseRef = (db, path) => path;
-            window.firebaseSet = (path, config) => firebase.database().ref(path).set(config);
-
-            console.log("🔥 Firebase (Modo TTK Studio) inicializado!");
-
-            // ==========================================
-            // ESCUTA A NUVEM NO TIKTOK STUDIO (OBS)
-            // ==========================================
-            const urlParams = new URLSearchParams(window.location.search);
-            const viewMode = urlParams.get('view');
-            const rdmUser = urlParams.get('u') || localStorage.getItem('rdm_user_tiktok') || localStorage.getItem('rdm_user') || 'visitante';
-
-            if (viewMode === 'gerador') {
-                const idGerador = urlParams.get('id') || '1';
-                firebase.database().ref(`usuarios/${rdmUser}/diretoria_gerador_${idGerador}`).on('value', (snapshot) => {
-                    if (snapshot.exists()) {
-                        // O TTK Studio recebe os dados e pisca a tela na mesma hora
-                        localStorage.setItem(`diretoria_gerador_${idGerador}`, JSON.stringify(snapshot.val()));
-                    }
-                });
-            }
-        } catch (error) {
-            console.error("Erro ao inicializar Firebase:", error);
-        }
     </script>
 </body>
 </html>
