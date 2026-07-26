@@ -1586,7 +1586,7 @@
                 // 3. Salva a memória preservada de volta no HD (O motor global joga pro Firebase)
                 localStorage.setItem('diretoria_rankings', JSON.stringify(historicoSalvo));
 
-                // 4. A MEMÓRIA DO FÃ CLUBE ESTÁ BLINDADA: Não tocamos na diretoria_users_meta!
+                // 4. A MEMÓRIA DO FÃ CLUBE É IMORTAL! (Removemos o comando que apagava ela)
                 localStorage.setItem('diretoria_maiores_presentes', JSON.stringify([]));
                 localStorage.setItem('diretoria_ativos', JSON.stringify([]));
                 localStorage.setItem('diretoria_ativos_obj', JSON.stringify({}));
@@ -1595,8 +1595,7 @@
                 bancoRankings = historicoSalvo;
 
                 if (typeof ramData !== 'undefined') {
-                    // BLINDADO: Apenas apaga quem estava no Auditório, mas mantém as patentes do Pódio intactas!
-                    ramData.ativosObj = {};
+                    ramData.ativosObj = {}; // Mantém a RAM do Fã Clube intacta
                 }
                 if (typeof maioresPresentes !== 'undefined') maioresPresentes = [];
                 if (typeof usuariosAtivosLive !== 'undefined') usuariosAtivosLive.clear();
@@ -1975,9 +1974,13 @@
         };
 
         function iniciarModoOBS(viewMode) {
-            // Isolamento Total e Seguro: Sem mexer nos métodos nativos do navegador!
+            // BLINDAGEM SEGURA: Usa uma função separada para não causar tela branca no OBS!
             window.NUVEM_OBS = {};
             window.memoriaPodio = "FORCAR_INICIO";
+
+            const lerMemoriaOBS = (chave) => {
+                return window.NUVEM_OBS[chave] || null;
+            };
 
             // Função segura e independente para o OBS ler a memória do Firebase sem crashar
             const getSafeMem = (chave) => {
@@ -2019,9 +2022,10 @@
                 let html = '';
                 const topLimit = 5;
 
-                const rankData = JSON.parse(getSafeMem('diretoria_rankings')) || bancoRankings;
+                // Usa a nova função segura em vez de dar conflito com o navegador
+                const rankData = JSON.parse(lerMemoriaOBS('diretoria_rankings')) || bancoRankings;
                 const dbHoje = rankData['diario'] || { gifters: {}, likes: {} };
-                const layoutCfg = JSON.parse(getSafeMem('diretoria_rank_layout')) || {gifters:'completo', gifts:'completo', likes:'completo'};
+                const layoutCfg = JSON.parse(lerMemoriaOBS('diretoria_rank_layout')) || {gifters:'completo', gifts:'completo', likes:'completo'};
 
                 if (viewMode === 'ranking_gifters') {
                     const giftersSeguros = dbHoje.gifters || {};
@@ -2126,7 +2130,7 @@
                     `;
                 }
                 else if (viewMode === 'podio_fas') {
-                    const metaL = JSON.parse(getSafeMem('diretoria_users_meta')) || {};
+                    const metaL = JSON.parse(lerMemoriaOBS('diretoria_users_meta')) || {};
                     // Filtra e organiza por Nível. Se empatar, usa ordem alfabética para não piscar!
                     const topFas = Object.entries(metaL)
                                          .filter(u => u[1].fLevel > 0)
