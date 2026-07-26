@@ -1575,7 +1575,7 @@
         setTimeout(renderizarRankings, 500);
 
         function limparRankings() {
-            if(confirm("⚠️ PREPARAR NOVA LIVE?\nIsso vai limpar a live atual, zerando o ranking DIÁRIO e Tap Tap.\nO Pódio de Fãs e os Históricos serão PRESERVADOS na nuvem Firebase!")) {
+            if(confirm("⚠️ PREPARAR NOVA LIVE?\nIsso vai limpar a live atual, zerando o ranking DIÁRIO, Tap Tap, PÓDIO DE FÃS e Nível de Gifter.\nOs Históricos (Semanal, Mensal, Geral) serão PRESERVADOS na nuvem Firebase!")) {
 
                 // 1. Resgata o histórico completo da memória antes de apagar qualquer coisa
                 let historicoSalvo = JSON.parse(localStorage.getItem('diretoria_rankings')) || bancoRankings;
@@ -1586,7 +1586,8 @@
                 // 3. Salva a memória preservada de volta no HD (O motor global joga pro Firebase)
                 localStorage.setItem('diretoria_rankings', JSON.stringify(historicoSalvo));
 
-                // 4. A MEMÓRIA DO FÃ CLUBE É IMORTAL! (Removemos o comando que apagava ela)
+                // 4. Limpa as variáveis da live atual (incluindo níveis de Fã e Gifter para zerar o Pódio)
+                localStorage.setItem('diretoria_users_meta', JSON.stringify({}));
                 localStorage.setItem('diretoria_maiores_presentes', JSON.stringify([]));
                 localStorage.setItem('diretoria_ativos', JSON.stringify([]));
                 localStorage.setItem('diretoria_ativos_obj', JSON.stringify({}));
@@ -1595,7 +1596,8 @@
                 bancoRankings = historicoSalvo;
 
                 if (typeof ramData !== 'undefined') {
-                    ramData.ativosObj = {}; // Mantém a RAM do Fã Clube intacta
+                    ramData.usersMeta = {}; // Zera os níveis em RAM
+                    ramData.ativosObj = {}; // Zera o auditório em RAM
                 }
                 if (typeof maioresPresentes !== 'undefined') maioresPresentes = [];
                 if (typeof usuariosAtivosLive !== 'undefined') usuariosAtivosLive.clear();
@@ -1604,7 +1606,7 @@
                 // Manda reescrever a tela
                 rankingPrecisaAtualizar = true;
                 renderizarRankings();
-                alert("✅ Live atual encerrada e telão limpo!\nO seu histórico longo (Semanal, Mensal, etc) está seguro no Firebase.");
+                alert("✅ Live atual encerrada e telões limpos (incluindo o Pódio)!\nO seu histórico longo (Semanal, Mensal, etc) está seguro no Firebase.");
             }
         }
 
