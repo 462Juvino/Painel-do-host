@@ -292,6 +292,7 @@
                             likes: document.getElementById('obs-layout-likes').value
                         };
                         localStorage.setItem('diretoria_rank_layout', JSON.stringify(cfg));
+                        renderizarRankings(); // GATILHO: Atualiza a interface do Chrome na mesma hora!
                     }
                     setTimeout(() => {
                         const cfg = JSON.parse(localStorage.getItem('diretoria_rank_layout')) || {gifters:'completo', gifts:'completo', likes:'completo'};
@@ -1481,6 +1482,8 @@
             const perSelect = document.getElementById('periodo-ranking').value;
             const dadosAtuais = bancoRankings[perSelect];
             const metaLocal = JSON.parse(localStorage.getItem('diretoria_users_meta')) || {};
+            // Puxa a escolha de layout do HD
+            const layoutCfg = JSON.parse(localStorage.getItem('diretoria_rank_layout')) || {gifters:'completo', gifts:'completo', likes:'completo'};
 
             const divGifters = document.getElementById('lista-ranking-gifters');
             const divLikes = document.getElementById('lista-ranking-likes');
@@ -1492,20 +1495,40 @@
             if(divGifters) {
                 divGifters.innerHTML = '';
                 const arr = Object.entries(dadosAtuais.gifters).sort((a, b) => b[1].pontos - a[1].pontos);
-                arr.forEach((item, index) => {
-                    const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
-                    divGifters.innerHTML += `<div style="display: flex; align-items: center; background: #333; padding: 10px; border-radius: 6px; border-left: 4px solid ${cor}; margin-bottom: 8px;"><strong style="color: ${cor}; width: 30px;">#${index + 1}</strong><img src="${item[1].avatar}" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; object-fit: cover;"><span style="flex: 1; color: white; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item[0]}</span><span style="color: gold; font-weight: bold; margin-right: 10px;">💎 ${item[1].pontos}</span><button onclick="adicionarAoLetreiro('${item[0]}', '${item[1].avatar}')" style="background: #9b59b6; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px; font-weight: bold;">✨ Add</button></div>`;
-                });
+
+                if (layoutCfg.gifters === 'foto') {
+                    let html = `<div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; padding: 10px 0;">`;
+                    arr.forEach((item, index) => {
+                        const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : '#888';
+                        html += `<div style="position: relative; margin-bottom: 15px;"><img src="${item[1].avatar}" style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid ${cor}; object-fit: cover;"><div style="position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); background: ${cor}; color: black; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 10px;">#${index + 1}</div></div>`;
+                    });
+                    divGifters.innerHTML = html + `</div>`;
+                } else {
+                    arr.forEach((item, index) => {
+                        const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
+                        divGifters.innerHTML += `<div style="display: flex; align-items: center; background: #333; padding: 10px; border-radius: 6px; border-left: 4px solid ${cor}; margin-bottom: 8px;"><strong style="color: ${cor}; width: 30px;">#${index + 1}</strong><img src="${item[1].avatar}" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; object-fit: cover;"><span style="flex: 1; color: white; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item[0]}</span><span style="color: gold; font-weight: bold; margin-right: 10px;">💎 ${item[1].pontos}</span><button onclick="adicionarAoLetreiro('${item[0]}', '${item[1].avatar}')" style="background: #9b59b6; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px; font-weight: bold;">✨ Add</button></div>`;
+                    });
+                }
                 if(document.getElementById('tit-gifters')) document.getElementById('tit-gifters').innerHTML = `💎 Top Presenteadores <span style="background:#555; padding:2px 8px; border-radius:10px; font-size:12px; margin-left:5px;">${arr.length}</span>`;
             }
 
             if(divLikes) {
                 divLikes.innerHTML = '';
                 const arr = Object.entries(dadosAtuais.likes).sort((a, b) => b[1].pontos - a[1].pontos);
-                arr.forEach((item, index) => {
-                    const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
-                    divLikes.innerHTML += `<div style="display: flex; align-items: center; background: #333; padding: 10px; border-radius: 6px; border-left: 4px solid ${cor}; margin-bottom: 8px;"><strong style="color: ${cor}; width: 30px;">#${index + 1}</strong><img src="${item[1].avatar}" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; object-fit: cover;"><span style="flex: 1; color: white; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item[0]}</span><span style="color: #ff4757; font-weight: bold; margin-right: 10px;">❤️ ${item[1].pontos}</span><button onclick="adicionarAoLetreiro('${item[0]}', '${item[1].avatar}')" style="background: #9b59b6; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px; font-weight: bold;">✨ Add</button></div>`;
-                });
+
+                if (layoutCfg.likes === 'foto') {
+                    let html = `<div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; padding: 10px 0;">`;
+                    arr.forEach((item, index) => {
+                        const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : '#888';
+                        html += `<div style="position: relative; margin-bottom: 15px;"><img src="${item[1].avatar}" style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid ${cor}; object-fit: cover;"><div style="position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); background: ${cor}; color: black; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 10px;">#${index + 1}</div></div>`;
+                    });
+                    divLikes.innerHTML = html + `</div>`;
+                } else {
+                    arr.forEach((item, index) => {
+                        const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
+                        divLikes.innerHTML += `<div style="display: flex; align-items: center; background: #333; padding: 10px; border-radius: 6px; border-left: 4px solid ${cor}; margin-bottom: 8px;"><strong style="color: ${cor}; width: 30px;">#${index + 1}</strong><img src="${item[1].avatar}" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; object-fit: cover;"><span style="flex: 1; color: white; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item[0]}</span><span style="color: #ff4757; font-weight: bold; margin-right: 10px;">❤️ ${item[1].pontos}</span><button onclick="adicionarAoLetreiro('${item[0]}', '${item[1].avatar}')" style="background: #9b59b6; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px; font-weight: bold;">✨ Add</button></div>`;
+                    });
+                }
                 if(document.getElementById('tit-likes')) document.getElementById('tit-likes').innerHTML = `❤️ Top Tap Tap <span style="background:#555; padding:2px 8px; border-radius:10px; font-size:12px; margin-left:5px;">${arr.length}</span>`;
             }
 
@@ -1552,7 +1575,7 @@
         setTimeout(renderizarRankings, 500);
 
         function limparRankings() {
-            if(confirm("⚠️ PREPARAR NOVA LIVE?\nIsso vai limpar a live atual, zerando o ranking DIÁRIO, Pódio e Tap Tap.\nOs históricos Semanal, Mensal e Geral serão PRESERVADOS e salvos na nuvem Firebase!")) {
+            if(confirm("⚠️ PREPARAR NOVA LIVE?\nIsso vai limpar a live atual, zerando o ranking DIÁRIO e Tap Tap.\nO Pódio de Fãs e os Históricos serão PRESERVADOS na nuvem Firebase!")) {
 
                 // 1. Resgata o histórico completo da memória antes de apagar qualquer coisa
                 let historicoSalvo = JSON.parse(localStorage.getItem('diretoria_rankings')) || bancoRankings;
@@ -1563,8 +1586,7 @@
                 // 3. Salva a memória preservada de volta no HD (O motor global joga pro Firebase)
                 localStorage.setItem('diretoria_rankings', JSON.stringify(historicoSalvo));
 
-                // 4. Limpa apenas as variáveis transitórias da live que acabou (quem tava no chat, pódio, presentes de hoje)
-                localStorage.setItem('diretoria_users_meta', JSON.stringify({}));
+                // 4. A MEMÓRIA DO FÃ CLUBE ESTÁ BLINDADA: Não tocamos na diretoria_users_meta!
                 localStorage.setItem('diretoria_maiores_presentes', JSON.stringify([]));
                 localStorage.setItem('diretoria_ativos', JSON.stringify([]));
                 localStorage.setItem('diretoria_ativos_obj', JSON.stringify({}));
@@ -1573,7 +1595,7 @@
                 bancoRankings = historicoSalvo;
 
                 if (typeof ramData !== 'undefined') {
-                    ramData.usersMeta = {};
+                    // BLINDADO: Apenas apaga quem estava no Auditório, mas mantém as patentes do Pódio intactas!
                     ramData.ativosObj = {};
                 }
                 if (typeof maioresPresentes !== 'undefined') maioresPresentes = [];
