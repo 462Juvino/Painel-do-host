@@ -1974,24 +1974,23 @@
             }
         };
 
-        // ==========================================
-        // ROTEADOR DE WIDGETS PARA OBS / TIKTOK STUDIO
-        // ==========================================
         function iniciarModoOBS(viewMode) {
-            // BLINDAGEM DE MEMÓRIA: Impede o link do OBS de corromper o HD do Chrome.
+            // Isolamento Total e Seguro: Sem mexer nos métodos nativos do navegador!
             window.NUVEM_OBS = {};
-            const originalGetItem = localStorage.getItem;
-            localStorage.getItem = function(key) {
-                // OBS LÊ APENAS A RAM! Nunca toca no HD real do computador!
-                if (key.startsWith('diretoria_')) return window.NUVEM_OBS[key] || null;
-                return originalGetItem.call(localStorage, key);
+            window.memoriaPodio = "FORCAR_INICIO";
+
+            // Função segura e independente para o OBS ler a memória do Firebase sem crashar
+            const getSafeMem = (chave) => {
+                if (window.NUVEM_OBS && window.NUVEM_OBS[chave] !== undefined) {
+                    return window.NUVEM_OBS[chave];
+                }
+                try { return localStorage.getItem(chave); } catch(e) { return null; }
             };
-            window.memoriaPodio = "";
 
             // Desliga a estrutura do painel de controle e mantém o fundo transparente
             document.getElementById('sidebar').style.display = 'none';
             document.getElementById('main-content').style.display = 'none';
-            if (document.getElementById('mobile-header')) document.getElementById('mobile-header').style.display = 'none'; // Some com a barra de cima!
+            if (document.getElementById('mobile-header')) document.getElementById('mobile-header').style.display = 'none';
             document.body.style.backgroundColor = 'transparent';
             document.body.style.overflow = 'hidden';
 
@@ -2020,10 +2019,9 @@
                 let html = '';
                 const topLimit = 5;
 
-                const rankData = JSON.parse(localStorage.getItem('diretoria_rankings')) || bancoRankings;
-                // BLINDAGEM: Garante que os objetos internos existam para não explodir o Javascript e congelar a tela
+                const rankData = JSON.parse(getSafeMem('diretoria_rankings')) || bancoRankings;
                 const dbHoje = rankData['diario'] || { gifters: {}, likes: {} };
-                const layoutCfg = JSON.parse(localStorage.getItem('diretoria_rank_layout')) || {gifters:'completo', gifts:'completo', likes:'completo'};
+                const layoutCfg = JSON.parse(getSafeMem('diretoria_rank_layout')) || {gifters:'completo', gifts:'completo', likes:'completo'};
 
                 if (viewMode === 'ranking_gifters') {
                     const giftersSeguros = dbHoje.gifters || {};
@@ -2044,7 +2042,7 @@
                     }
                 }
                 else if (viewMode === 'ranking_gifts') {
-                    const maiores = JSON.parse(localStorage.getItem('diretoria_maiores_presentes')) || [];
+                    const maiores = JSON.parse(getSafeMem('diretoria_maiores_presentes')) || [];
                     const arr = maiores.slice(0, topLimit);
                     if (layoutCfg.gifts === 'foto') {
                         html += `<div style="display:flex; justify-content:center; align-items:center; gap:15px; padding:15px; background:rgba(0,0,0,0.6); border-radius:20px; box-shadow:0 0 15px rgba(0,0,0,0.5);">`;
@@ -2081,7 +2079,7 @@
                 }
                 else if (viewMode === 'ativos') {
                     html += `<div class="widget-title">🟢 Auditório (Pessoas Ativas na Live)</div>`;
-                    const ativos = JSON.parse(localStorage.getItem('diretoria_ativos')) || [];
+                    const ativos = JSON.parse(getSafeMem('diretoria_ativos')) || [];
                     html += `<div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; font-family: sans-serif;">`;
                     ativos.slice(-25).reverse().forEach(nome => {
                         html += `<span style="background: rgba(0,0,0,0.85); color: white; padding: 6px 16px; border-radius: 20px; font-weight: bold; border: 1px solid #00f2fe; font-size:14px;">${nome}</span>`;
@@ -2089,7 +2087,7 @@
                     html += `</div>`;
                 }
                 else if (viewMode === 'meta_gift') {
-                    const mGift = JSON.parse(localStorage.getItem('diretoria_meta_gift')) || { alvo: 100, atual: 0, presente: "" };
+                    const mGift = JSON.parse(getSafeMem('diretoria_meta_gift')) || { alvo: 100, atual: 0, presente: "" };
                     const porcentagem = Math.min((mGift.atual / Math.max(mGift.alvo, 1)) * 100, 100).toFixed(1);
                     const nomeMeta = mGift.presente ? `META DE ${mGift.presente.toUpperCase()}` : "META DE PRESENTES";
 
@@ -2109,7 +2107,7 @@
                     `;
                 }
                 else if (viewMode === 'meta_like') {
-                    const mLike = JSON.parse(localStorage.getItem('diretoria_meta_like')) || { alvo: 10000, atual: 0 };
+                    const mLike = JSON.parse(getSafeMem('diretoria_meta_like')) || { alvo: 10000, atual: 0 };
                     const porcentagem = Math.min((mLike.atual / Math.max(mLike.alvo, 1)) * 100, 100).toFixed(1);
 
                     html += `
@@ -2128,7 +2126,7 @@
                     `;
                 }
                 else if (viewMode === 'podio_fas') {
-                    const metaL = JSON.parse(localStorage.getItem('diretoria_users_meta')) || {};
+                    const metaL = JSON.parse(getSafeMem('diretoria_users_meta')) || {};
                     // Filtra e organiza por Nível. Se empatar, usa ordem alfabética para não piscar!
                     const topFas = Object.entries(metaL)
                                          .filter(u => u[1].fLevel > 0)
@@ -2165,7 +2163,7 @@
                                 </style>
                             `;
                             document.getElementById('obs-container').innerHTML = stylePodio + `
-                                <div id="msg-vazia" style="display:none; color:white; text-align:center; font-family: sans-serif; font-size: 20px; width:100%; position:absolute; top:50%; transform:translateY(-50%);">Aguardando Fãs...</div>
+                                <div id="msg-vazia" style="display:none; color:white; text-shadow: 2px 2px 5px black; text-align:center; font-family: sans-serif; font-size: 20px; width:100%; position:absolute; top:50%; transform:translateY(-50%);">Aguardando Fãs...</div>
                                 <div id="podio-dinamico-wrapper" class="podium-wrapper">
                                     <div id="p-pos-2" class="podium-place place-2"></div>
                                     <div id="p-pos-1" class="podium-place place-1"></div>
@@ -2200,7 +2198,6 @@
                         }
                     }
                 }
-
                 // Bloqueia a sobreposição caso a view atual seja mídia, potes, letreiro, gerador, sorteio ou podio
                 if (viewMode !== 'midia' && !viewMode.startsWith('pote') && viewMode !== 'gerador' && viewMode !== 'letreiro' && viewMode !== 'sorteio' && viewMode !== 'podio_fas') {
                     document.getElementById('obs-container').innerHTML = html;
