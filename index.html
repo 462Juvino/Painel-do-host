@@ -1964,9 +1964,12 @@
                 return window.NUVEM_OBS[chave] || null;
             };
 
-            // Função 100% ESCRAVA: O OBS não tem mais permissão de ler o HD local para não dar choque com o Firebase!
+            // Permite a leitura inicial rápida para o Pódio não piscar no F5, mas depois a Nuvem assume o controle total!
             const getSafeMem = (chave) => {
-                return window.NUVEM_OBS[chave] || null;
+                if (window.NUVEM_OBS && window.NUVEM_OBS[chave] !== undefined) {
+                    return window.NUVEM_OBS[chave];
+                }
+                try { return localStorage.getItem(chave); } catch(e) { return null; }
             };
 
             // Desliga a estrutura do painel de controle e mantém o fundo transparente
@@ -2689,15 +2692,13 @@
                 } catch(err) {}
             }, 1500);
         } else {
-            // MODO TIKTOK STUDIO (O ESCRAVO DA API)
+            // MODO OBS / TIKTOK STUDIO (O ESCRAVO DA API)
             window.NUVEM_OBS = {};
             setInterval(() => {
-                // A FORÇA MÁXIMA OFICIAL contra cache teimoso sem quebrar a segurança do Firebase.
-                fetch(urlSync, {
-                    method: 'GET',
-                    cache: 'no-store',
-                    headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'Expires': '0' }
-                })
+                // A CHAVE MESTRA: Usar "?_cb=tempo" burla o cache do TikTok Studio garantidamente SEM acionar os bloqueios de segurança (CORS) do Firebase!
+                const urlSemCache = urlSync + '?_cb=' + new Date().getTime();
+
+                fetch(urlSemCache, { cache: 'no-store' })
                 .then(r => r.json())
                 .then(st => {
                     if (st) {
@@ -2713,6 +2714,13 @@
 
                         if(st.sort && st.sort.id) window.NUVEM_OBS['diretoria_sorteio_disparo'] = JSON.stringify(st.sort);
                         if(st.midia && st.midia.id) window.NUVEM_OBS['diretoria_midia_disparo'] = JSON.stringify(st.midia);
+
+                        // Atualiza o HD local silenciosamente para o próximo F5 ser instantâneo e não piscar "Aguardando"
+                        try {
+                            localStorage.setItem('diretoria_rankings', window.NUVEM_OBS['diretoria_rankings']);
+                            localStorage.setItem('diretoria_users_meta', window.NUVEM_OBS['diretoria_users_meta']);
+                            localStorage.setItem('diretoria_meta_like', window.NUVEM_OBS['diretoria_meta_like']);
+                        } catch(e) {}
                     }
                 }).catch(()=>{});
             }, 1000);
