@@ -2024,10 +2024,10 @@
                 let html = '';
                 const topLimit = 5;
 
-                // Usa a nova função segura em vez de dar conflito com o navegador
-                const rankData = JSON.parse(lerMemoriaOBS('diretoria_rankings')) || bancoRankings;
+                // Usa a função de segurança máxima (getSafeMem) para ler a RAM ou HD sem dar erro
+                const rankData = JSON.parse(getSafeMem('diretoria_rankings')) || bancoRankings;
                 const dbHoje = rankData['diario'] || { gifters: {}, likes: {} };
-                const layoutCfg = JSON.parse(lerMemoriaOBS('diretoria_rank_layout')) || {gifters:'completo', gifts:'completo', likes:'completo'};
+                const layoutCfg = JSON.parse(getSafeMem('diretoria_rank_layout')) || {gifters:'completo', gifts:'completo', likes:'completo'};
 
                 if (viewMode === 'ranking_gifters') {
                     const giftersSeguros = dbHoje.gifters || {};
@@ -2132,7 +2132,7 @@
                     `;
                 }
                 else if (viewMode === 'podio_fas') {
-                    const metaL = JSON.parse(lerMemoriaOBS('diretoria_users_meta')) || {};
+                    const metaL = JSON.parse(getSafeMem('diretoria_users_meta')) || {};
                     // Filtra e organiza por Nível. Se empatar, usa ordem alfabética para não piscar!
                     const topFas = Object.entries(metaL)
                                          .filter(u => u[1].fLevel > 0)
@@ -2689,15 +2689,12 @@
                 }).catch(()=>{});
             }, 1500); // Acelerado o envio para 1.5s
         } else {
-            // MODO TIKTOK STUDIO (O ESCRAVO DA API): Isolamento Total!
+            // MODO OBS / TIKTOK STUDIO (O ESCRAVO DA API): Isolamento Total e Seguro!
             window.NUVEM_OBS = {};
             setInterval(() => {
-                // A forma oficial de forçar o TikTok Studio a não usar Cache sem quebrar o Firebase
-                fetch(urlSync, {
-                    method: 'GET',
-                    cache: 'no-store',
-                    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
-                })
+                // Removemos os cabeçalhos que estavam bloqueando o Firebase.
+                // Usar apenas "cache: 'no-store'" força a atualização real sem causar erro de segurança (CORS).
+                fetch(urlSync, { cache: 'no-store' })
                 .then(r => r.json())
                 .then(st => {
                     if (st) {
