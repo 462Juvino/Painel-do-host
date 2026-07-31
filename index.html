@@ -2689,10 +2689,15 @@
                 }).catch(()=>{});
             }, 1500); // Acelerado o envio para 1.5s
         } else {
-            // MODO OBS (O ESCRAVO DA API): Isolamento Total!
+            // MODO TIKTOK STUDIO (O ESCRAVO DA API): Isolamento Total!
             window.NUVEM_OBS = {};
             setInterval(() => {
-                fetch(urlSync)
+                // A forma oficial de forçar o TikTok Studio a não usar Cache sem quebrar o Firebase
+                fetch(urlSync, {
+                    method: 'GET',
+                    cache: 'no-store',
+                    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+                })
                 .then(r => r.json())
                 .then(st => {
                     if (st) {
