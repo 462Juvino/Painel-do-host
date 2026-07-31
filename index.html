@@ -1495,40 +1495,20 @@
             if(divGifters) {
                 divGifters.innerHTML = '';
                 const arr = Object.entries(dadosAtuais.gifters).sort((a, b) => b[1].pontos - a[1].pontos);
-
-                if (layoutCfg.gifters === 'foto') {
-                    let html = `<div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; padding: 10px 0;">`;
-                    arr.forEach((item, index) => {
-                        const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : '#888';
-                        html += `<div style="position: relative; margin-bottom: 15px;"><img src="${item[1].avatar}" style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid ${cor}; object-fit: cover;"><div style="position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); background: ${cor}; color: black; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 10px;">#${index + 1}</div></div>`;
-                    });
-                    divGifters.innerHTML = html + `</div>`;
-                } else {
-                    arr.forEach((item, index) => {
-                        const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
-                        divGifters.innerHTML += `<div style="display: flex; align-items: center; background: #333; padding: 10px; border-radius: 6px; border-left: 4px solid ${cor}; margin-bottom: 8px;"><strong style="color: ${cor}; width: 30px;">#${index + 1}</strong><img src="${item[1].avatar}" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; object-fit: cover;"><span style="flex: 1; color: white; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item[0]}</span><span style="color: gold; font-weight: bold; margin-right: 10px;">💎 ${item[1].pontos}</span><button onclick="adicionarAoLetreiro('${item[0]}', '${item[1].avatar}')" style="background: #9b59b6; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px; font-weight: bold;">✨ Add</button></div>`;
-                    });
-                }
+                arr.forEach((item, index) => {
+                    const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
+                    divGifters.innerHTML += `<div style="display: flex; align-items: center; background: #333; padding: 10px; border-radius: 6px; border-left: 4px solid ${cor}; margin-bottom: 8px;"><strong style="color: ${cor}; width: 30px;">#${index + 1}</strong><img src="${item[1].avatar}" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; object-fit: cover;"><span style="flex: 1; color: white; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item[0]}</span><span style="color: gold; font-weight: bold; margin-right: 10px;">💎 ${item[1].pontos}</span><button onclick="adicionarAoLetreiro('${item[0]}', '${item[1].avatar}')" style="background: #9b59b6; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px; font-weight: bold;">✨ Add</button></div>`;
+                });
                 if(document.getElementById('tit-gifters')) document.getElementById('tit-gifters').innerHTML = `💎 Top Presenteadores <span style="background:#555; padding:2px 8px; border-radius:10px; font-size:12px; margin-left:5px;">${arr.length}</span>`;
             }
 
             if(divLikes) {
                 divLikes.innerHTML = '';
                 const arr = Object.entries(dadosAtuais.likes).sort((a, b) => b[1].pontos - a[1].pontos);
-
-                if (layoutCfg.likes === 'foto') {
-                    let html = `<div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; padding: 10px 0;">`;
-                    arr.forEach((item, index) => {
-                        const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : '#888';
-                        html += `<div style="position: relative; margin-bottom: 15px;"><img src="${item[1].avatar}" style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid ${cor}; object-fit: cover;"><div style="position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); background: ${cor}; color: black; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 10px;">#${index + 1}</div></div>`;
-                    });
-                    divLikes.innerHTML = html + `</div>`;
-                } else {
-                    arr.forEach((item, index) => {
-                        const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
-                        divLikes.innerHTML += `<div style="display: flex; align-items: center; background: #333; padding: 10px; border-radius: 6px; border-left: 4px solid ${cor}; margin-bottom: 8px;"><strong style="color: ${cor}; width: 30px;">#${index + 1}</strong><img src="${item[1].avatar}" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; object-fit: cover;"><span style="flex: 1; color: white; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item[0]}</span><span style="color: #ff4757; font-weight: bold; margin-right: 10px;">❤️ ${item[1].pontos}</span><button onclick="adicionarAoLetreiro('${item[0]}', '${item[1].avatar}')" style="background: #9b59b6; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px; font-weight: bold;">✨ Add</button></div>`;
-                    });
-                }
+                arr.forEach((item, index) => {
+                    const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
+                    divLikes.innerHTML += `<div style="display: flex; align-items: center; background: #333; padding: 10px; border-radius: 6px; border-left: 4px solid ${cor}; margin-bottom: 8px;"><strong style="color: ${cor}; width: 30px;">#${index + 1}</strong><img src="${item[1].avatar}" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; object-fit: cover;"><span style="flex: 1; color: white; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item[0]}</span><span style="color: #ff4757; font-weight: bold; margin-right: 10px;">❤️ ${item[1].pontos}</span><button onclick="adicionarAoLetreiro('${item[0]}', '${item[1].avatar}')" style="background: #9b59b6; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px; font-weight: bold;">✨ Add</button></div>`;
+                });
                 if(document.getElementById('tit-likes')) document.getElementById('tit-likes').innerHTML = `❤️ Top Tap Tap <span style="background:#555; padding:2px 8px; border-radius:10px; font-size:12px; margin-left:5px;">${arr.length}</span>`;
             }
 
@@ -2032,56 +2012,56 @@
                 if (viewMode === 'ranking_gifters') {
                     const giftersSeguros = dbHoje.gifters || {};
                     const arr = Object.entries(giftersSeguros).sort((a, b) => b[1].pontos - a[1].pontos).slice(0, topLimit);
+                    html += `<div class="widget-title">🏆 Top Presenteadores (Hoje)</div>`;
+                    html += `<div style="display: flex; flex-direction: column; align-items: flex-start;">`;
                     if (layoutCfg.gifters === 'foto') {
-                        html += `<div style="display:flex; justify-content:center; align-items:center; gap:15px; padding:15px; background:rgba(0,0,0,0.6); border-radius:20px; box-shadow:0 0 15px rgba(0,0,0,0.5);">`;
                         arr.forEach((item, index) => {
                             const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
-                            html += `<div style="position:relative;"><img src="${item[1].avatar}" style="width:55px; height:55px; border-radius:50%; border:3px solid ${cor}; object-fit:cover; box-shadow: 0 0 10px ${cor};"><div style="position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); background:${cor}; color:black; font-size:12px; font-weight:bold; padding:2px 8px; border-radius:10px;">#${index+1}</div></div>`;
+                            html += `<div class="ranking-item" style="border-left-color: ${cor}; width: fit-content; padding-right: 20px;"><div class="pos" style="color: ${cor}">#${index + 1}</div><img class="avatar" style="margin-right: 15px;" src="${item[1].avatar}"><div class="coins">💎 ${item[1].pontos}</div></div>`;
                         });
-                        html += `</div>`;
                     } else {
-                        html += `<div class="widget-title">🏆 Top Presenteadores (Hoje)</div>`;
                         arr.forEach((item, index) => {
                             const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
-                            html += `<div class="ranking-item" style="border-left-color: ${cor};"><div class="pos" style="color: ${cor}">#${index + 1}</div><img class="avatar" src="${item[1].avatar}"><div class="info"><div class="name">${item[0]}</div></div><div class="coins">💎 ${item[1].pontos}</div></div>`;
+                            html += `<div class="ranking-item" style="border-left-color: ${cor}; width: 100%; box-sizing: border-box;"><div class="pos" style="color: ${cor}">#${index + 1}</div><img class="avatar" src="${item[1].avatar}"><div class="info"><div class="name">${item[0]}</div></div><div class="coins">💎 ${item[1].pontos}</div></div>`;
                         });
                     }
+                    html += `</div>`;
                 }
                 else if (viewMode === 'ranking_gifts') {
                     const maiores = JSON.parse(getSafeMem('diretoria_maiores_presentes')) || [];
                     const arr = maiores.slice(0, topLimit);
+                    html += `<div class="widget-title">🔥 Maior Presente Isolado</div>`;
+                    html += `<div style="display: flex; flex-direction: column; align-items: flex-start;">`;
                     if (layoutCfg.gifts === 'foto') {
-                        html += `<div style="display:flex; justify-content:center; align-items:center; gap:15px; padding:15px; background:rgba(0,0,0,0.6); border-radius:20px; box-shadow:0 0 15px rgba(0,0,0,0.5);">`;
                         arr.forEach((item, index) => {
                             const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
-                            html += `<div style="position:relative;"><img src="${item.avatar}" style="width:55px; height:55px; border-radius:50%; border:3px solid ${cor}; object-fit:cover; box-shadow: 0 0 10px ${cor};"><div style="position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); background:${cor}; color:black; font-size:12px; font-weight:bold; padding:2px 8px; border-radius:10px;">#${index+1}</div></div>`;
+                            html += `<div class="ranking-item" style="border-left-color: ${cor}; width: fit-content; padding-right: 20px;"><div class="pos" style="color: ${cor}">#${index + 1}</div><img class="avatar" style="margin-right: 15px;" src="${item.avatar}"><div class="coins">💎 ${item.coins}</div></div>`;
                         });
-                        html += `</div>`;
                     } else {
-                        html += `<div class="widget-title">🔥 Maior Presente Isolado</div>`;
                         arr.forEach((item, index) => {
                             const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
-                            html += `<div class="ranking-item" style="border-left-color: ${cor};"><div class="pos" style="color: ${cor}">#${index + 1}</div><img class="avatar" src="${item.avatar}"><div class="info"><div class="name">${item.user}</div><div class="gift-name">${item.gift}</div></div><div class="coins">💎 ${item.coins}</div></div>`;
+                            html += `<div class="ranking-item" style="border-left-color: ${cor}; width: 100%; box-sizing: border-box;"><div class="pos" style="color: ${cor}">#${index + 1}</div><img class="avatar" src="${item.avatar}"><div class="info"><div class="name">${item.user}</div><div class="gift-name">${item.gift}</div></div><div class="coins">💎 ${item.coins}</div></div>`;
                         });
                     }
+                    html += `</div>`;
                 }
                 else if (viewMode === 'ranking_likes') {
                     const likesSeguros = dbHoje.likes || {};
                     const arr = Object.entries(likesSeguros).sort((a, b) => b[1].pontos - a[1].pontos).slice(0, topLimit);
+                    html += `<div class="widget-title">❤️ Top Tap Tap (Hoje)</div>`;
+                    html += `<div style="display: flex; flex-direction: column; align-items: flex-start;">`;
                     if (layoutCfg.likes === 'foto') {
-                        html += `<div style="display:flex; justify-content:center; align-items:center; gap:15px; padding:15px; background:rgba(0,0,0,0.6); border-radius:20px; box-shadow:0 0 15px rgba(0,0,0,0.5);">`;
                         arr.forEach((item, index) => {
                             const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
-                            html += `<div style="position:relative;"><img src="${item[1].avatar}" style="width:55px; height:55px; border-radius:50%; border:3px solid ${cor}; object-fit:cover; box-shadow: 0 0 10px ${cor};"><div style="position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); background:${cor}; color:black; font-size:12px; font-weight:bold; padding:2px 8px; border-radius:10px;">#${index+1}</div></div>`;
+                            html += `<div class="ranking-item" style="border-left-color: ${cor}; width: fit-content; padding-right: 20px;"><div class="pos" style="color: ${cor}">#${index + 1}</div><img class="avatar" style="margin-right: 15px;" src="${item[1].avatar}"><div class="coins" style="color: #ff4757;">❤️ ${item[1].pontos}</div></div>`;
                         });
-                        html += `</div>`;
                     } else {
-                        html += `<div class="widget-title">❤️ Top Tap Tap (Hoje)</div>`;
                         arr.forEach((item, index) => {
                             const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
-                            html += `<div class="ranking-item" style="border-left-color: ${cor};"><div class="pos" style="color: ${cor}">#${index + 1}</div><img class="avatar" src="${item[1].avatar}"><div class="info"><div class="name">${item[0]}</div></div><div class="coins" style="color: #ff4757;">❤️ ${item[1].pontos}</div></div>`;
+                            html += `<div class="ranking-item" style="border-left-color: ${cor}; width: 100%; box-sizing: border-box;"><div class="pos" style="color: ${cor}">#${index + 1}</div><img class="avatar" src="${item[1].avatar}"><div class="info"><div class="name">${item[0]}</div></div><div class="coins" style="color: #ff4757;">❤️ ${item[1].pontos}</div></div>`;
                         });
                     }
+                    html += `</div>`;
                 }
                 else if (viewMode === 'ativos') {
                     html += `<div class="widget-title">🟢 Auditório (Pessoas Ativas na Live)</div>`;
