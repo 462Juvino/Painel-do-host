@@ -2665,10 +2665,9 @@
         const urlSync = `https://painel-do-host-default-rtdb.firebaseio.com/usuarios/${userGLimpo}/sync_global.json`;
 
         if (!viewModeParam) {
-            // MODO CHROME (O CÉREBRO): Envio Inquebrável para a API
-            setInterval(() => {
+            // MODO CHROME (O CÉREBRO): Loop Inteligente Anti-Gargalo
+            function sincronizarPainel() {
                 try {
-                    // BLINDAGEM MÁXIMA: Se houver sujeira no HD, o sistema anula em vez de travar a tela inteira!
                     const loadSafe = (k, def) => { try { return JSON.parse(localStorage.getItem(k)) || def; } catch(e) { return def; } };
 
                     const estadoVisual = {
@@ -2684,20 +2683,27 @@
                         potes: loadSafe('diretoria_fila_potes', []),
                         layout: loadSafe('diretoria_rank_layout', {"gifters":"completo","gifts":"completo","likes":"completo"})
                     };
+
                     fetch(urlSync, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(estadoVisual)
-                    }).catch(()=>{});
-                } catch(err) {}
-            }, 1500);
+                    })
+                    .then(() => { setTimeout(sincronizarPainel, 1500); }) // Aguarda terminar para disparar o próximo!
+                    .catch(() => { setTimeout(sincronizarPainel, 1500); });
+                } catch(err) {
+                    setTimeout(sincronizarPainel, 1500);
+                }
+            }
+            sincronizarPainel(); // Aciona o motor
+
         } else {
             // MODO OBS / TIKTOK STUDIO (O ESCRAVO DA API)
             window.NUVEM_OBS = {};
-            setInterval(() => {
-                // A forma limpa e oficial: SEM alterar a URL (pois o Firebase rejeita links modificados)
-                // e usando apenas { cache: 'no-store' } para obrigar o TikTok Studio a baixar o novo.
-                fetch(urlSync, { cache: 'no-store' })
+
+            function lerNuvemOBS() {
+                // cache: 'reload' é a função nativa invencível do navegador para furar cache sem gerar bloqueios de segurança
+                fetch(urlSync, { method: 'GET', cache: 'reload' })
                 .then(r => r.json())
                 .then(st => {
                     if (st) {
@@ -2713,11 +2719,13 @@
 
                         if(st.sort && st.sort.id) window.NUVEM_OBS['diretoria_sorteio_disparo'] = JSON.stringify(st.sort);
                         if(st.midia && st.midia.id) window.NUVEM_OBS['diretoria_midia_disparo'] = JSON.stringify(st.midia);
-
-                        // NOTA: Removido o salvamento local do OBS. Ele viverá 100% em tempo real da nuvem!
                     }
-                }).catch(()=>{});
-            }, 1000);
+                    setTimeout(lerNuvemOBS, 1000); // O OBS só pede os dados novos DEPOIS que ele terminar de ler os antigos!
+                }).catch(() => {
+                    setTimeout(lerNuvemOBS, 1000); // Tenta novamente de forma segura se a rede piscar
+                });
+            }
+            lerNuvemOBS(); // Aciona o motor
         }
 
     </script>
