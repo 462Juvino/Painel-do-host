@@ -2226,7 +2226,7 @@
 
                 let lastSorteioId = 0;
                 setInterval(() => {
-                    const disparo = JSON.parse(localStorage.getItem('diretoria_sorteio_disparo'));
+                    const disparo = JSON.parse(getSafeMem('diretoria_sorteio_disparo'));
                     if (disparo && disparo.id !== lastSorteioId) {
                         lastSorteioId = disparo.id;
                         const area = document.getElementById('sorteio-area');
@@ -2309,7 +2309,7 @@
 
                 // 3. Atualizador Inteligente (Ouve as mudanças sem destruir a animação)
                 setInterval(() => {
-                    const dados = JSON.parse(localStorage.getItem('diretoria_letreiro')) || { itens: [], sep: "⭐", vel: 60 };
+                    const dados = JSON.parse(getSafeMem('diretoria_letreiro')) || { itens: [], sep: "⭐", vel: 60 };
                     const estadoAtual = JSON.stringify(dados);
 
                     // SE NINGUÉM FOI ADICIONADO OU REMOVIDO, ELE NÃO FAZ NADA!
@@ -2358,7 +2358,7 @@
 
                 let lastDisparoId = 0;
                 setInterval(() => {
-                    const disparo = JSON.parse(localStorage.getItem('diretoria_midia_disparo'));
+                    const disparo = JSON.parse(getSafeMem('diretoria_midia_disparo'));
                     if (disparo && disparo.id !== lastDisparoId) {
                         lastDisparoId = disparo.id;
                         const container = document.getElementById('midia-player');
@@ -2485,7 +2485,7 @@
                     let lastPoteId = 0;
                     // Rodando a 200ms para sugar os presentes rapidamente e não engasgar
                     setInterval(() => {
-                        let fila = JSON.parse(localStorage.getItem('diretoria_fila_potes')) || [];
+                        let fila = JSON.parse(getSafeMem('diretoria_fila_potes')) || [];
                         fila.forEach(item => {
                             if (item.id > lastPoteId) {
                                 lastPoteId = item.id;
