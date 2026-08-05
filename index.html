@@ -2695,10 +2695,9 @@
             // MODO OBS / TIKTOK STUDIO (O ESCRAVO DA API)
             window.NUVEM_OBS = {};
             setInterval(() => {
-                // A CHAVE MESTRA: Usar "?_cb=tempo" burla o cache do TikTok Studio garantidamente SEM acionar os bloqueios de segurança (CORS) do Firebase!
-                const urlSemCache = urlSync + '?_cb=' + new Date().getTime();
-
-                fetch(urlSemCache, { cache: 'no-store' })
+                // A forma limpa e oficial: SEM alterar a URL (pois o Firebase rejeita links modificados)
+                // e usando apenas { cache: 'no-store' } para obrigar o TikTok Studio a baixar o novo.
+                fetch(urlSync, { cache: 'no-store' })
                 .then(r => r.json())
                 .then(st => {
                     if (st) {
@@ -2715,12 +2714,7 @@
                         if(st.sort && st.sort.id) window.NUVEM_OBS['diretoria_sorteio_disparo'] = JSON.stringify(st.sort);
                         if(st.midia && st.midia.id) window.NUVEM_OBS['diretoria_midia_disparo'] = JSON.stringify(st.midia);
 
-                        // Atualiza o HD local silenciosamente para o próximo F5 ser instantâneo e não piscar "Aguardando"
-                        try {
-                            localStorage.setItem('diretoria_rankings', window.NUVEM_OBS['diretoria_rankings']);
-                            localStorage.setItem('diretoria_users_meta', window.NUVEM_OBS['diretoria_users_meta']);
-                            localStorage.setItem('diretoria_meta_like', window.NUVEM_OBS['diretoria_meta_like']);
-                        } catch(e) {}
+                        // NOTA: Removido o salvamento local do OBS. Ele viverá 100% em tempo real da nuvem!
                     }
                 }).catch(()=>{});
             }, 1000);
