@@ -1662,8 +1662,8 @@
         cacheSys.vips = JSON.parse(localStorage.getItem('diretoria_vips_config')) || [];
 
         function processarEventoTikTok(jsonData) {
-            // BLINDAGEM MÁXIMA: O link do OBS é proibido de processar a live. Ele é apenas uma tela escrava.
-            if (new URLSearchParams(window.location.search).get('view')) return;
+            // OBS 100% INDEPENDENTE: Agora ele processa a live e cria a memória em tempo real!
+            const isOBS = new URLSearchParams(window.location.search).get('view') !== null;
 
             const event = jsonData.event;
             const data = jsonData.data;
@@ -1761,7 +1761,7 @@
                     if (moedasGastas >= moedasMinimas) podeFalar = true;
                 }
 
-                if (lerChatAtivo && podeFalar && !verificaPalavrao(msg)) {
+                if (!isOBS && lerChatAtivo && podeFalar && !verificaPalavrao(msg)) {
                     let textoLimpo = msg.replace(/😂|🤣/g, " rindo ").replace(/❤️|😍/g, " coração ");
                     const regexEmoji = /[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu;
                     let nomeSemEmoji = user.replace(regexEmoji, '').trim();
@@ -1828,7 +1828,7 @@
                 maioresPresentes = maioresPresentes.slice(0, 20);
                 memDirty.maiores = true;
 
-                if (document.getElementById('ler-presentes').checked && !narradorPausado && !usuariosMutados.has(user)) {
+                if (!isOBS && document.getElementById('ler-presentes') && document.getElementById('ler-presentes').checked && !narradorPausado && !usuariosMutados.has(user)) {
                     falar(`Muito obrigado ${user} por enviar ${repeatCount} ${giftName}`);
                 }
             }
@@ -1840,7 +1840,7 @@
                 memDirty.metaL = true;
                 if (document.getElementById('meta-like-atual')) document.getElementById('meta-like-atual').value = cacheSys.metaLike.atual;
 
-                if (document.getElementById('ler-likes').checked && !narradorPausado && !usuariosMutados.has(user)) {
+                if (!isOBS && document.getElementById('ler-likes') && document.getElementById('ler-likes').checked && !narradorPausado && !usuariosMutados.has(user)) {
                     falar(`Muito obrigado ${user} pelas curtidas!`);
                 }
             }
@@ -1947,10 +1947,8 @@
         window.onload = () => {
             if (verificarAcesso()) {
                 console.log("✅ Acesso RDM Validado.");
-                const isOBS = new URLSearchParams(window.location.search).get('view');
-                if (!isOBS) {
-                    setInterval(verificarEConectar, 2000); // O OBS É SURDO. SÓ O PAINEL CONECTA NO TIKFINITY!
-                }
+                // AGORA O OBS É INDEPENDENTE! Ele mesmo conecta na Nuvem/TikFinity e escuta os presentes em tempo real.
+                setInterval(verificarEConectar, 2000);
                 carregarInterfaceLetreiro();
             }
         };
@@ -1999,13 +1997,13 @@
             `;
             document.head.insertAdjacentHTML('beforeend', estiloRanking);
 
-            // Loop estável de atualização de 1 segundo focado ÚNICA E EXCLUSIVAMENTE NA NUVEM!
+            // Loop estável de atualização de 1 segundo focado na RAM LOCAL para Rankings, e NUVEM para Layout!
             setInterval(() => {
                 let html = '';
                 const topLimit = 5;
 
-                // Garante que a tela comece vazia e só preencha quando o Firebase mandar o sinal verde
-                const rankData = JSON.parse(getSafeMem('diretoria_rankings')) || { diario: { gifters: {}, likes: {} } };
+                // RANKINGS AGORA SÃO 100% INDEPENDENTES (Vêm da memória local do TikFinity). A Nuvem dita apenas o Layout!
+                const rankData = bancoRankings;
                 const dbHoje = rankData['diario'] || { gifters: {}, likes: {} };
                 const layoutCfg = JSON.parse(getSafeMem('diretoria_rank_layout')) || {gifters:'completo', gifts:'completo', likes:'completo'};
 
@@ -2028,7 +2026,7 @@
                     html += `</div>`;
                 }
                 else if (viewMode === 'ranking_gifts') {
-                    const maiores = JSON.parse(lerMemoriaOBS('diretoria_maiores_presentes')) || [];
+                    const maiores = maioresPresentes;
                     const arr = maiores.slice(0, topLimit);
                     html += `<div class="widget-title">🔥 Maior Presente Isolado</div>`;
                     html += `<div style="display: flex; flex-direction: column; align-items: flex-start;">`;
@@ -2083,7 +2081,7 @@
                 }
                 else if (viewMode === 'ativos') {
                     html += `<div class="widget-title">🟢 Auditório (Pessoas Ativas na Live)</div>`;
-                    const ativos = JSON.parse(getSafeMem('diretoria_ativos')) || [];
+                    const ativos = Array.from(usuariosAtivosLive);
                     html += `<div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; font-family: sans-serif;">`;
                     ativos.slice(-25).reverse().forEach(nome => {
                         html += `<span style="background: rgba(0,0,0,0.85); color: white; padding: 6px 16px; border-radius: 20px; font-weight: bold; border: 1px solid #00f2fe; font-size:14px;">${nome}</span>`;
@@ -2130,7 +2128,7 @@
                     `;
                 }
                 else if (viewMode === 'podio_fas') {
-                    const metaL = JSON.parse(getSafeMem('diretoria_users_meta')) || {};
+                    const metaL = ramData.usersMeta;
                     // Filtra e organiza por Nível. Se empatar, usa ordem alfabética para não piscar!
                     const topFas = Object.entries(metaL)
                                          .filter(u => u[1].fLevel > 0)
@@ -2226,6 +2224,7 @@
 
                 let lastSorteioId = 0;
                 setInterval(() => {
+                    // Lendo da Nuvem Blindada
                     const disparo = JSON.parse(getSafeMem('diretoria_sorteio_disparo'));
                     if (disparo && disparo.id !== lastSorteioId) {
                         lastSorteioId = disparo.id;
@@ -2309,6 +2308,7 @@
 
                 // 3. Atualizador Inteligente (Ouve as mudanças sem destruir a animação)
                 setInterval(() => {
+                    // Lendo da Nuvem Blindada
                     const dados = JSON.parse(getSafeMem('diretoria_letreiro')) || { itens: [], sep: "⭐", vel: 60 };
                     const estadoAtual = JSON.stringify(dados);
 
@@ -2485,7 +2485,8 @@
                     let lastPoteId = 0;
                     // Rodando a 200ms para sugar os presentes rapidamente e não engasgar
                     setInterval(() => {
-                        let fila = JSON.parse(getSafeMem('diretoria_fila_potes')) || [];
+                        // POTES INDEPENDENTES: Suga os presentes da conexão direta do OBS
+                        let fila = ramData.filaPotes;
                         fila.forEach(item => {
                             if (item.id > lastPoteId) {
                                 lastPoteId = item.id;
@@ -2543,7 +2544,8 @@
                     const rdmUser = localStorage.getItem('rdm_user_tiktok') || localStorage.getItem('rdm_user') || 'visitante';
                     const rdmUserLimpo = rdmUser.replace(/[.#$[\]]/g, '_'); // Limpa os pontos do nome igual no salvamento
 
-                    fetch(`https://painel-do-host-default-rtdb.firebaseio.com/usuarios/${rdmUserLimpo}/diretoria_gerador_${idGerador}.json`)
+                    // Blindagem Anti-Cache Oficial para o Gerador
+                    fetch(`https://painel-do-host-default-rtdb.firebaseio.com/usuarios/${rdmUserLimpo}/diretoria_gerador_${idGerador}.json`, { cache: 'reload' })
                         .then(res => res.json())
                         .then(dadosNuvem => {
                             if (dadosNuvem) localStorage.setItem(`diretoria_gerador_${idGerador}`, JSON.stringify(dadosNuvem));
