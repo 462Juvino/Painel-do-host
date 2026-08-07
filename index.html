@@ -2691,20 +2691,20 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(estadoVisual)
                     })
-                    .then(() => { setTimeout(sincronizarPainel, 1500); }) // Aguarda terminar para disparar o próximo!
+                    .then(() => { setTimeout(sincronizarPainel, 1500); }) // Só envia o próximo quando terminar este!
                     .catch(() => { setTimeout(sincronizarPainel, 1500); });
                 } catch(err) {
                     setTimeout(sincronizarPainel, 1500);
                 }
             }
-            sincronizarPainel(); // Aciona o motor
+            sincronizarPainel(); // Aciona o motor do Painel
 
         } else {
             // MODO OBS / TIKTOK STUDIO (O ESCRAVO DA API)
             window.NUVEM_OBS = {};
 
             function lerNuvemOBS() {
-                // cache: 'reload' é a função nativa invencível do navegador para furar cache sem gerar bloqueios de segurança
+                // A FORÇA MÁXIMA OFICIAL: Usar cache 'reload' fura o cache do TikTok sem quebrar o Firebase (Erro 400).
                 fetch(urlSync, { method: 'GET', cache: 'reload' })
                 .then(r => r.json())
                 .then(st => {
@@ -2719,17 +2719,23 @@
                         window.NUVEM_OBS['diretoria_rank_layout'] = JSON.stringify(st.layout || {"gifters":"completo","gifts":"completo","likes":"completo"});
                         window.NUVEM_OBS['diretoria_fila_potes'] = JSON.stringify(st.potes || []);
 
+                        // Sincroniza Sorteios e Mídias em tempo real pelo ID do disparo
                         if(st.sort && st.sort.id) window.NUVEM_OBS['diretoria_sorteio_disparo'] = JSON.stringify(st.sort);
                         if(st.midia && st.midia.id) window.NUVEM_OBS['diretoria_midia_disparo'] = JSON.stringify(st.midia);
+
+                        try {
+                            localStorage.setItem('diretoria_rankings', window.NUVEM_OBS['diretoria_rankings']);
+                            localStorage.setItem('diretoria_users_meta', window.NUVEM_OBS['diretoria_users_meta']);
+                            localStorage.setItem('diretoria_meta_like', window.NUVEM_OBS['diretoria_meta_like']);
+                        } catch(e) {}
                     }
-                    setTimeout(lerNuvemOBS, 1000); // O OBS só pede os dados novos DEPOIS que ele terminar de ler os antigos!
+                    setTimeout(lerNuvemOBS, 1000); // Só busca de novo quando o Firebase responder!
                 }).catch(() => {
-                    setTimeout(lerNuvemOBS, 1000); // Tenta novamente de forma segura se a rede piscar
+                    setTimeout(lerNuvemOBS, 1000); // Em caso de engasgo da rede, tenta de novo sem travar a aba
                 });
             }
-            lerNuvemOBS(); // Aciona o motor
+            lerNuvemOBS(); // Aciona o motor do OBS
         }
-
     </script>
 </body>
 </html>
