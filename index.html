@@ -440,6 +440,13 @@
                         <div><strong style="color: white;">🟢 Auditório (Ativos)</strong><br><span style="color: #aaa; font-size: 12px;">Pessoas interagindo na live</span></div>
                         <button onclick="copiarLinkOBS('ativos')" style="background: #0088ff; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">📋 Copiar Link</button>
                     </div>
+
+                    <!-- Link: Super Fãs -->
+                    <div style="background: #222; padding: 15px; border-radius: 8px; border-left: 4px solid #9b59b6; display: flex; justify-content: space-between; align-items: center;">
+                        <div><strong style="color: white;">🌟 Super Fãs (Assinantes)</strong><br><span style="color: #aaa; font-size: 12px;">Ranking permanente de Membros VIP</span></div>
+                        <button onclick="copiarLinkOBS('super_fans')" style="background: #0088ff; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">📋 Copiar Link</button>
+                    </div>
+
                     <!-- Link: Mídias Interativas -->
                     <div style="background: #222; padding: 15px; border-radius: 8px; border-left: 4px solid #a855f7; display: flex; justify-content: space-between; align-items: center;">
                         <div><strong style="color: white;">🎭 Mídias Interativas</strong><br><span style="color: #aaa; font-size: 12px;">Áudios, Imagens e Vídeos de gatilho</span></div>
@@ -1515,11 +1522,11 @@
             // NOVOS RANKINGS DE METADADOS E AUDITÓRIO
             const ativos = JSON.parse(localStorage.getItem('diretoria_ativos')) || [];
 
-            // REGRA DOS 15 SEGUNDOS: Função que verifica se o usuário interagiu recentemente
+            // REGRA DE 1 MINUTO (60s): Função que verifica se o usuário interagiu recentemente
             const agora = Date.now();
             const usuarioEstaAtivo = (nome) => {
                 if (!ramData.lastInteraction || !ramData.lastInteraction[nome]) return false;
-                return (agora - ramData.lastInteraction[nome]) <= 15000;
+                return (agora - ramData.lastInteraction[nome]) <= 60000;
             };
 
             if(divFas) {
@@ -1696,9 +1703,16 @@
             // REGISTRA O RELÓGIO DA ÚLTIMA INTERAÇÃO PARA A REGRA DOS 15 SEGUNDOS
             ramData.lastInteraction[user] = Date.now();
 
-            // EXTRAÇÃO DE METADADOS (Níveis, Seguidor, Doador)
+            // EXTRAÇÃO DE METADADOS (Níveis, Seguidor, Doador, Super Fã)
             if (!ramData.usersMeta[user]) {
-                ramData.usersMeta[user] = { avatar: avatarUrl, fLevel: 0, gLevel: 0, isFollower: false, hasGifts: false };
+                ramData.usersMeta[user] = { avatar: avatarUrl, fLevel: 0, gLevel: 0, isFollower: false, hasGifts: false, isSuperFan: false };
+            }
+
+            // VERIFICAÇÃO DE SUPER FÃ (Assinante/Membro VIP do TikTok)
+            if (data.userIdentity && typeof data.userIdentity.isSubscriber !== 'undefined') {
+                ramData.usersMeta[user].isSuperFan = data.userIdentity.isSubscriber;
+            } else if (data.isSubscriber !== undefined) {
+                ramData.usersMeta[user].isSuperFan = (data.isSubscriber === true || data.isSubscriber === "true");
             }
 
             // Fã Clube e Gifter Level (Procura em todas as variáveis que o TikFinity pode mandar)
@@ -2021,11 +2035,11 @@
                 const dbHoje = rankData['diario'] || { gifters: {}, likes: {} };
                 const layoutCfg = JSON.parse(getSafeMem('diretoria_rank_layout')) || {gifters:'completo', gifts:'completo', likes:'completo'};
 
-                // REGRA DOS 15 SEGUNDOS PARA O OBS:
+                // REGRA DE 1 MINUTO (60s) PARA O OBS:
                 const nowOBS = Date.now();
                 const isUserActiveOBS = (nome) => {
                     if (!ramData.lastInteraction || !ramData.lastInteraction[nome]) return false;
-                    return (nowOBS - ramData.lastInteraction[nome]) <= 15000;
+                    return (nowOBS - ramData.lastInteraction[nome]) <= 60000;
                 };
 
                 if (viewMode === 'ranking_gifters') {
@@ -2096,6 +2110,30 @@
                         arr.forEach((item, index) => {
                             const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
                             html += `<div class="ranking-item" style="border-left-color: ${cor}; width: 100%; box-sizing: border-box;"><div class="pos" style="color: ${cor}">#${index + 1}</div><img class="avatar" src="${item[1].avatar}"><div class="info"><div class="name">${item[0]}</div></div><div class="coins" style="color: #ff4757;">❤️ ${item[1].pontos}</div></div>`;
+                        });
+                    }
+                    html += `</div>`;
+                }
+                else if (viewMode === 'super_fans') {
+                    const metaL = ramData.usersMeta; // Lê a memória independente
+                    // Filtra apenas Super Fãs e NÃO EXIGE ATIVIDADE DE TEMPO! Fica congelado.
+                    // Organizado em ordem decrescente pelo Nível de Fã Comum.
+                    const arr = Object.entries(metaL)
+                                      .filter(u => u[1].isSuperFan)
+                                      .sort((a,b) => (b[1].fLevel - a[1].fLevel) || a[0].localeCompare(b[0]))
+                                      .slice(0, topLimit);
+
+                    html += `<div class="widget-title">🌟 Super Fãs VIPs</div>`;
+                    html += `<div style="display: flex; flex-direction: column; align-items: flex-start;">`;
+                    if (layoutCfg.likes === 'foto') { // Respeita a mesma escolha do layout de TapTap
+                        arr.forEach((item, index) => {
+                            const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
+                            html += `<div class="ranking-item" style="border-left-color: ${cor}; width: fit-content; padding-right: 20px;"><div class="pos" style="color: ${cor}">#${index + 1}</div><img class="avatar" style="margin-right: 15px; margin-bottom: 0;" src="${item[1].avatar}"><div class="coins" style="color: #00f2fe;">Lvl ${item[1].fLevel}</div></div>`;
+                        });
+                    } else {
+                        arr.forEach((item, index) => {
+                            const cor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'white';
+                            html += `<div class="ranking-item" style="border-left-color: ${cor}; width: 100%; box-sizing: border-box;"><div class="pos" style="color: ${cor}">#${index + 1}</div><img class="avatar" src="${item[1].avatar}"><div class="info"><div class="name">${item[0]}</div></div><div class="coins" style="color: #00f2fe;">Lvl ${item[1].fLevel}</div></div>`;
                         });
                     }
                     html += `</div>`;
