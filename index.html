@@ -2724,6 +2724,8 @@
                 let filaExecucao = [];
                 let tocando = false;
 
+                let erroGeminiMostrado = false; // Fusível para não flodar a tela
+
                 async function pensarComGemini(prompt, cfg) {
                     if (!cfg.gemini) return "Esqueceram de me dar o cérebro. Cadê a chave da API?";
                     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${cfg.gemini}`;
@@ -2732,15 +2734,21 @@
                         const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
                         const data = await res.json();
 
-                        // NOVO: Se o Google mandar um erro, ele avisa no painel F12!
+                        // Captura o erro do Google e trava para você conseguir ler
                         if (data.error) {
-                            console.error("❌ ERRO DO GOOGLE GEMINI:", data.error.message);
+                            if (!erroGeminiMostrado) {
+                                console.error("❌ O GOOGLE RECUSOU A MENSAGEM. MOTIVO:", data.error.message);
+                                erroGeminiMostrado = true;
+                            }
                             return "Mestre, a minha chave do Google está dando erro.";
                         }
 
                         return data.candidates[0].content.parts[0].text.replace(/[*#]/g, '');
                     } catch (e) {
-                        console.error("❌ ERRO FATAL NO JAVASCRIPT:", e);
+                        if (!erroGeminiMostrado) {
+                            console.error("❌ ERRO DE REDE/CONEXÃO:", e.message || e);
+                            erroGeminiMostrado = true;
+                        }
                         return "Tive um branco de memória agora.";
                     }
                 }
