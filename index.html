@@ -184,6 +184,7 @@
         <button class="nav-btn" onclick="abrirAba('aba-metas')">🎯 Metas ao Vivo</button>
         <button class="nav-btn" onclick="abrirAba('aba-sorteio')">🎟️ Sorteio (Roleta)</button>
         <button class="nav-btn" onclick="abrirAba('aba-geradores')">📺 Telas Gerador PRO</button>
+        <button class="nav-btn" onclick="abrirAba('aba-live-auto')">🤖 Live Auto (Boas-Vindas)</button>
         <button class="nav-btn" onclick="abrirAba('aba-links')">🔗 Links (OBS/TikTok)</button>
     </div>
 
@@ -411,6 +412,62 @@
             </div>
         </div>
 
+        <!-- NOVA ABA: LIVE AUTO (CÉREBRO NPC + GITHUB) -->
+        <div id="aba-live-auto" class="tab-section">
+            <div class="card">
+                <h3 style="margin: 0 0 5px 0; color: #00f2fe;">🤖 Cérebro NPC (Live Auto)</h3>
+                <p style="font-size: 13px; color: #ccc; margin-bottom: 20px;">Gerencie as respostas inteligentes, vídeos hospedados na nuvem e a voz da IA.</p>
+
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 15px; color: #2ed573; margin-bottom: 20px; font-weight: bold; background: #111; padding: 15px; border-radius: 8px; border: 1px solid #2ed573;">
+                    <input type="checkbox" id="live-auto-ativo" onchange="salvarLiveAuto()" style="width: 20px; height: 20px;"> LIGAR CÉREBRO NPC
+                </label>
+
+                <!-- VÍDEOS NA NUVEM (GITHUB) -->
+                <div style="background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444; margin-bottom: 15px;">
+                    <h4 style="margin: 0 0 5px 0; color: #f39c12;">☁️ Repositório de Vídeos (GitHub)</h4>
+                    <p style="font-size: 11px; color: #aaa; margin-bottom: 10px;">Cole o link raiz da pasta do seu GitHub onde os vídeos estão hospedados. O sistema buscará automaticamente pelos arquivos: <strong>@usuario_geral.mp4, @usuario_respostas.mp4, @usuario_bravo.mp4 e @usuario_rosa.mp4</strong></p>
+                    <input type="text" id="live-auto-github" placeholder="Ex: https://raw.githubusercontent.com/SeuUsuario/SeuRepo/main/videos" onchange="salvarLiveAuto()" style="width: 100%; box-sizing: border-box; background: #111; border: 1px solid #555; color: white; padding: 8px; border-radius: 4px;">
+                </div>
+
+                <!-- CONFIGURAÇÃO DA INTELIGÊNCIA -->
+                <div style="background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444;">
+                    <h4 style="margin: 0 0 10px 0; color: #a855f7;">🧠 Cérebro e Fala</h4>
+
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; flex: 1;">
+                            Palavra-Chave (Responder chat):
+                            <input type="text" id="live-auto-keyword" value="kaveirinha" onchange="salvarLiveAuto()" style="margin-top: 5px; background: #111; border: 1px solid #00f2fe; color: white; padding: 8px; border-radius: 4px;">
+                        </label>
+                        <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; flex: 2;">
+                            Chave API Gemini (Google):
+                            <span style="font-size: 10px;"><a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#00f2fe;">Pegue sua chave gratuita aqui</a></span>
+                            <input type="password" id="live-auto-gemini" placeholder="Cole sua API Key aqui..." onchange="salvarLiveAuto()" style="margin-top: 5px; background: #111; border: 1px solid #555; color: white; padding: 8px; border-radius: 4px;">
+                        </label>
+                    </div>
+
+                    <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; margin-bottom: 10px;">
+                        Personalidade da IA:
+                        <input type="text" id="live-auto-persona" value="Você é sarcástico. Responda em no máximo 2 frases." onchange="salvarLiveAuto()" style="margin-top: 5px; background: #111; border: 1px solid #555; color: white; padding: 8px; border-radius: 4px;">
+                    </label>
+
+                    <div style="display: flex; gap: 10px;">
+                        <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; flex: 1;">
+                            Modo da Voz:
+                            <select id="live-auto-modo" onchange="salvarLiveAuto()" style="margin-top: 5px; background: #111; border: 1px solid #555; color: white; padding: 8px; border-radius: 4px;">
+                                <option value="local">IA Clone Local (.EXE)</option>
+                                <option value="nativo">Padrão (Mecânica/Sem Programa)</option>
+                            </select>
+                        </label>
+                        <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; flex: 1;">
+                            Porta do Clone Local (Link do CMD):
+                            <input type="text" id="live-auto-api" value="http://127.0.0.1:8020/gerar" onchange="salvarLiveAuto()" style="margin-top: 5px; background: #111; border: 1px solid #555; color: white; padding: 8px; border-radius: 4px;">
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
         <div id="aba-links" class="tab-section">
             <div class="card">
                 <h3 style="color: #00f2fe; margin-top: 0; margin-bottom: 15px;">🔗 Links de Captura (OBS / TikTok Studio)</h3>
@@ -445,6 +502,12 @@
                     <div style="background: #222; padding: 15px; border-radius: 8px; border-left: 4px solid #9b59b6; display: flex; justify-content: space-between; align-items: center;">
                         <div><strong style="color: white;">🌟 Super Fãs (Assinantes)</strong><br><span style="color: #aaa; font-size: 12px;">Ranking permanente de Membros VIP</span></div>
                         <button onclick="copiarLinkOBS('super_fans')" style="background: #0088ff; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">📋 Copiar Link</button>
+                    </div>
+
+                    <!-- Link: Live Auto -->
+                    <div style="background: #222; padding: 15px; border-radius: 8px; border-left: 4px solid #00ffff; display: flex; justify-content: space-between; align-items: center;">
+                        <div><strong style="color: white;">🤖 Live Auto (Entradas)</strong><br><span style="color: #aaa; font-size: 12px;">Vídeo + Voz de boas-vindas</span></div>
+                        <button onclick="copiarLinkOBS('live_auto')" style="background: #0088ff; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">📋 Copiar Link</button>
                     </div>
 
                     <!-- Link: Mídias Interativas -->
@@ -1242,7 +1305,9 @@
         function carregarVozes() {
             const vozesBrutas = window.speechSynthesis.getVoices();
             const seletor = document.getElementById('seletor-vozes');
-            seletor.innerHTML = '';
+            const seletorAuto = document.getElementById('live-auto-voz');
+            if (seletor) seletor.innerHTML = '';
+            if (seletorAuto) seletorAuto.innerHTML = '';
             vozesFiltradas = [];
 
             vozesBrutas.forEach((voz) => {
@@ -1262,9 +1327,42 @@
                     }
 
                     option.textContent = `${emoji} ${voz.name} (${voz.lang})`;
-                    seletor.appendChild(option);
+                    if (seletor) seletor.appendChild(option);
+
+                    if (seletorAuto) {
+                        const optAuto = document.createElement('option');
+                        optAuto.value = vozesFiltradas.length - 1;
+                        optAuto.textContent = option.textContent;
+                        seletorAuto.appendChild(optAuto);
+                    }
                 }
             });
+            carregarLiveAuto(); // Chama a restauração dos dados na tela
+        }
+
+        function salvarLiveAuto() {
+            const conf = {
+                ativo: document.getElementById('live-auto-ativo').checked,
+                github: document.getElementById('live-auto-github').value, // NOVO
+                keyword: document.getElementById('live-auto-keyword').value,
+                gemini: document.getElementById('live-auto-gemini').value,
+                persona: document.getElementById('live-auto-persona').value,
+                modo: document.getElementById('live-auto-modo').value,
+                apiLocal: document.getElementById('live-auto-api').value
+            };
+            localStorage.setItem('diretoria_liveauto_config', JSON.stringify(conf));
+        }
+        function carregarLiveAuto() {
+            const conf = JSON.parse(localStorage.getItem('diretoria_liveauto_config'));
+            if (conf) {
+                if(document.getElementById('live-auto-ativo')) document.getElementById('live-auto-ativo').checked = conf.ativo;
+                if(document.getElementById('live-auto-github')) document.getElementById('live-auto-github').value = conf.github || ''; // NOVO
+                if(document.getElementById('live-auto-keyword')) document.getElementById('live-auto-keyword').value = conf.keyword || 'kaveirinha';
+                if(document.getElementById('live-auto-gemini')) document.getElementById('live-auto-gemini').value = conf.gemini || '';
+                if(document.getElementById('live-auto-persona')) document.getElementById('live-auto-persona').value = conf.persona || '';
+                if(document.getElementById('live-auto-modo')) document.getElementById('live-auto-modo').value = conf.modo || 'local';
+                if(document.getElementById('live-auto-api')) document.getElementById('live-auto-api').value = conf.apiLocal || 'http://127.0.0.1:8020/gerar';
+            }
         }
 
         // O navegador às vezes demora um tempinho para baixar a lista de vozes
@@ -1680,9 +1778,10 @@
             rastreioSorteio: JSON.parse(localStorage.getItem('diretoria_rastreio_sorteio')) || {},
             filaPotes: JSON.parse(localStorage.getItem('diretoria_fila_potes')) || [],
             usersMeta: JSON.parse(localStorage.getItem('diretoria_users_meta')) || {},
-            lastInteraction: {} // RELÓGIO DE ATIVIDADE DOS 15 SEGUNDOS
+            lastInteraction: {},
+            filaLiveAuto: JSON.parse(localStorage.getItem('diretoria_fila_liveauto')) || []
         };
-        let memDirty = { ativos: false, vistos: false, rastreio: false, potes: false, metaG: false, metaL: false, maiores: false, meta: false };
+        let memDirty = { ativos: false, vistos: false, rastreio: false, potes: false, metaG: false, metaL: false, maiores: false, meta: false, liveauto: false };
 
         setInterval(() => {
             cacheSys.midias = JSON.parse(localStorage.getItem('diretoria_midias_config')) || [];
@@ -1705,9 +1804,31 @@
             const user = data.nickname || data.uniqueId || "User";
             const avatarUrl = data.profilePictureUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${user}`;
 
+            let isJoin = false;
             if (!usuariosAtivosLive.has(user)) {
                 usuariosAtivosLive.add(user);
                 localStorage.setItem('diretoria_ativos', JSON.stringify(Array.from(usuariosAtivosLive)));
+                isJoin = true;
+            }
+            if (event === "join" || event === "member") isJoin = true;
+
+            // GATILHO DA ENTRADA AUTOMÁTICA
+            if (isJoin && !isOBS) {
+                let confAuto = JSON.parse(localStorage.getItem('diretoria_liveauto_config'));
+                if (confAuto && confAuto.ativo) {
+                    let textoFormatado = (confAuto.texto || "{nome}").replace(/{nome}/g, user);
+                    ramData.filaLiveAuto.push({
+                        id: Date.now() + Math.random(),
+                        nome: user,
+                        texto: textoFormatado,
+                        url: confAuto.url || "",
+                        modo: confAuto.modo || "nativo",
+                        apiLocal: confAuto.apiLocal || "http://127.0.0.1:8020/gerar",
+                        vozIndex: confAuto.vozIndex || 0
+                    });
+                    if (ramData.filaLiveAuto.length > 50) ramData.filaLiveAuto.shift();
+                    memDirty.liveauto = true;
+                }
             }
 
             if (!ramData.ativosObj[user]) {
@@ -1774,6 +1895,37 @@
             if (event === "chat") {
                 const msg = data.comment || "";
                 const msgLimpa = msg.toLowerCase().trim();
+
+                // ==========================================
+                // LÓGICA DO NPC (PALAVRA-CHAVE E FLOOD)
+                // ==========================================
+                let confAuto = JSON.parse(localStorage.getItem('diretoria_liveauto_config'));
+                if (confAuto && confAuto.ativo && confAuto.keyword) {
+                    const key = confAuto.keyword.toLowerCase().trim();
+
+                    // Só processa se a pessoa escreveu a palavra-chave e algo a mais!
+                    if (msgLimpa.includes(key) && msgLimpa.length > key.length + 2) {
+
+                        // Sistema Anti-Flood (Conta mensagens nos últimos 30s)
+                        if (!ramData.floodControl) ramData.floodControl = {};
+                        if (!ramData.floodControl[user]) ramData.floodControl[user] = 0;
+                        ramData.floodControl[user]++;
+
+                        setTimeout(() => { ramData.floodControl[user]--; }, 30000); // Limpa após 30s
+
+                        let isFlood = ramData.floodControl[user] > 3; // Mais de 3 mensagens em 30s = BRONCA!
+
+                        ramData.filaLiveAuto.push({
+                            id: Date.now() + Math.random(),
+                            nome: user,
+                            pergunta: msg,
+                            flood: isFlood,
+                            tipo: "chat"
+                        });
+                        if (ramData.filaLiveAuto.length > 20) ramData.filaLiveAuto.shift();
+                        memDirty.liveauto = true;
+                    }
+                }
 
                 // Cria um código único para a mensagem. Se já processou nos últimos segundos, ignora!
                 const hashMsg = user + ":" + msgLimpa;
@@ -1901,6 +2053,7 @@
             if (memDirty.metaL) { localStorage.setItem('diretoria_meta_like', JSON.stringify(cacheSys.metaLike)); memDirty.metaL = false; }
             if (memDirty.maiores) { localStorage.setItem('diretoria_maiores_presentes', JSON.stringify(maioresPresentes)); memDirty.maiores = false; }
             if (memDirty.meta) { localStorage.setItem('diretoria_users_meta', JSON.stringify(ramData.usersMeta)); memDirty.meta = false; }
+            if (memDirty.liveauto) { localStorage.setItem('diretoria_fila_liveauto', JSON.stringify(ramData.filaLiveAuto)); memDirty.liveauto = false; }
         }, 1500);
         // ==========================================
         // SISTEMA DO LETREIRO ANIMADO (COM FOTO)
@@ -2480,6 +2633,119 @@
                 }, 500);
             }
 
+            if (viewMode === 'live_auto') {
+                document.body.innerHTML = `
+                    <div style="width: 100vw; height: 100vh; position: relative; overflow: hidden; background: transparent;">
+                        <!-- Vídeo que fica sempre em Loop no fundo (Geral) -->
+                        <video id="vid-geral" autoplay loop muted style="position: absolute; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); opacity: 1; transition: opacity 0.3s;"></video>
+                        <!-- Vídeo que sobrepõe quando a IA age (Falando, Bravo, Rosa, etc) -->
+                        <video id="vid-acao" autoplay loop muted style="position: absolute; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); opacity: 0; transition: opacity 0.3s;"></video>
+                    </div>`;
+
+                let lastAutoId = 0;
+                let filaExecucao = [];
+                let tocando = false;
+
+                async function pensarComGemini(prompt, cfg) {
+                    if (!cfg.gemini) return "Esqueceram de me dar o cérebro. Cadê a chave da API?";
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${cfg.gemini}`;
+                    const body = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 60 } };
+                    try {
+                        const res = await fetch(url, { method: 'POST', body: JSON.stringify(body) });
+                        const data = await res.json();
+                        return data.candidates[0].content.parts[0].text.replace(/[*#]/g, '');
+                    } catch (e) { return "Minha mente falhou agora."; }
+                }
+
+                function gerarAudioCloneLocal(texto, urlApi) {
+                    return new Promise(async (resolve) => {
+                        try {
+                            const res = await fetch(`${urlApi}?text=${encodeURIComponent(texto)}`);
+                            if (!res.ok) throw new Error();
+                            const blob = await res.blob();
+                            const audio = document.createElement('audio');
+                            audio.src = URL.createObjectURL(blob);
+                            resolve(audio);
+                        } catch (e) { resolve(null); }
+                    });
+                }
+
+                setInterval(() => {
+                    const cfg = JSON.parse(getSafeMem('diretoria_liveauto_config')) || {};
+                    const hostArroba = (getSafeMem('diretoria_tt_user') || 'usuario').replace('@', ''); // Pega o nome do dono da live (ex: joao)
+
+                    // Mantém o vídeo base (@usuario_geral.mp4) sempre rodando no fundo
+                    const vidGeral = document.getElementById('vid-geral');
+                    if (vidGeral && cfg.github) {
+                        const urlGeral = `${cfg.github}/@${hostArroba}_geral.mp4`;
+                        if (vidGeral.getAttribute('src') !== urlGeral) vidGeral.src = urlGeral;
+                    }
+
+                    let filaNuvem = JSON.parse(getSafeMem('diretoria_fila_liveauto')) || [];
+                    filaNuvem.forEach(item => {
+                        if (item.id > lastAutoId) { lastAutoId = item.id; filaExecucao.push(item); }
+                    });
+                    if (!tocando && filaExecucao.length > 0) tocarProximoAuto();
+                }, 500);
+
+                async function tocarProximoAuto() {
+                    tocando = true;
+                    let atual = filaExecucao.shift();
+                    const cfg = JSON.parse(getSafeMem('diretoria_liveauto_config')) || {};
+                    const hostArroba = (getSafeMem('diretoria_tt_user') || 'usuario').replace('@', '');
+                    const vidGeral = document.getElementById('vid-geral');
+                    const vidAcao = document.getElementById('vid-acao');
+
+                    let promptIA = `${cfg.persona}\n\n`;
+                    let estadoVideo = "respostas"; // Estado padrão da ação
+
+                    if (atual.tipo === "chat") {
+                        if (atual.flood) {
+                            estadoVideo = "bravo";
+                            promptIA += `O usuário ${atual.nome} enviou mensagens repetidas (flood) no chat: "${atual.pergunta}". Dê uma bronca engraçada nele.`;
+                        } else {
+                            promptIA += `O usuário ${atual.nome} disse: "${atual.pergunta}". Dê uma resposta rápida.`;
+                        }
+                    } else if (atual.tipo === "presente") {
+                        estadoVideo = atual.presenteNome.toLowerCase().replace(/[^a-z0-9]/g, ''); // Ex: rosa, leao
+                        promptIA += `O usuário ${atual.nome} acabou de enviar o presente: ${atual.presenteNome}. Agradeça com muita empolgação!`;
+                    }
+
+                    // 1. CHAMA O GEMINI
+                    let textoFinal = await pensarComGemini(promptIA, cfg);
+
+                    // 2. CHAMA O .EXE
+                    let audioPlayer = null;
+                    if (cfg.modo === 'local' && cfg.apiLocal) audioPlayer = await gerarAudioCloneLocal(textoFinal, cfg.apiLocal);
+                    if (!audioPlayer) audioPlayer = new SpeechSynthesisUtterance(textoFinal);
+
+                    // 3. ROTEIA O VÍDEO DA AÇÃO (ex: @joao_bravo.mp4 ou @joao_rosa.mp4)
+                    if (vidAcao && cfg.github) {
+                        vidAcao.src = `${cfg.github}/@${hostArroba}_${estadoVideo}.mp4`;
+
+                        // Garante que o vídeo da ação comece do início e apareça
+                        vidAcao.currentTime = 0;
+                        vidAcao.style.opacity = "1";
+                    }
+
+                    // 4. REPRODUZ
+                    const finalizar = () => {
+                        if (vidAcao) vidAcao.style.opacity = "0"; // Esconde a ação, revelando o "geral" no fundo
+                        setTimeout(() => { tocando = false; }, 800); // Respiro natural
+                    };
+
+                    if (audioPlayer instanceof SpeechSynthesisUtterance) {
+                        audioPlayer.onend = finalizar;
+                        audioPlayer.onerror = finalizar;
+                        window.speechSynthesis.speak(audioPlayer);
+                    } else {
+                        audioPlayer.onended = finalizar;
+                        audioPlayer.onerror = finalizar;
+                        audioPlayer.play().catch(finalizar);
+                    }
+                }
+            }
+
             // ===================================
             // POTES COM MOTOR FÍSICO 2D (Matter.js)
             // ===================================
@@ -2784,7 +3050,8 @@
                         midia: loadSafe('diretoria_midia_disparo', {}),
                         potes: loadSafe('diretoria_fila_potes', []),
                         layout: loadSafe('diretoria_rank_layout', {"gifters":"completo","gifts":"completo","likes":"completo"}),
-                        reload: loadSafe('diretoria_comando_reload', '0') // Envia o gatilho de F5
+                        reload: loadSafe('diretoria_comando_reload', '0'), // Envia o gatilho de F5
+                        liveauto: loadSafe('diretoria_fila_liveauto', []) // ENVIA A FILA DE BOAS VINDAS
                     };
 
                     fetch(urlSync, {
@@ -2811,14 +3078,21 @@
                 .then(r => r.json())
                 .then(st => {
                     if (st) {
-                        // 1. SISTEMA DE AUTO-F5 (RELOAD REMOTO)
+                        // 1. SISTEMA DE AUTO-F5 VIRTUAL (RELOAD REMOTO)
                         if (st.reload && st.reload !== '0') {
                             if (ultimaOrdemReload === null) {
                                 ultimaOrdemReload = st.reload; // Na primeira leitura, apenas registra
                             } else if (st.reload !== ultimaOrdemReload) {
-                                // O Painel clicou em "Zerar Tudo"! O link se auto-atualiza na mesma hora!
-                                window.location.reload(true);
-                                return;
+                                ultimaOrdemReload = st.reload; // Atualiza a trava para não entrar em loop
+
+                                // F5 VIRTUAL: Formata a RAM do OBS na marra sem usar o reload() bloqueado!
+                                bancoRankings.diario = { id: '', gifters: {}, likes: {} };
+                                ramData.usersMeta = {};
+                                ramData.ativosObj = {};
+                                ramData.lastInteraction = {};
+                                maioresPresentes = [];
+                                usuariosAtivosLive.clear();
+                                window.memoriaPodio = "FORCAR_INICIO"; // Destrava o Pódio
                             }
                         }
 
@@ -2832,9 +3106,10 @@
                         window.NUVEM_OBS['diretoria_rank_layout'] = JSON.stringify(st.layout || {"gifters":"completo","gifts":"completo","likes":"completo"});
                         window.NUVEM_OBS['diretoria_fila_potes'] = JSON.stringify(st.potes || []);
 
-                        // Sincroniza Sorteios e Mídias em tempo real pelo ID do disparo
+                        // Sincroniza Sorteios, Mídias e LIVE AUTO em tempo real!
                         if(st.sort && st.sort.id) window.NUVEM_OBS['diretoria_sorteio_disparo'] = JSON.stringify(st.sort);
                         if(st.midia && st.midia.id) window.NUVEM_OBS['diretoria_midia_disparo'] = JSON.stringify(st.midia);
+                        window.NUVEM_OBS['diretoria_fila_liveauto'] = JSON.stringify(st.liveauto || []);
 
                         try {
                             localStorage.setItem('diretoria_rankings', window.NUVEM_OBS['diretoria_rankings']);
