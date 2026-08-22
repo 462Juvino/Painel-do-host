@@ -462,6 +462,42 @@
                         </label>
                     </div>
                 </div>
+
+                <!-- NOVO: HISTÓRICO DA FILA EM TEMPO REAL -->
+                <div style="background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444; margin-top: 15px;">
+                    <h4 style="margin: 0 0 10px 0; color: #f39c12;">📜 Histórico de Ações (Fila do NPC)</h4>
+                    <p style="font-size: 11px; color: #aaa; margin-top: 0; margin-bottom: 10px;">Acompanhe o que a IA está gerando em tempo real.</p>
+                    <div id="log-fila-npc" style="height: 150px; background: #111; border: 1px solid #333; border-radius: 4px; padding: 10px; overflow-y: auto; font-size: 13px; color: #ccc; font-family: monospace;">
+                        <span style="color: #666;">Aguardando ações na live...</span>
+                    </div>
+                </div>
+
+                <!-- SCRIPT PARA ATUALIZAR O HISTÓRICO SOZINHO -->
+                <script>
+                    setInterval(() => {
+                        if (document.getElementById('aba-live-auto').classList.contains('active')) {
+                            const fila = JSON.parse(localStorage.getItem('diretoria_fila_liveauto')) || [];
+                            const logDiv = document.getElementById('log-fila-npc');
+                            if (logDiv) {
+                                if (fila.length === 0) {
+                                    logDiv.innerHTML = '<span style="color: #666;">Nenhuma ação na fila no momento...</span>';
+                                } else {
+                                    let html = '';
+                                    fila.slice().reverse().forEach(item => {
+                                        let cor = item.tipo === 'presente' ? '#2ed573' : (item.tipo === 'chat' ? '#00f2fe' : '#f39c12');
+                                        let icone = item.tipo === 'presente' ? '🎁' : (item.tipo === 'chat' ? '💬' : '👋');
+                                        let detalhe = item.tipo === 'presente' ? item.presenteNome : (item.tipo === 'chat' ? item.pergunta : 'Boas-vindas');
+                                        html += `<div style="margin-bottom: 8px; border-left: 3px solid ${cor}; padding-left: 8px; background: #1a1a1a; padding: 5px; border-radius: 4px;">
+                                            <strong style="color: white;">${item.nome}</strong>: <span style="color: ${cor};">${icone} ${detalhe}</span>
+                                        </div>`;
+                                    });
+                                    logDiv.innerHTML = html;
+                                }
+                            }
+                        }
+                    }, 1000);
+                </script>
+
             </div>
         </div>
 
@@ -1802,6 +1838,10 @@
             const user = data.nickname || data.uniqueId || "User";
             const avatarUrl = data.profilePictureUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${user}`;
 
+            // NOVO: Limpa Emojis e Pontuações para o Áudio do NPC sair perfeito
+            let nomeLimpoNPC = user.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').replace(/[^\w\s\u00C0-\u00FF]/g, '').trim();
+            if (nomeLimpoNPC === "") nomeLimpoNPC = "Amigo";
+
             let isJoin = false;
             if (!usuariosAtivosLive.has(user)) {
                 usuariosAtivosLive.add(user);
@@ -1824,11 +1864,11 @@
 
                             if (inatividadeMs <= 25000) {
                                 let baseTexto = document.getElementById('live-auto-texto') ? document.getElementById('live-auto-texto').value : "Seja bem vindo {nome}";
-                                let textoFormatado = baseTexto.replace(/{nome}/g, user);
+                                let textoFormatado = baseTexto.replace(/{nome}/g, nomeLimpoNPC); // Usa o nome limpo
 
                                 ramData.filaLiveAuto.push({
                                     id: Date.now() + Math.random(),
-                                    nome: user,
+                                    nome: nomeLimpoNPC, // Usa o nome limpo
                                     texto: textoFormatado,
                                     modo: checkAuto.modo || "local",
                                     apiLocal: checkAuto.apiLocal || "http://127.0.0.1:8020/gerar",
@@ -1932,8 +1972,8 @@
 
                             ramData.filaLiveAuto.push({
                                 id: Date.now() + Math.random(),
-                                nome: user,
-                                pergunta: perguntaReal, // Envia a pergunta limpa!
+                                nome: nomeLimpoNPC, // ANTES ERA user
+                                pergunta: perguntaReal,
                                 flood: isFlood,
                                 tipo: "chat"
                             });
@@ -1991,7 +2031,7 @@
                 if (confAutoGift && confAutoGift.ativo) {
                     ramData.filaLiveAuto.push({
                         id: Date.now() + Math.random(),
-                        nome: user,
+                        nome: nomeLimpoNPC, // ANTES ERA user
                         presenteNome: giftName,
                         tipo: "presente"
                     });
