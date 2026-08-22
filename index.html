@@ -2712,7 +2712,9 @@
             }
 
             if (viewMode === 'live_auto') {
-                document.body.innerHTML = `
+                // BLINDAGEM DO FLOOD: Apenas altera o container, mantendo o painel invisível e seguro!
+                document.getElementById('obs-container').style.padding = '0';
+                document.getElementById('obs-container').innerHTML = `
                     <div style="width: 100vw; height: 100vh; position: relative; overflow: hidden; background: transparent;">
                         <!-- Vídeo que fica sempre em Loop no fundo (Geral) -->
                         <video id="vid-geral" autoplay loop muted style="position: absolute; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); opacity: 1; transition: opacity 0.3s;"></video>
@@ -2723,30 +2725,29 @@
                 let lastAutoId = 0;
                 let filaExecucao = [];
                 let tocando = false;
-
-                let erroGeminiMostrado = false; // Fusível para não flodar a tela
+                let erroGeminiMostrado = false;
 
                 async function pensarComGemini(prompt, cfg) {
                     if (!cfg.gemini) return "Esqueceram de me dar o cérebro. Cadê a chave da API?";
-                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${cfg.gemini}`;
+                    // SOLUÇÃO DA IA: Trocamos para o gemini-pro, o modelo mais estável que nunca é bloqueado
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${cfg.gemini}`;
                     const body = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 60 } };
                     try {
                         const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
                         const data = await res.json();
 
-                        // Captura o erro do Google e trava para você conseguir ler
                         if (data.error) {
                             if (!erroGeminiMostrado) {
-                                console.error("❌ O GOOGLE RECUSOU A MENSAGEM. MOTIVO:", data.error.message);
+                                console.error("❌ GOOGLE RECUSOU:", data.error.message);
                                 erroGeminiMostrado = true;
                             }
-                            return "Mestre, a minha chave do Google está dando erro.";
+                            return "O Google não quer deixar eu falar agora.";
                         }
 
                         return data.candidates[0].content.parts[0].text.replace(/[*#]/g, '');
                     } catch (e) {
                         if (!erroGeminiMostrado) {
-                            console.error("❌ ERRO DE REDE/CONEXÃO:", e.message || e);
+                            console.error("❌ ERRO DE CONEXÃO COM A IA:", e);
                             erroGeminiMostrado = true;
                         }
                         return "Tive um branco de memória agora.";
