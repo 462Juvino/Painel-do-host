@@ -428,15 +428,20 @@
 
                     <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                         <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; flex: 1;">
-                            Palavra-Chave (Responder chat):
+                            Palavra-Chave (Chat):
                             <input type="text" id="live-auto-keyword" value="kaveirinha" onchange="salvarLiveAuto()" style="margin-top: 5px; background: #111; border: 1px solid #00f2fe; color: white; padding: 8px; border-radius: 4px;">
                         </label>
                         <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; flex: 2;">
-                            Chave API Gemini (Google):
-                            <span style="font-size: 10px;"><a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#00f2fe;">Pegue sua chave gratuita aqui</a></span>
+                            Chave API Gemini:
+                            <span style="font-size: 10px;"><a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#00f2fe;">Criar Chave Gratuita</a></span>
                             <input type="password" id="live-auto-gemini" placeholder="Cole sua API Key aqui..." onchange="salvarLiveAuto()" style="margin-top: 5px; background: #111; border: 1px solid #555; color: white; padding: 8px; border-radius: 4px;">
                         </label>
                     </div>
+
+                    <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; margin-bottom: 10px;">
+                        Texto de Boas-Vindas (Use <strong style="color: #00f2fe;">{nome}</strong>):
+                        <input type="text" id="live-auto-texto" value="Seja muito bem vindo à live, {nome}!" onchange="salvarLiveAuto()" style="margin-top: 5px; background: #111; border: 1px solid #555; color: white; padding: 8px; border-radius: 4px;">
+                    </label>
 
                     <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; margin-bottom: 10px;">
                         Personalidade da IA:
@@ -452,7 +457,7 @@
                             </select>
                         </label>
                         <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; flex: 1;">
-                            Porta do Clone Local (Link do CMD):
+                            Porta do Clone Local:
                             <input type="text" id="live-auto-api" value="http://127.0.0.1:8020/gerar" onchange="salvarLiveAuto()" style="margin-top: 5px; background: #111; border: 1px solid #555; color: white; padding: 8px; border-radius: 4px;">
                         </label>
                     </div>
@@ -1337,6 +1342,7 @@
             const conf = {
                 ativo: document.getElementById('live-auto-ativo').checked,
                 keyword: document.getElementById('live-auto-keyword').value,
+                texto: document.getElementById('live-auto-texto').value,
                 gemini: document.getElementById('live-auto-gemini').value,
                 persona: document.getElementById('live-auto-persona').value,
                 modo: document.getElementById('live-auto-modo').value,
@@ -1349,6 +1355,7 @@
             if (conf) {
                 if(document.getElementById('live-auto-ativo')) document.getElementById('live-auto-ativo').checked = conf.ativo;
                 if(document.getElementById('live-auto-keyword')) document.getElementById('live-auto-keyword').value = conf.keyword || 'kaveirinha';
+                if(document.getElementById('live-auto-texto')) document.getElementById('live-auto-texto').value = conf.texto || 'Seja muito bem vindo à live, {nome}!';
                 if(document.getElementById('live-auto-gemini')) document.getElementById('live-auto-gemini').value = conf.gemini || '';
                 if(document.getElementById('live-auto-persona')) document.getElementById('live-auto-persona').value = conf.persona || '';
                 if(document.getElementById('live-auto-modo')) document.getElementById('live-auto-modo').value = conf.modo || 'local';
@@ -1896,35 +1903,40 @@
                 const msgLimpa = msg.toLowerCase().trim();
 
                 // ==========================================
-                // LÓGICA DO NPC (PALAVRA-CHAVE E FLOOD)
+                // LÓGICA DO NPC (PALAVRA-CHAVE LIMPA E FLOOD)
                 // ==========================================
                 let confAuto = JSON.parse(localStorage.getItem('diretoria_liveauto_config'));
                 if (confAuto && confAuto.ativo && confAuto.keyword) {
                     const key = confAuto.keyword.toLowerCase().trim();
 
-                    // Só processa se a pessoa escreveu a palavra-chave e algo a mais!
-                    if (msgLimpa.includes(key) && msgLimpa.length > key.length + 2) {
+                    if (msgLimpa.includes(key)) {
+                        // Limpa a palavra-chave da pergunta para a IA não se confundir
+                        const regexKey = new RegExp(key, "ig");
+                        const perguntaReal = msg.replace(regexKey, "").trim();
 
-                        // Sistema Anti-Flood (Conta mensagens nos últimos 30s)
-                        if (!ramData.floodControl) ramData.floodControl = {};
-                        if (!ramData.floodControl[user]) ramData.floodControl[user] = 0;
-                        ramData.floodControl[user]++;
+                        if (perguntaReal.length > 0) { // Só responde se a pessoa perguntou algo além do nome!
+                            if (!ramData.floodControl) ramData.floodControl = {};
+                            if (!ramData.floodControl[user]) ramData.floodControl[user] = 0;
+                            ramData.floodControl[user]++;
 
-                        setTimeout(() => { ramData.floodControl[user]--; }, 30000); // Limpa após 30s
+                            setTimeout(() => { ramData.floodControl[user]--; }, 30000);
 
-                        let isFlood = ramData.floodControl[user] > 3; // Mais de 3 mensagens em 30s = BRONCA!
+                            let isFlood = ramData.floodControl[user] > 3;
 
-                        ramData.filaLiveAuto.push({
-                            id: Date.now() + Math.random(),
-                            nome: user,
-                            pergunta: msg,
-                            flood: isFlood,
-                            tipo: "chat"
-                        });
-                        if (ramData.filaLiveAuto.length > 20) ramData.filaLiveAuto.shift();
-                        memDirty.liveauto = true;
+                            ramData.filaLiveAuto.push({
+                                id: Date.now() + Math.random(),
+                                nome: user,
+                                pergunta: perguntaReal, // Envia a pergunta limpa!
+                                flood: isFlood,
+                                tipo: "chat"
+                            });
+                            if (ramData.filaLiveAuto.length > 20) ramData.filaLiveAuto.shift();
+                            memDirty.liveauto = true;
+                        }
                     }
                 }
+
+            // LÓGICA DE CHAT LOGO ABAIXO:
 
                 // Cria um código único para a mensagem. Se já processou nos últimos segundos, ignora!
                 const hashMsg = user + ":" + msgLimpa;
@@ -2735,8 +2747,8 @@
 
                     } else {
                         // ENTRADAS: IGNORA O GEMINI E CACHEIA O BEM-VINDO
-                        estadoVideo = "respostas";
-                        textoFinal = atual.texto || `Seja muito bem-vindo à live, ${atual.nome}!`;
+                        estadoVideo = "respostas"; // Usa o vídeo com a boca mexendo
+                        textoFinal = atual.texto; // Puxa o texto formatado corretamente com o nome
                     }
 
                     // 2. CHAMA O MOTOR DE CLONAGEM LOCAL
