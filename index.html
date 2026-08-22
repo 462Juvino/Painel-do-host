@@ -1810,30 +1810,37 @@
             }
             if (event === "join" || event === "member") isJoin = true;
 
-            // GATILHO DA ENTRADA AUTOMÁTICA (REGRA DOS 10 SEGUNDOS)
+            // GATILHO DA ENTRADA AUTOMÁTICA (REGRA DOS 10s + DESCARTE SE SAIU)
             if (isJoin && !isOBS) {
                 let confAuto = JSON.parse(localStorage.getItem('diretoria_liveauto_config'));
                 if (confAuto && confAuto.ativo) {
-                    let textoFormatado = (document.getElementById('live-auto-texto') ? document.getElementById('live-auto-texto').value : "Seja bem vindo {nome}").replace(/{nome}/g, user);
+                    ramData.lastInteraction[user] = Date.now(); // Registra o horário da entrada
 
-                    // Inicia o cronômetro invisível de 10 segundos antes de jogar na fila
                     setTimeout(() => {
                         let checkAuto = JSON.parse(localStorage.getItem('diretoria_liveauto_config'));
                         if (checkAuto && checkAuto.ativo) {
-                            ramData.filaLiveAuto.push({
-                                id: Date.now() + Math.random(),
-                                nome: user,
-                                texto: textoFormatado,
-                                url: checkAuto.url || "",
-                                modo: checkAuto.modo || "nativo",
-                                apiLocal: checkAuto.apiLocal || "http://127.0.0.1:8020/gerar",
-                                vozIndex: checkAuto.vozIndex || 0,
-                                tipo: "join"
-                            });
-                            if (ramData.filaLiveAuto.length > 50) ramData.filaLiveAuto.shift();
-                            memDirty.liveauto = true;
+                            // Se a pessoa interagiu ou permaneceu ativa nos últimos 25s, ela ainda está na live!
+                            const inatividadeMs = Date.now() - (ramData.lastInteraction[user] || 0);
+
+                            if (inatividadeMs <= 25000) {
+                                let baseTexto = document.getElementById('live-auto-texto') ? document.getElementById('live-auto-texto').value : "Seja bem vindo {nome}";
+                                let textoFormatado = baseTexto.replace(/{nome}/g, user);
+
+                                ramData.filaLiveAuto.push({
+                                    id: Date.now() + Math.random(),
+                                    nome: user,
+                                    texto: textoFormatado,
+                                    modo: checkAuto.modo || "local",
+                                    apiLocal: checkAuto.apiLocal || "http://127.0.0.1:8020/gerar",
+                                    tipo: "join"
+                                });
+                                if (ramData.filaLiveAuto.length > 50) ramData.filaLiveAuto.shift();
+                                memDirty.liveauto = true;
+                            } else {
+                                console.log(`❌ Usuário ${user} saiu da live antes dos 10s. Boas-vindas cancelada.`);
+                            }
                         }
-                    }, 10000); // 10000 ms = 10 Segundos
+                    }, 10000); // Aguarda 10 segundos
                 }
             }
 
@@ -1978,6 +1985,19 @@
                 }
             }
             else if (event === "gift") {
+
+                // ENVIA O PRESENTE PARA A FILA DO CÉREBRO NPC
+                let confAutoGift = JSON.parse(localStorage.getItem('diretoria_liveauto_config'));
+                if (confAutoGift && confAutoGift.ativo) {
+                    ramData.filaLiveAuto.push({
+                        id: Date.now() + Math.random(),
+                        nome: user,
+                        presenteNome: giftName,
+                        tipo: "presente"
+                    });
+                    if (ramData.filaLiveAuto.length > 50) ramData.filaLiveAuto.shift();
+                    memDirty.liveauto = true;
+                }
                 const giftName = data.giftName || "Presente";
                 const repeatCount = parseInt(data.repeatCount || 1);
                 const unitDiamond = parseInt(data.diamondCount || 1);
