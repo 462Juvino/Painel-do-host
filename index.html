@@ -2422,7 +2422,7 @@
             }
 
             // ===================================
-            // PLAYER DE MÍDIA ISOLADO (OBS) - COM DESTRUIÇÃO AUTOMÁTICA
+            // PLAYER DE MÍDIA ISOLADO (OBS) - COM DESTRUIÇÃO AUTOMÁTICA E ANTI-BLOQUEIO
             // ===================================
             if (viewMode === 'midia') {
                 const estiloPopup = `<style> @keyframes popupAnim { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } } </style>`;
@@ -2439,16 +2439,42 @@
                         container.innerHTML = ''; // Limpa a tela
 
                         if (disparo.tipo === 'video') {
-                            // A mágica acontece no onended="this.remove()"
-                            container.innerHTML = `<video src="${disparo.url}" autoplay onended="this.remove()" style="max-width: 100%; max-height: 100%; filter: drop-shadow(0 0 20px rgba(0,0,0,0.8)); animation: popupAnim 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);"></video>`;
-                        } else if (disparo.tipo === 'image') {
-                            container.innerHTML = `<img id="img-temp-${disparo.id}" src="${disparo.url}" style="max-width: 100%; max-height: 100%; filter: drop-shadow(0 0 20px rgba(0,0,0,0.8)); animation: popupAnim 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">`;
+                            // Constrói o vídeo nativamente burlando o bloqueio de tags HTML
+                            const vid = document.createElement('video');
+                            vid.src = disparo.url;
+                            vid.style.cssText = "max-width: 100%; max-height: 100%; filter: drop-shadow(0 0 20px rgba(0,0,0,0.8)); animation: popupAnim 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);";
+                            vid.onended = () => vid.remove();
+                            container.appendChild(vid);
+
+                            // Força o PLAY simulando uma ação manual
                             setTimeout(() => {
-                                const img = document.getElementById(`img-temp-${disparo.id}`);
-                                if (img) img.remove(); // Remove a imagem após 8 segundos cravados
-                            }, 8000);
+                                let p = vid.play();
+                                if (p !== undefined) {
+                                    p.catch(e => {
+                                        // Se o TikTok Studio bloquear o áudio, ele muta e joga o vídeo na tela à força!
+                                        vid.muted = true;
+                                        vid.play().catch(err => console.log(err));
+                                    });
+                                }
+                            }, 100);
+
+                        } else if (disparo.tipo === 'image') {
+                            const img = document.createElement('img');
+                            img.src = disparo.url;
+                            img.style.cssText = "max-width: 100%; max-height: 100%; filter: drop-shadow(0 0 20px rgba(0,0,0,0.8)); animation: popupAnim 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);";
+                            container.appendChild(img);
+                            setTimeout(() => { img.remove(); }, 8000);
+
                         } else if (disparo.tipo === 'audio') {
-                            container.innerHTML = `<audio src="${disparo.url}" autoplay onended="this.remove()"></audio>`;
+                            const aud = document.createElement('audio');
+                            aud.src = disparo.url;
+                            aud.onended = () => aud.remove();
+                            container.appendChild(aud);
+
+                            setTimeout(() => {
+                                let p = aud.play();
+                                if (p !== undefined) { p.catch(e => console.log(e)); }
+                            }, 100);
                         }
                     }
                 }, 500);
