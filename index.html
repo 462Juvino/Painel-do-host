@@ -1944,7 +1944,7 @@
                         let textoFormatado = inputTexto.replace(/{nome}/g, nomeLimpoNPC);
 
                         ramData.filaLiveAuto.push({
-                            id: Date.now() + Math.random(),
+                            id: (window.autoIdCounter = (window.autoIdCounter || Date.now()) + 1),
                             nome: nomeLimpoNPC,
                             texto: textoFormatado,
                             modo: confAuto.modo || "local",
@@ -1978,7 +1978,7 @@
                             let isFlood = ramData.floodControl[user] > 3;
 
                             ramData.filaLiveAuto.push({
-                                id: Date.now() + Math.random(),
+                                id: (window.autoIdCounter = (window.autoIdCounter || Date.now()) + 1),
                                 nome: nomeLimpoNPC, // ANTES ERA user
                                 pergunta: perguntaReal,
                                 flood: isFlood,
@@ -2037,7 +2037,7 @@
                 let confAutoGift = JSON.parse(localStorage.getItem('diretoria_liveauto_config'));
                 if (confAutoGift && confAutoGift.ativo) {
                     ramData.filaLiveAuto.push({
-                        id: Date.now() + Math.random(),
+                        id: (window.autoIdCounter = (window.autoIdCounter || Date.now()) + 1),
                         nome: nomeLimpoNPC, // ANTES ERA user
                         presenteNome: giftName,
                         tipo: "presente"
@@ -2061,7 +2061,7 @@
                 memDirty.rastreio = true;
 
                 // AGORA SIM! Salvando a QTD e a URL corretas na fila para não cair genérico
-                ramData.filaPotes.push({ id: Date.now() + Math.random(), url: giftPictureUrl, coins: unitDiamond, qtd: repeatCount });
+                ramData.filaPotes.push({ id: (window.autoIdCounter = (window.autoIdCounter || Date.now()) + 1), url: giftPictureUrl, coins: unitDiamond, qtd: repeatCount });
                 if (ramData.filaPotes.length > 100) ramData.filaPotes.shift();
                 memDirty.potes = true;
 
