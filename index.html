@@ -1803,23 +1803,30 @@
             }
             if (event === "join" || event === "member") isJoin = true;
 
-            // GATILHO DA ENTRADA AUTOMÁTICA
+            // GATILHO DA ENTRADA AUTOMÁTICA (REGRA DOS 10 SEGUNDOS)
             if (isJoin && !isOBS) {
                 let confAuto = JSON.parse(localStorage.getItem('diretoria_liveauto_config'));
                 if (confAuto && confAuto.ativo) {
                     let textoFormatado = (document.getElementById('live-auto-texto') ? document.getElementById('live-auto-texto').value : "Seja bem vindo {nome}").replace(/{nome}/g, user);
-                    ramData.filaLiveAuto.push({
-                        id: Date.now() + Math.random(),
-                        nome: user,
-                        texto: textoFormatado,
-                        url: confAuto.url || "",
-                        modo: confAuto.modo || "nativo",
-                        apiLocal: confAuto.apiLocal || "http://127.0.0.1:8020/gerar",
-                        vozIndex: confAuto.vozIndex || 0,
-                        tipo: "join" // AVISA O OBS QUE A PESSOA ENTROU!
-                    });
-                    if (ramData.filaLiveAuto.length > 50) ramData.filaLiveAuto.shift();
-                    memDirty.liveauto = true;
+
+                    // Inicia o cronômetro invisível de 10 segundos antes de jogar na fila
+                    setTimeout(() => {
+                        let checkAuto = JSON.parse(localStorage.getItem('diretoria_liveauto_config'));
+                        if (checkAuto && checkAuto.ativo) {
+                            ramData.filaLiveAuto.push({
+                                id: Date.now() + Math.random(),
+                                nome: user,
+                                texto: textoFormatado,
+                                url: checkAuto.url || "",
+                                modo: checkAuto.modo || "nativo",
+                                apiLocal: checkAuto.apiLocal || "http://127.0.0.1:8020/gerar",
+                                vozIndex: checkAuto.vozIndex || 0,
+                                tipo: "join"
+                            });
+                            if (ramData.filaLiveAuto.length > 50) ramData.filaLiveAuto.shift();
+                            memDirty.liveauto = true;
+                        }
+                    }, 10000); // 10000 ms = 10 Segundos
                 }
             }
 
