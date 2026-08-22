@@ -1857,39 +1857,7 @@
             }
             if (event === "join" || event === "member") isJoin = true;
 
-            // GATILHO DA ENTRADA AUTOMÁTICA (REGRA DOS 10s + DESCARTE SE SAIU)
-            if (isJoin && !isOBS) {
-                let confAuto = JSON.parse(localStorage.getItem('diretoria_liveauto_config'));
-                if (confAuto && confAuto.ativo) {
-                    ramData.lastInteraction[user] = Date.now(); // Registra o horário da entrada
 
-                    setTimeout(() => {
-                        let checkAuto = JSON.parse(localStorage.getItem('diretoria_liveauto_config'));
-                        if (checkAuto && checkAuto.ativo) {
-                            // Se a pessoa interagiu ou permaneceu ativa nos últimos 25s, ela ainda está na live!
-                            const inatividadeMs = Date.now() - (ramData.lastInteraction[user] || 0);
-
-                            if (inatividadeMs <= 25000) {
-                                let baseTexto = document.getElementById('live-auto-texto') ? document.getElementById('live-auto-texto').value : "Seja bem vindo {nome}";
-                                let textoFormatado = baseTexto.replace(/{nome}/g, nomeLimpoNPC); // Usa o nome limpo
-
-                                ramData.filaLiveAuto.push({
-                                    id: Date.now() + Math.random(),
-                                    nome: nomeLimpoNPC, // Usa o nome limpo
-                                    texto: textoFormatado,
-                                    modo: checkAuto.modo || "local",
-                                    apiLocal: checkAuto.apiLocal || "http://127.0.0.1:8020/gerar",
-                                    tipo: "join"
-                                });
-                                if (ramData.filaLiveAuto.length > 50) ramData.filaLiveAuto.shift();
-                                memDirty.liveauto = true;
-                            } else {
-                                console.log(`❌ Usuário ${user} saiu da live antes dos 10s. Boas-vindas cancelada.`);
-                            }
-                        }
-                    }, 60000); // Aguarda 10 segundos
-                }
-            }
 
             if (!ramData.ativosObj[user]) {
                 ramData.ativosObj[user] = avatarUrl;
@@ -1901,7 +1869,8 @@
 
             // EXTRAÇÃO DE METADADOS (Níveis, Seguidor, Doador, Super Fã)
             if (!ramData.usersMeta[user]) {
-                ramData.usersMeta[user] = { avatar: avatarUrl, fLevel: 0, gLevel: 0, isFollower: false, hasGifts: false, isSuperFan: false };
+                // Adicionamos a tag 'welcomed: false' para saber quem ainda não recebeu boas-vindas
+                ramData.usersMeta[user] = { avatar: avatarUrl, fLevel: 0, gLevel: 0, isFollower: false, hasGifts: false, isSuperFan: false, welcomed: false };
             }
 
             // VERIFICAÇÃO DE SUPER FÃ (Assinante/Membro VIP do TikTok)
@@ -1955,6 +1924,37 @@
             if (event === "chat") {
                 const msg = data.comment || "";
                 const msgLimpa = msg.toLowerCase().trim();
+
+                // ==========================================
+                // BOAS-VINDAS APENAS NO 1º COMENTÁRIO DA LIVE
+                // ==========================================
+                let confAuto = JSON.parse(localStorage.getItem('diretoria_liveauto_config'));
+                if (confAuto && confAuto.ativo && !isOBS) {
+                    // Checa se a pessoa ainda não recebeu as boas-vindas nesta live
+                    if (!ramData.usersMeta[user].welcomed) {
+                        ramData.usersMeta[user].welcomed = true; // Marca como cumprimentada
+                        memDirty.meta = true; // Salva no HD para não esquecer
+
+                        // BLINDAGEM: Se o campo estiver vazio ou só tiver "{nome}", força a frase completa
+                        let inputTexto = document.getElementById('live-auto-texto') ? document.getElementById('live-auto-texto').value.trim() : "";
+                        if (inputTexto === "" || inputTexto === "{nome}") {
+                            inputTexto = "Seja muito bem-vindo à live, {nome}!";
+                        }
+
+                        let textoFormatado = inputTexto.replace(/{nome}/g, nomeLimpoNPC);
+
+                        ramData.filaLiveAuto.push({
+                            id: Date.now() + Math.random(),
+                            nome: nomeLimpoNPC,
+                            texto: textoFormatado,
+                            modo: confAuto.modo || "local",
+                            apiLocal: confAuto.apiLocal || "http://127.0.0.1:8020/gerar",
+                            tipo: "join" // Mantemos a tag "join" para a fila saber que é prioridade baixa
+                        });
+                        if (ramData.filaLiveAuto.length > 50) ramData.filaLiveAuto.shift();
+                        memDirty.liveauto = true;
+                    }
+                }
 
                 // ==========================================
                 // LÓGICA DO NPC (PALAVRA-CHAVE LIMPA E FLOOD)
