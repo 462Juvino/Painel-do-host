@@ -422,13 +422,6 @@
                     <input type="checkbox" id="live-auto-ativo" onchange="salvarLiveAuto()" style="width: 20px; height: 20px;"> LIGAR CÉREBRO NPC
                 </label>
 
-                <!-- VÍDEOS NA NUVEM (GITHUB) -->
-                <div style="background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444; margin-bottom: 15px;">
-                    <h4 style="margin: 0 0 5px 0; color: #f39c12;">☁️ Repositório de Vídeos (GitHub)</h4>
-                    <p style="font-size: 11px; color: #aaa; margin-bottom: 10px;">Cole o link raiz da pasta do seu GitHub onde os vídeos estão hospedados. O sistema buscará automaticamente pelos arquivos: <strong>@usuario_geral.mp4, @usuario_respostas.mp4, @usuario_bravo.mp4 e @usuario_rosa.mp4</strong></p>
-                    <input type="text" id="live-auto-github" placeholder="Ex: https://raw.githubusercontent.com/SeuUsuario/SeuRepo/main/videos" onchange="salvarLiveAuto()" style="width: 100%; box-sizing: border-box; background: #111; border: 1px solid #555; color: white; padding: 8px; border-radius: 4px;">
-                </div>
-
                 <!-- CONFIGURAÇÃO DA INTELIGÊNCIA -->
                 <div style="background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444;">
                     <h4 style="margin: 0 0 10px 0; color: #a855f7;">🧠 Cérebro e Fala</h4>
@@ -1343,7 +1336,6 @@
         function salvarLiveAuto() {
             const conf = {
                 ativo: document.getElementById('live-auto-ativo').checked,
-                github: document.getElementById('live-auto-github').value, // NOVO
                 keyword: document.getElementById('live-auto-keyword').value,
                 gemini: document.getElementById('live-auto-gemini').value,
                 persona: document.getElementById('live-auto-persona').value,
@@ -1356,7 +1348,6 @@
             const conf = JSON.parse(localStorage.getItem('diretoria_liveauto_config'));
             if (conf) {
                 if(document.getElementById('live-auto-ativo')) document.getElementById('live-auto-ativo').checked = conf.ativo;
-                if(document.getElementById('live-auto-github')) document.getElementById('live-auto-github').value = conf.github || ''; // NOVO
                 if(document.getElementById('live-auto-keyword')) document.getElementById('live-auto-keyword').value = conf.keyword || 'kaveirinha';
                 if(document.getElementById('live-auto-gemini')) document.getElementById('live-auto-gemini').value = conf.gemini || '';
                 if(document.getElementById('live-auto-persona')) document.getElementById('live-auto-persona').value = conf.persona || '';
@@ -2676,8 +2667,8 @@
 
                     // Mantém o vídeo base (@usuario_geral.mp4) sempre rodando no fundo
                     const vidGeral = document.getElementById('vid-geral');
-                    if (vidGeral && cfg.github) {
-                        const urlGeral = `${cfg.github}/@${hostArroba}_geral.mp4`;
+                    if (vidGeral) {
+                        const urlGeral = `@${hostArroba}_geral.mp4`; // Busca o vídeo na mesma pasta raiz do site
                         if (vidGeral.getAttribute('src') !== urlGeral) vidGeral.src = urlGeral;
                     }
 
@@ -2719,9 +2710,9 @@
                     if (cfg.modo === 'local' && cfg.apiLocal) audioPlayer = await gerarAudioCloneLocal(textoFinal, cfg.apiLocal);
                     if (!audioPlayer) audioPlayer = new SpeechSynthesisUtterance(textoFinal);
 
-                    // 3. ROTEIA O VÍDEO DA AÇÃO (ex: @joao_bravo.mp4 ou @joao_rosa.mp4)
-                    if (vidAcao && cfg.github) {
-                        vidAcao.src = `${cfg.github}/@${hostArroba}_${estadoVideo}.mp4`;
+                    // 3. ROTEIA O VÍDEO DA AÇÃO LOCALMENTE (ex: @joao_bravo.mp4 ou @joao_rosa.mp4)
+                    if (vidAcao) {
+                        vidAcao.src = `@${hostArroba}_${estadoVideo}.mp4`;
 
                         // Garante que o vídeo da ação comece do início e apareça
                         vidAcao.currentTime = 0;
