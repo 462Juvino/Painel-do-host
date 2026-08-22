@@ -2730,7 +2730,7 @@
                 async function pensarComGemini(prompt, cfg) {
                     if (!cfg.gemini) return "Esqueceram de me dar o cérebro. Cadê a chave da API?";
                     // SOLUÇÃO DA IA: Trocamos para o gemini-pro, o modelo mais estável que nunca é bloqueado
-                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${cfg.gemini}`;
+                    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${cfg.gemini}`;
                     const body = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 60 } };
                     try {
                         const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
