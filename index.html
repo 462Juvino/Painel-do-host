@@ -2664,9 +2664,9 @@
 
                 setInterval(() => {
                     const cfg = JSON.parse(getSafeMem('diretoria_liveauto_config')) || {};
-                    const hostArroba = (getSafeMem('rdm_user') || 'usuario').replace('@', ''); // CORREÇÃO DA VARIÁVEL DE LOGIN
+                    const hostArroba = (getSafeMem('rdm_user') || 'usuario').replace('@', '');
 
-                    // Mantém o vídeo base (@kaveira_geral.mp4) sempre rodando no fundo
+                    // Mantém o vídeo base (@usuario_geral.mp4) sempre rodando no fundo
                     const vidGeral = document.getElementById('vid-geral');
                     if (vidGeral) {
                         const urlGeral = `@${hostArroba}_geral.mp4`;
@@ -2675,8 +2675,27 @@
 
                     let filaNuvem = JSON.parse(getSafeMem('diretoria_fila_liveauto')) || [];
                     filaNuvem.forEach(item => {
-                        if (item.id > lastAutoId) { lastAutoId = item.id; filaExecucao.push(item); }
+                        if (item.id > lastAutoId) {
+                            lastAutoId = item.id;
+                            filaExecucao.push(item);
+                        }
                     });
+
+                    // 🧠 MOTOR DE PRIORIDADE MÁXIMA
+                    if (filaExecucao.length > 0) {
+                        filaExecucao.sort((a, b) => {
+                            // Define o peso de cada ação
+                            const peso = { "presente": 3, "chat": 2, "join": 1 };
+                            const pesoA = peso[a.tipo] || 0;
+                            const pesoB = peso[b.tipo] || 0;
+
+                            if (pesoA !== pesoB) {
+                                return pesoB - pesoA; // Quem tem maior peso fura a fila e sobe!
+                            }
+                            return a.id - b.id; // Se forem do mesmo tipo, respeita a ordem de chegada
+                        });
+                    }
+
                     if (!tocando && filaExecucao.length > 0) tocarProximoAuto();
                 }, 500);
 
