@@ -1727,11 +1727,12 @@
                 // 3. Salva a memória preservada de volta no HD (O motor global joga pro Firebase)
                 localStorage.setItem('diretoria_rankings', JSON.stringify(historicoSalvo));
 
-                // 4. Limpa as variáveis da live atual (incluindo níveis de Fã e Gifter para zerar o Pódio)
+                // 4. Limpa as variáveis da live atual (incluindo fila do NPC, Níveis e Pódio)
                 localStorage.setItem('diretoria_users_meta', JSON.stringify({}));
                 localStorage.setItem('diretoria_maiores_presentes', JSON.stringify([]));
                 localStorage.setItem('diretoria_ativos', JSON.stringify([]));
                 localStorage.setItem('diretoria_ativos_obj', JSON.stringify({}));
+                localStorage.setItem('diretoria_fila_liveauto', JSON.stringify([])); // NOVO: Zera Fila NPC no HD
 
                 // GATILHO REMOTO: Manda um sinal pro OBS dar F5 sozinho!
                 localStorage.setItem('diretoria_comando_reload', Date.now().toString());
@@ -1742,6 +1743,7 @@
                 if (typeof ramData !== 'undefined') {
                     ramData.usersMeta = {}; // Zera os níveis em RAM
                     ramData.ativosObj = {}; // Zera o auditório em RAM
+                    ramData.filaLiveAuto = []; // NOVO: Zera Fila NPC na RAM
                 }
                 if (typeof maioresPresentes !== 'undefined') maioresPresentes = [];
                 if (typeof usuariosAtivosLive !== 'undefined') usuariosAtivosLive.clear();
@@ -1750,7 +1752,12 @@
                 // Manda reescrever a tela
                 rankingPrecisaAtualizar = true;
                 renderizarRankings();
-                alert("✅ Live atual encerrada e telões limpos (incluindo o Pódio)!\nO seu histórico longo (Semanal, Mensal, etc) está seguro no Firebase.");
+
+                // Força atualização da aba do NPC (Log Visual)
+                const logDiv = document.getElementById('log-fila-npc');
+                if(logDiv) logDiv.innerHTML = '<span style="color: #666;">Fila esvaziada. Aguardando ações...</span>';
+
+                alert("✅ Live atual encerrada, Fila do NPC zerada e Telões limpos com sucesso!");
             }
         }
 
@@ -1880,7 +1887,7 @@
                                 console.log(`❌ Usuário ${user} saiu da live antes dos 10s. Boas-vindas cancelada.`);
                             }
                         }
-                    }, 10000); // Aguarda 10 segundos
+                    }, 60000); // Aguarda 10 segundos
                 }
             }
 
