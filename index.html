@@ -1807,7 +1807,7 @@
             if (isJoin && !isOBS) {
                 let confAuto = JSON.parse(localStorage.getItem('diretoria_liveauto_config'));
                 if (confAuto && confAuto.ativo) {
-                    let textoFormatado = (confAuto.texto || "{nome}").replace(/{nome}/g, user);
+                    let textoFormatado = (document.getElementById('live-auto-texto') ? document.getElementById('live-auto-texto').value : "Seja bem vindo {nome}").replace(/{nome}/g, user);
                     ramData.filaLiveAuto.push({
                         id: Date.now() + Math.random(),
                         nome: user,
@@ -1815,7 +1815,8 @@
                         url: confAuto.url || "",
                         modo: confAuto.modo || "nativo",
                         apiLocal: confAuto.apiLocal || "http://127.0.0.1:8020/gerar",
-                        vozIndex: confAuto.vozIndex || 0
+                        vozIndex: confAuto.vozIndex || 0,
+                        tipo: "join" // AVISA O OBS QUE A PESSOA ENTROU!
                     });
                     if (ramData.filaLiveAuto.length > 50) ramData.filaLiveAuto.shift();
                     memDirty.liveauto = true;
@@ -2645,7 +2646,7 @@
                         const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
                         const data = await res.json();
                         return data.candidates[0].content.parts[0].text.replace(/[*#]/g, '');
-                    } catch (e) { return "Minha mente falhou agora."; }
+                    } catch (e) { return "Tive um branco de memória agora."; }
                 }
 
                 function gerarAudioCloneLocal(texto, urlApi) {
@@ -2663,12 +2664,12 @@
 
                 setInterval(() => {
                     const cfg = JSON.parse(getSafeMem('diretoria_liveauto_config')) || {};
-                    const hostArroba = (getSafeMem('diretoria_tt_user') || 'usuario').replace('@', ''); // Pega o nome do dono da live (ex: joao)
+                    const hostArroba = (getSafeMem('rdm_user') || 'usuario').replace('@', ''); // CORREÇÃO DA VARIÁVEL DE LOGIN
 
-                    // Mantém o vídeo base (@usuario_geral.mp4) sempre rodando no fundo
+                    // Mantém o vídeo base (@kaveira_geral.mp4) sempre rodando no fundo
                     const vidGeral = document.getElementById('vid-geral');
                     if (vidGeral) {
-                        const urlGeral = `@${hostArroba}_geral.mp4`; // Busca o vídeo na mesma pasta raiz do site
+                        const urlGeral = `@${hostArroba}_geral.mp4`;
                         if (vidGeral.getAttribute('src') !== urlGeral) vidGeral.src = urlGeral;
                     }
 
@@ -2683,46 +2684,51 @@
                     tocando = true;
                     let atual = filaExecucao.shift();
                     const cfg = JSON.parse(getSafeMem('diretoria_liveauto_config')) || {};
-                    const hostArroba = (getSafeMem('diretoria_tt_user') || 'usuario').replace('@', '');
+                    const hostArroba = (getSafeMem('rdm_user') || 'usuario').replace('@', ''); // CORREÇÃO DA VARIÁVEL
                     const vidGeral = document.getElementById('vid-geral');
                     const vidAcao = document.getElementById('vid-acao');
 
                     let promptIA = `${cfg.persona}\n\n`;
-                    let estadoVideo = "respostas"; // Estado padrão da ação
+                    let estadoVideo = "respostas";
+                    let textoFinal = "";
 
                     if (atual.tipo === "chat") {
+                        // CHAT: USA O GEMINI PARA RESPOSTAS INTELIGENTES E VARIÁVEIS
                         if (atual.flood) {
                             estadoVideo = "bravo";
                             promptIA += `O usuário ${atual.nome} enviou mensagens repetidas (flood) no chat: "${atual.pergunta}". Dê uma bronca engraçada nele.`;
                         } else {
                             promptIA += `O usuário ${atual.nome} disse: "${atual.pergunta}". Dê uma resposta rápida.`;
                         }
+                        textoFinal = await pensarComGemini(promptIA, cfg);
+
                     } else if (atual.tipo === "presente") {
+                        // PRESENTES: IGNORA O GEMINI PARA CACHEAR O ÁUDIO INFINITAMENTE NO PYTHON!
                         estadoVideo = atual.presenteNome.toLowerCase().replace(/[^a-z0-9]/g, ''); // Ex: rosa, leao
-                        promptIA += `O usuário ${atual.nome} acabou de enviar o presente: ${atual.presenteNome}. Agradeça com muita empolgação!`;
+                        textoFinal = `Muito obrigado pelo presente ${atual.presenteNome}, ${atual.nome}!`;
+
+                    } else {
+                        // ENTRADAS: IGNORA O GEMINI E CACHEIA O BEM-VINDO
+                        estadoVideo = "respostas";
+                        textoFinal = atual.texto || `Seja muito bem-vindo à live, ${atual.nome}!`;
                     }
 
-                    // 1. CHAMA O GEMINI
-                    let textoFinal = await pensarComGemini(promptIA, cfg);
-
-                    // 2. CHAMA O .EXE
+                    // 2. CHAMA O MOTOR DE CLONAGEM LOCAL
                     let audioPlayer = null;
                     if (cfg.modo === 'local' && cfg.apiLocal) audioPlayer = await gerarAudioCloneLocal(textoFinal, cfg.apiLocal);
                     if (!audioPlayer) audioPlayer = new SpeechSynthesisUtterance(textoFinal);
 
-                    // 3. ROTEIA O VÍDEO DA AÇÃO LOCALMENTE (ex: @joao_bravo.mp4 ou @joao_rosa.mp4)
+                    // 3. ROTEIA O VÍDEO DA AÇÃO (ex: @kaveirablackops_bravo.mp4)
                     if (vidAcao) {
                         vidAcao.src = `@${hostArroba}_${estadoVideo}.mp4`;
-
-                        // Garante que o vídeo da ação comece do início e apareça
                         vidAcao.currentTime = 0;
                         vidAcao.style.opacity = "1";
                     }
 
                     // 4. REPRODUZ
                     const finalizar = () => {
-                        if (vidAcao) vidAcao.style.opacity = "0"; // Esconde a ação, revelando o "geral" no fundo
-                        setTimeout(() => { tocando = false; }, 800); // Respiro natural
+                        if (vidAcao) vidAcao.style.opacity = "0"; // Esconde a ação, voltando pro GERAL
+                        setTimeout(() => { tocando = false; }, 800);
                     };
 
                     if (audioPlayer instanceof SpeechSynthesisUtterance) {
