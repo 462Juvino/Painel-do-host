@@ -828,41 +828,56 @@
 
             function carregarGerador() {
                 const idGerador = document.getElementById('seletor-gerador').value;
-                let config = null;
-                // Blindagem 3: Trata a leitura dos geradores também
-                try {
-                    config = JSON.parse(localStorage.getItem(`diretoria_gerador_${idGerador}`));
-                } catch(e) {}
-
                 const baseUrl = window.location.href.split('?')[0];
                 const user = localStorage.getItem('rdm_user_tiktok') || localStorage.getItem('rdm_user') || 'visitante';
                 document.getElementById('link-gerador-atual').innerText = `${baseUrl}?u=${user}&p=pro&view=gerador&id=${idGerador}`;
 
-                if (config) {
-                    document.getElementById('config-layout').value = config.layout || 'horizontal';
-                    document.getElementById('config-anim').value = config.anim || 'none';
-                    document.getElementById('config-speed').value = config.speed || 3;
-                    for (let i = 1; i <= 10; i++) {
-                        if(config.itens[i-1] && document.getElementById(`img-gerador-${i}`)) {
-                            document.getElementById(`img-gerador-${i}`).value = config.itens[i-1].img || '';
-                            document.getElementById(`txt-gerador-${i}`).value = config.itens[i-1].txt || '';
-                            document.getElementById(`cor-gerador-${i}`).value = config.itens[i-1].cor || '#ffffff';
-                            document.getElementById(`tam-gerador-${i}`).value = config.itens[i-1].tam || 30;
+                // Função interna para preencher as caixinhas visuais do Painel
+                const preencherTela = (config) => {
+                    if (config) {
+                        document.getElementById('config-layout').value = config.layout || 'horizontal';
+                        document.getElementById('config-anim').value = config.anim || 'none';
+                        document.getElementById('config-speed').value = config.speed || 3;
+                        for (let i = 1; i <= 10; i++) {
+                            if(config.itens && config.itens[i-1] && document.getElementById(`img-gerador-${i}`)) {
+                                document.getElementById(`img-gerador-${i}`).value = config.itens[i-1].img || '';
+                                document.getElementById(`txt-gerador-${i}`).value = config.itens[i-1].txt || '';
+                                document.getElementById(`cor-gerador-${i}`).value = config.itens[i-1].cor || '#ffffff';
+                                document.getElementById(`tam-gerador-${i}`).value = config.itens[i-1].tam || 30;
+                            }
+                        }
+                    } else {
+                        document.getElementById('config-layout').value = 'horizontal';
+                        document.getElementById('config-anim').value = 'none';
+                        document.getElementById('config-speed').value = 3;
+                        for (let i = 1; i <= 10; i++) {
+                            if(document.getElementById(`img-gerador-${i}`)) {
+                                document.getElementById(`img-gerador-${i}`).value = '';
+                                document.getElementById(`txt-gerador-${i}`).value = '';
+                                document.getElementById(`cor-gerador-${i}`).value = '#ffffff';
+                                document.getElementById(`tam-gerador-${i}`).value = 30;
+                            }
                         }
                     }
-                } else {
-                    document.getElementById('config-layout').value = 'horizontal';
-                    document.getElementById('config-anim').value = 'none';
-                    document.getElementById('config-speed').value = 3;
-                    for (let i = 1; i <= 10; i++) {
-                        if(document.getElementById(`img-gerador-${i}`)) {
-                            document.getElementById(`img-gerador-${i}`).value = '';
-                            document.getElementById(`txt-gerador-${i}`).value = '';
-                            document.getElementById(`cor-gerador-${i}`).value = '#ffffff';
-                            document.getElementById(`tam-gerador-${i}`).value = 30;
+                };
+
+                // 1. Tenta carregar primeiro da memória local do navegador
+                try {
+                    let configLocal = JSON.parse(localStorage.getItem(`diretoria_gerador_${idGerador}`));
+                    preencherTela(configLocal);
+                } catch(e) {}
+
+                // 2. SINCRONIZAÇÃO COM A NUVEM: Puxa o que está no Firebase para nunca mais o painel amanhecer vazio!
+                const rdmUserLimpo = user.replace(/[.#$[\]]/g, '_');
+                fetch(`https://painel-do-host-default-rtdb.firebaseio.com/usuarios/${rdmUserLimpo}/diretoria_gerador_${idGerador}.json?t=${Date.now()}`)
+                    .then(res => res.json())
+                    .then(dadosNuvem => {
+                        if (dadosNuvem) {
+                            // Se a nuvem tem dados, sobrescreve o painel e salva no navegador
+                            localStorage.setItem(`diretoria_gerador_${idGerador}`, JSON.stringify(dadosNuvem));
+                            preencherTela(dadosNuvem);
                         }
-                    }
-                }
+                    }).catch(() => {});
             }
 
             inicializarGeradorPRO();
