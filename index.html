@@ -2731,8 +2731,18 @@
                     try {
                         const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
                         const data = await res.json();
+
+                        // NOVO: Se o Google mandar um erro, ele avisa no painel F12!
+                        if (data.error) {
+                            console.error("❌ ERRO DO GOOGLE GEMINI:", data.error.message);
+                            return "Mestre, a minha chave do Google está dando erro.";
+                        }
+
                         return data.candidates[0].content.parts[0].text.replace(/[*#]/g, '');
-                    } catch (e) { return "Tive um branco de memória agora."; }
+                    } catch (e) {
+                        console.error("❌ ERRO FATAL NO JAVASCRIPT:", e);
+                        return "Tive um branco de memória agora.";
+                    }
                 }
 
                 function gerarAudioCloneLocal(texto, urlApi) {
