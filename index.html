@@ -432,9 +432,9 @@
                             <input type="text" id="live-auto-keyword" value="kaveirinha" onchange="salvarLiveAuto()" style="margin-top: 5px; background: #111; border: 1px solid #00f2fe; color: white; padding: 8px; border-radius: 4px;">
                         </label>
                         <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; flex: 2;">
-                            Chave API Gemini:
-                            <span style="font-size: 10px;"><a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#00f2fe;">Criar Chave Gratuita</a></span>
-                            <input type="password" id="live-auto-gemini" placeholder="Cole sua API Key aqui..." onchange="salvarLiveAuto()" style="margin-top: 5px; background: #111; border: 1px solid #555; color: white; padding: 8px; border-radius: 4px;">
+                            Chave API Groq (Llama 3):
+                            <span style="font-size: 10px;"><a href="https://console.groq.com/keys" target="_blank" style="color:#00f2fe;">Criar Chave Gratuita</a></span>
+                            <input type="password" id="live-auto-gemini" placeholder="Cole sua API Key da Groq..." onchange="salvarLiveAuto()" style="margin-top: 5px; background: #111; border: 1px solid #555; color: white; padding: 8px; border-radius: 4px;">
                         </label>
                     </div>
 
@@ -2725,32 +2725,26 @@
                 let lastAutoId = 0;
                 let filaExecucao = [];
                 let tocando = false;
-                let erroGeminiMostrado = false;
+                let erroIAMostrado = false;
 
-                async function pensarComGemini(prompt, cfg) {
+                async function pensarComIA(prompt, cfg) {
                     if (!cfg.gemini) return "Esqueceram de me dar o cérebro. Cadê a chave da API?";
-                    // SOLUÇÃO DA IA: Trocamos para o gemini-pro, o modelo mais estável que nunca é bloqueado
-                    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${cfg.gemini}`;
-                    const body = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 60 } };
+
+                    // Extrai a base da URL (Ex: tira o /gerar e deixa só http://127.0.0.1:8020)
+                    let baseUrl = cfg.apiLocal ? cfg.apiLocal.replace('/gerar', '') : "http://127.0.0.1:8020";
+                    // Chama a nova rota /pensar do seu Python!
+                    const url = `${baseUrl}/pensar?prompt=${encodeURIComponent(prompt)}&persona=${encodeURIComponent(cfg.persona)}&api_key=${encodeURIComponent(cfg.gemini)}`;
+
                     try {
-                        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                        const res = await fetch(url);
                         const data = await res.json();
-
-                        if (data.error) {
-                            if (!erroGeminiMostrado) {
-                                console.error("❌ GOOGLE RECUSOU:", data.error.message);
-                                erroGeminiMostrado = true;
-                            }
-                            return "O Google não quer deixar eu falar agora.";
-                        }
-
-                        return data.candidates[0].content.parts[0].text.replace(/[*#]/g, '');
+                        return data.texto;
                     } catch (e) {
-                        if (!erroGeminiMostrado) {
-                            console.error("❌ ERRO DE CONEXÃO COM A IA:", e);
-                            erroGeminiMostrado = true;
+                        if (!erroIAMostrado) {
+                            console.error("❌ ERRO DE CONEXÃO COM O PYTHON:", e);
+                            erroIAMostrado = true;
                         }
-                        return "Tive um branco de memória agora.";
+                        return "O meu servidor cerebral está desligado.";
                     }
                 }
 
@@ -2824,7 +2818,7 @@
                         } else {
                             promptIA += `O usuário ${atual.nome} disse: "${atual.pergunta}". Dê uma resposta rápida.`;
                         }
-                        textoFinal = await pensarComGemini(promptIA, cfg);
+                        textoFinal = await pensarComIA(promptIA, cfg);
 
                     } else if (atual.tipo === "presente") {
                         // PRESENTES: IGNORA O GEMINI PARA CACHEAR O ÁUDIO INFINITAMENTE NO PYTHON!
