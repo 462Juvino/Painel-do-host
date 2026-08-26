@@ -2032,23 +2032,11 @@
                 }
             }
             else if (event === "gift") {
-
-                // ENVIA O PRESENTE PARA A FILA DO CÉREBRO NPC
-                let confAutoGift = JSON.parse(localStorage.getItem('diretoria_liveauto_config'));
-                if (confAutoGift && confAutoGift.ativo) {
-                    ramData.filaLiveAuto.push({
-                        id: (window.autoIdCounter = (window.autoIdCounter || Date.now()) + 1),
-                        nome: nomeLimpoNPC, // ANTES ERA user
-                        presenteNome: giftName,
-                        tipo: "presente"
-                    });
-                    if (ramData.filaLiveAuto.length > 50) ramData.filaLiveAuto.shift();
-                    memDirty.liveauto = true;
-                }
                 const giftName = data.giftName || "Presente";
                 const repeatCount = parseInt(data.repeatCount || 1);
                 const unitDiamond = parseInt(data.diamondCount || 1);
                 const totalDiamonds = unitDiamond * repeatCount;
+                const isFinished = data.repeatEnd !== false;
 
                 // Puxa a imagem oficial do catálogo caso o TikFinity esqueça de mandar!
                 let giftPictureUrl = data.giftPictureUrl || "";
@@ -2060,12 +2048,10 @@
                 ramData.rastreioSorteio[user].push(giftName.toLowerCase().trim());
                 memDirty.rastreio = true;
 
-                // AGORA SIM! Salvando a QTD e a URL corretas na fila para não cair genérico
+                // Salvando a QTD e a URL corretas na fila dos Potes 2D
                 ramData.filaPotes.push({ id: (window.autoIdCounter = (window.autoIdCounter || Date.now()) + 1), url: giftPictureUrl, coins: unitDiamond, qtd: repeatCount });
                 if (ramData.filaPotes.length > 100) ramData.filaPotes.shift();
                 memDirty.potes = true;
-
-                const isFinished = data.repeatEnd !== false;
 
                 if (typeof window.cacheCatalogoGlobal === 'undefined') {
                     window.cacheCatalogoGlobal = JSON.parse(localStorage.getItem('diretoria_catalogo_presentes')) || {};
@@ -2075,7 +2061,22 @@
                     localStorage.setItem('diretoria_catalogo_presentes', JSON.stringify(window.cacheCatalogoGlobal));
                 }
 
-                if (!isFinished) return;
+                if (!isFinished) return; // BLOQUEIA AQUI SE O COMBO AINDA NÃO TERMINOU!
+
+                // O COMBO ACABOU! AGORA SIM MANDAMOS PARA O CÉREBRO NPC AGRADECER 1 ÚNICA VEZ
+                let confAutoGift = JSON.parse(localStorage.getItem('diretoria_liveauto_config'));
+                if (confAutoGift && confAutoGift.ativo) {
+                    ramData.filaLiveAuto.push({
+                        id: (window.autoIdCounter = (window.autoIdCounter || Date.now()) + 1),
+                        nome: nomeLimpoNPC,
+                        presenteNome: giftName,
+                        tipo: "presente",
+                        qtd: repeatCount,      // Salva o combo
+                        moedas: totalDiamonds  // Salva o valor total em moedas
+                    });
+                    if (ramData.filaLiveAuto.length > 50) ramData.filaLiveAuto.shift();
+                    memDirty.liveauto = true;
+                }
 
                 let somarGift = false;
                 if (!cacheSys.metaGift.presente || cacheSys.metaGift.presente.trim() === "") somarGift = true;
@@ -2821,9 +2822,16 @@
                         textoFinal = await pensarComIA(promptIA, cfg);
 
                     } else if (atual.tipo === "presente") {
-                        // PRESENTES: IGNORA O GEMINI PARA CACHEAR O ÁUDIO INFINITAMENTE NO PYTHON!
-                        estadoVideo = atual.presenteNome.toLowerCase().replace(/[^a-z0-9]/g, ''); // Ex: rosa, leao
-                        textoFinal = `Muito obrigado pelo presente ${atual.presenteNome}, ${atual.nome}!`;
+                        estadoVideo = atual.presenteNome.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+                        // LÓGICA DE INTELIGÊNCIA: Presente Caro, Combo ou Normal
+                        if (atual.moedas > 98) {
+                            textoFinal = `Nossa! Muito obrigado pelo super presente, ${atual.nome}! Mandou muito bem com esse ${atual.presenteNome}!`;
+                        } else if (atual.qtd > 1) {
+                            textoFinal = `Que combo incrível de ${atual.presenteNome}! Muito obrigado, ${atual.nome}!`;
+                        } else {
+                            textoFinal = `Muito obrigado pelo presente ${atual.presenteNome}, ${atual.nome}!`;
+                        }
 
                     } else {
                         // ENTRADAS: IGNORA O GEMINI E CACHEIA O BEM-VINDO
