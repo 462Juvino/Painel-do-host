@@ -2780,22 +2780,12 @@
             if (viewMode === 'live_auto') {
                 document.getElementById('obs-container').style.padding = '0';
 
-                // MÁGICA ANTI-TELA BRANCA: Botão invisível que desbloqueia o áudio no Chrome!
+                // HTML Limpo: Sem tela preta, vídeos 100% mudos forçados
                 document.getElementById('obs-container').innerHTML = `
-                    <div id="unlock-overlay" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.9); color:white; display:flex; justify-content:center; align-items:center; z-index:9999; font-size:24px; font-weight:bold; cursor:pointer; text-align:center; padding:20px;" onclick="this.style.display='none'; let v=document.getElementById('vid-geral'); if(v){v.muted=false; v.play();}">
-                        ⚠️ O navegador bloqueou o autoplay.<br><br>👉 CLIQUE AQUI NA TELA PARA INICIAR A ANIMAÇÃO 👈
-                    </div>
                     <div style="width: 100vw; height: 100vh; position: fixed; top: 0; left: 0; overflow: hidden; background: transparent;">
-                        <video id="vid-geral" loop muted playsinline style="position: absolute; top:0; left:0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); opacity: 1; z-index: 1;"></video>
-                        <video id="vid-acao" playsinline style="position: absolute; top:0; left:0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); opacity: 0; z-index: 2; transition: opacity 0.2s;"></video>
+                        <video id="vid-geral" autoplay loop muted playsinline style="position: absolute; top:0; left:0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); opacity: 1; z-index: 1;"></video>
+                        <video id="vid-acao" autoplay muted playsinline style="position: absolute; top:0; left:0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); opacity: 0; z-index: 2; transition: opacity 0.2s;"></video>
                     </div>`;
-
-                setTimeout(() => {
-                    if (navigator.userAgent.includes("OBS")) {
-                        let overlay = document.getElementById('unlock-overlay');
-                        if (overlay) overlay.style.display = 'none';
-                    }
-                }, 500);
 
                 let lastAutoId = 0;
                 let filaExecucao = [];
@@ -2805,48 +2795,53 @@
                     if (!cfg.gemini) return "Sem chave da API.";
                     let baseUrl = cfg.apiLocal ? cfg.apiLocal.replace('/gerar', '') : "http://127.0.0.1:8020";
                     const url = `${baseUrl}/pensar?prompt=${encodeURIComponent(prompt)}&persona=${encodeURIComponent(cfg.persona)}&api_key=${encodeURIComponent(cfg.gemini)}`;
+
                     try {
-                        console.log("[IA] Enviando prompt para a API Gemini...");
-                        const res = await fetch(url);
+                        const controller = new AbortController();
+                        const id = setTimeout(() => controller.abort(), 4000);
+                        const res = await fetch(url, { signal: controller.signal });
+                        clearTimeout(id);
                         const data = await res.json();
-                        return data.texto;
+                        return data.texto || "Estou sem palavras.";
                     } catch (e) {
-                        console.error("[IA ERRO] A API do Gemini falhou ou não respondeu:", e);
-                        return "Meu cérebro falhou, mas estou aqui.";
+                        return "Minha conexão falhou, desculpe.";
                     }
                 }
 
                 function gerarAudioCloneLocal(texto, urlApi) {
                     return new Promise(async (resolve) => {
                         try {
-                            const res = await fetch(`${urlApi}?text=${encodeURIComponent(texto)}`);
+                            const controller = new AbortController();
+                            const id = setTimeout(() => controller.abort(), 5000);
+                            const res = await fetch(`${urlApi}?text=${encodeURIComponent(texto)}`, { signal: controller.signal });
+                            clearTimeout(id);
                             if (!res.ok) throw new Error();
                             const blob = await res.blob();
                             const audio = document.createElement('audio');
                             audio.src = URL.createObjectURL(blob);
                             resolve(audio);
-                        } catch (e) {
-                            console.error("[ÁUDIO LOCAL ERRO] O servidor TTS local não respondeu:", e);
-                            resolve(null);
-                        }
+                        } catch (e) { resolve(null); }
                     });
                 }
 
                 setInterval(() => {
                     const hostArroba = (getSafeMem('rdm_user') || 'usuario').replace('@', '');
-
-                    // 1. CORREÇÃO DO LOOP INFINITO DO GERAL: Trava usando data-attribute em vez de src!
                     const vidGeral = document.getElementById('vid-geral');
+
                     if (vidGeral) {
+                        // VÍDEO GERAL NA RAIZ (SOLTO NO GITHUB)
                         const urlGeral = `@${hostArroba}_geral.mp4`;
-                        // Ao comparar src direto, o navegador converte para http://... e o IF entra em loop eterno!
+
                         if (vidGeral.getAttribute('data-loaded-src') !== urlGeral) {
-                            console.log("[VID-GERAL] Atribuindo vídeo de fundo:", urlGeral);
                             vidGeral.setAttribute('data-loaded-src', urlGeral);
                             vidGeral.src = urlGeral;
-                            vidGeral.play().catch(e => console.error("[VID-GERAL ERRO] Não foi possível dar Play inicial:", e));
-                        } else if (vidGeral.paused && document.getElementById('unlock-overlay').style.display === 'none') {
-                            vidGeral.play().catch(()=>{});
+                            vidGeral.muted = true; // FORÇA O MUDO PARA O CHROME NÃO BLOQUEAR
+                            let playGen = vidGeral.play();
+                            if (playGen !== undefined) playGen.catch(()=>{});
+                        } else if (vidGeral.paused) {
+                            vidGeral.muted = true;
+                            let playGen = vidGeral.play();
+                            if (playGen !== undefined) playGen.catch(()=>{});
                         }
                     }
 
@@ -2878,90 +2873,98 @@
                     const hostArroba = (getSafeMem('rdm_user') || 'usuario').replace('@', '');
                     const vidAcao = document.getElementById('vid-acao');
 
-                    console.log(`\n[FILA INICIO] Processando ação do tipo: ${atual.tipo} | Usuário: ${atual.nome}`);
-
                     let promptIA = `${cfg.persona}\n\n`;
-                    let estadoVideo = "resposta";
+                    let nomeComAcento = "resposta";
+                    let nomeSemAcento = "resposta";
                     let textoFinal = "";
 
                     if (atual.tipo === "chat") {
+                        nomeComAcento = atual.flood ? "bravo" : "resposta";
+                        nomeSemAcento = nomeComAcento;
                         if (atual.flood) {
-                            estadoVideo = "bravo";
-                            promptIA += `O usuário ${atual.nome} fez flood no chat: "${atual.pergunta}". Dê uma bronca engraçada nele.`;
+                            promptIA += `O usuário ${atual.nome} fez flood no chat: "${atual.pergunta}". Dê bronca curta.`;
                         } else {
-                            promptIA += `O usuário ${atual.nome} disse: "${atual.pergunta}". Dê uma resposta rápida.`;
+                            promptIA += `Usuário ${atual.nome} disse: "${atual.pergunta}". Responda em 1 frase.`;
                         }
                         textoFinal = await pensarComIA(promptIA, cfg);
 
                     } else if (atual.tipo === "presente") {
-                        // Limpa acentos e converte espaços em _ para bater certinho com o GitHub
-                        estadoVideo = atual.presenteNome.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '_');
-                        console.log(`[PRESENTE] Nome do presente limpo para busca de vídeo: ${estadoVideo}`);
-
                         if (atual.moedas > 98) {
-                            estadoVideo = "presente_grande";
-                            textoFinal = `Nossa! Muito obrigado pelo super presente, ${atual.nome}!`;
-                        } else if (atual.qtd > 1) {
-                            textoFinal = `Que combo de ${atual.presenteNome}! Muito obrigado, ${atual.nome}!`;
+                            nomeComAcento = "presente_grande";
+                            nomeSemAcento = "presente_grande";
+                            textoFinal = `Uau! Muito obrigado pelo presentão, ${atual.nome}! Mandou muito!`;
                         } else {
-                            textoFinal = `Obrigado pelo presente ${atual.presenteNome}, ${atual.nome}!`;
+                            let base = atual.presenteNome.toLowerCase().trim();
+                            nomeComAcento = base.replace(/\s+/g, '_');
+                            nomeSemAcento = base.normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '_');
+
+                            textoFinal = atual.qtd > 1
+                                ? `Que combo de ${atual.presenteNome}! Valeu, ${atual.nome}!`
+                                : `Obrigado pelo ${atual.presenteNome}, ${atual.nome}!`;
                         }
                     } else {
-                        estadoVideo = "resposta";
+                        nomeComAcento = "resposta";
+                        nomeSemAcento = "resposta";
                         textoFinal = atual.texto;
                     }
 
-                    console.log(`[TEXTO FINAL GERADO] "${textoFinal}"`);
-
                     let audioPlayer = null;
-                    if (cfg.modo === 'local' && cfg.apiLocal) audioPlayer = await gerarAudioCloneLocal(textoFinal, cfg.apiLocal);
+                    if (cfg.modo === 'local' && cfg.apiLocal) {
+                        audioPlayer = await gerarAudioCloneLocal(textoFinal, cfg.apiLocal);
+                    }
                     if (!audioPlayer) audioPlayer = new SpeechSynthesisUtterance(textoFinal);
 
-                    let videoTerminado = false;
+                    let finalizado = false;
                     const finalizar = () => {
-                        if (videoTerminado) return;
-                        videoTerminado = true;
-                        console.log("[FILA FIM] Ação encerrada. Ocultando vídeo e liberando motor.");
-                        if (vidAcao) vidAcao.style.opacity = "0";
-                        setTimeout(() => { tocando = false; }, 500);
+                        if (finalizado) return;
+                        finalizado = true;
+                        if (vidAcao) {
+                            vidAcao.style.opacity = "0";
+                            setTimeout(() => { vidAcao.pause(); }, 300);
+                        }
+                        setTimeout(() => { tocando = false; }, 800);
                     };
 
                     if (vidAcao) {
                         vidAcao.onended = finalizar;
+                        vidAcao.muted = true; // GARANTE QUE A AÇÃO SEJA MUDA
 
+                        // Busca na RAIZ do Github
+                        let try1 = `@${hostArroba}_${nomeComAcento}.mp4`;
+                        let try2 = `@${hostArroba}_${nomeSemAcento}.mp4`;
+                        let try3 = `@${hostArroba}_resposta.mp4`;
+
+                        vidAcao.setAttribute('data-tentativa', '1');
                         vidAcao.onerror = () => {
-                            let linkFallback = `@${hostArroba}_resposta.mp4`;
-                            if (vidAcao.getAttribute('src') !== linkFallback) {
-                                console.warn(`[VÍDEO AÇÃO] Arquivo principal não encontrado. Puxando o fallback: ${linkFallback}`);
-                                vidAcao.setAttribute('src', linkFallback);
-                                vidAcao.play().catch(e => console.error("[VÍDEO AÇÃO ERRO] Falha ao dar play no fallback:", e));
+                            let t = vidAcao.getAttribute('data-tentativa');
+                            if (t === '1') {
+                                vidAcao.setAttribute('data-tentativa', '2');
+                                vidAcao.src = try2;
+                            } else if (t === '2') {
+                                vidAcao.setAttribute('data-tentativa', '3');
+                                vidAcao.src = try3;
                             } else {
-                                console.error("[VÍDEO AÇÃO ERRO FATAL] O fallback de resposta também falhou ou não existe no GitHub.");
+                                vidAcao.style.opacity = "0";
                                 finalizar();
                             }
                         };
 
-                        let alvoSrc = `@${hostArroba}_${estadoVideo}.mp4`;
-                        console.log(`[VÍDEO AÇÃO] Tentando injetar vídeo principal: ${alvoSrc}`);
-                        vidAcao.setAttribute('src', alvoSrc);
+                        vidAcao.src = try1;
+                        vidAcao.currentTime = 0;
                         vidAcao.style.opacity = "1";
-                        vidAcao.play().catch(e => console.error("[VÍDEO AÇÃO ERRO] Falha ao iniciar vídeo:", e));
+
+                        let mainPlay = vidAcao.play();
+                        if (mainPlay) mainPlay.catch(()=>{});
                     }
 
                     if (audioPlayer instanceof SpeechSynthesisUtterance) {
                         window.speechSynthesis.speak(audioPlayer);
                     } else {
                         let pAud = audioPlayer.play();
-                        if (pAud) pAud.catch(e => console.error("[ÁUDIO PC ERRO] Falha ao tocar TTS local:", e));
+                        if (pAud) pAud.catch(()=>{});
                     }
 
-                    // Trava máxima: liberação forçada em 15s caso o vídeo no OBS congele e não mande o onended.
-                    setTimeout(() => {
-                        if (!videoTerminado) {
-                            console.warn("[SEGURANÇA] O vídeo demorou demais ou travou. Avançando a fila na marra.");
-                            finalizar();
-                        }
-                    }, 15000);
+                    setTimeout(finalizar, 15000);
                 }
             }
 
