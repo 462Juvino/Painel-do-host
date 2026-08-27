@@ -2779,12 +2779,24 @@
 
             if (viewMode === 'live_auto') {
                 document.getElementById('obs-container').style.padding = '0';
-                // Adicionado z-index e garantido que os vídeos fiquem fixos na tela
+
+                // MÁGICA ANTI-TELA BRANCA: Botão invisível que desbloqueia o áudio no Chrome!
                 document.getElementById('obs-container').innerHTML = `
+                    <div id="unlock-overlay" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.9); color:white; display:flex; justify-content:center; align-items:center; z-index:9999; font-size:24px; font-weight:bold; cursor:pointer; text-align:center; padding:20px;" onclick="this.style.display='none'; if(document.getElementById('vid-geral')) document.getElementById('vid-geral').play();">
+                        ⚠️ O Chrome bloqueou o vídeo automático.<br><br>👉 CLIQUE AQUI NA TELA PARA INICIAR A ANIMAÇÃO 👈
+                    </div>
                     <div style="width: 100vw; height: 100vh; position: fixed; top: 0; left: 0; overflow: hidden; background: transparent;">
-                        <video id="vid-geral" autoplay loop muted playsinline style="position: absolute; top:0; left:0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); opacity: 1; z-index: 1;"></video>
-                        <video id="vid-acao" autoplay muted playsinline style="position: absolute; top:0; left:0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); opacity: 0; z-index: 2; transition: opacity 0.2s;"></video>
+                        <video id="vid-geral" loop muted playsinline style="position: absolute; top:0; left:0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); opacity: 1; z-index: 1;"></video>
+                        <video id="vid-acao" playsinline style="position: absolute; top:0; left:0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); opacity: 0; z-index: 2; transition: opacity 0.2s;"></video>
                     </div>`;
+
+                // Se estiver rodando dentro do OBS Studio (onde o autoplay é livre), esconde o aviso sozinho
+                setTimeout(() => {
+                    if (navigator.userAgent.includes("OBS")) {
+                        let overlay = document.getElementById('unlock-overlay');
+                        if (overlay) overlay.style.display = 'none';
+                    }
+                }, 500);
 
                 let lastAutoId = 0;
                 let filaExecucao = [];
@@ -2793,21 +2805,13 @@
 
                 async function pensarComIA(prompt, cfg) {
                     if (!cfg.gemini) return "Esqueceram de me dar o cérebro. Cadê a chave da API?";
-
-                    // Extrai a base da URL (Ex: tira o /gerar e deixa só http://127.0.0.1:8020)
                     let baseUrl = cfg.apiLocal ? cfg.apiLocal.replace('/gerar', '') : "http://127.0.0.1:8020";
-                    // Chama a nova rota /pensar do seu Python!
                     const url = `${baseUrl}/pensar?prompt=${encodeURIComponent(prompt)}&persona=${encodeURIComponent(cfg.persona)}&api_key=${encodeURIComponent(cfg.gemini)}`;
-
                     try {
                         const res = await fetch(url);
                         const data = await res.json();
                         return data.texto;
                     } catch (e) {
-                        if (!erroIAMostrado) {
-                            console.error("❌ ERRO DE CONEXÃO COM O PYTHON:", e);
-                            erroIAMostrado = true;
-                        }
                         return "O meu servidor cerebral está desligado.";
                     }
                 }
@@ -2829,17 +2833,16 @@
                     const cfg = JSON.parse(getSafeMem('diretoria_liveauto_config')) || {};
                     const hostArroba = (getSafeMem('rdm_user') || 'usuario').replace('@', '');
 
-                    // 1. VÍDEO GERAL BLINDADO: Caminho ajustado para a sua pasta do GitHub
+                    // 1. VÍDEO GERAL: Buscando os vídeos soltos na RAIZ (Corrigido)
                     const vidGeral = document.getElementById('vid-geral');
                     if (vidGeral) {
-                        const urlGeral = `IA/Vídeos_Kaveirinha/@${hostArroba}_geral.mp4`;
-
+                        const urlGeral = `@${hostArroba}_geral.mp4`;
                         if (vidGeral.getAttribute('data-loaded-src') !== urlGeral) {
                             vidGeral.setAttribute('data-loaded-src', urlGeral);
                             vidGeral.src = urlGeral;
                             let playGen = vidGeral.play();
                             if (playGen !== undefined) playGen.catch(()=>{});
-                        } else if (vidGeral.paused) {
+                        } else if (vidGeral.paused && document.getElementById('unlock-overlay').style.display === 'none') {
                             let playGen = vidGeral.play();
                             if (playGen !== undefined) playGen.catch(()=>{});
                         }
@@ -2853,7 +2856,7 @@
                         }
                     });
 
-                    // 🧠 MOTOR DE PRIORIDADE
+                    // 🧠 MOTOR DE PRIORIDADE DA FILA
                     if (filaExecucao.length > 0) {
                         filaExecucao.sort((a, b) => {
                             const peso = { "presente": 3, "chat": 2, "join": 1 };
@@ -2874,21 +2877,15 @@
                     const hostArroba = (getSafeMem('rdm_user') || 'usuario').replace('@', '');
                     const vidAcao = document.getElementById('vid-acao');
 
-                    // FERRAMENTA DE-PARA: Limpa acentos e arruma o nome do arquivo perfeitamente
-                    const formatarNome = (str) => {
-                        return str.normalize('NFD').replace(/[\u0300-\u036f]/g, "") // Remove acentos do nome que vem do TikTok
-                                  .toLowerCase().trim()
-                                  .replace(/[^a-z0-9\s-]/g, '')
-                                  .replace(/\s+/g, '_');
-                    };
-
                     let promptIA = `${cfg.persona}\n\n`;
-                    let estadoVideo = "resposta";
+                    let nomeComAcento = "resposta";
+                    let nomeSemAcento = "resposta";
                     let textoFinal = "";
 
                     if (atual.tipo === "chat") {
                         if (atual.flood) {
-                            estadoVideo = "bravo";
+                            nomeComAcento = "bravo";
+                            nomeSemAcento = "bravo";
                             promptIA += `O usuário ${atual.nome} enviou mensagens repetidas (flood) no chat: "${atual.pergunta}". Dê uma bronca engraçada nele.`;
                         } else {
                             promptIA += `O usuário ${atual.nome} disse: "${atual.pergunta}". Dê uma resposta rápida.`;
@@ -2896,60 +2893,74 @@
                         textoFinal = await pensarComIA(promptIA, cfg);
 
                     } else if (atual.tipo === "presente") {
-                        estadoVideo = formatarNome(atual.presenteNome);
-
                         if (atual.moedas > 98) {
-                            estadoVideo = "presente_grande";
+                            nomeComAcento = "presente_grande";
+                            nomeSemAcento = "presente_grande";
                             textoFinal = `Nossa! Muito obrigado pelo super presente, ${atual.nome}! Mandou muito bem com esse ${atual.presenteNome}!`;
-                        } else if (atual.qtd > 1) {
-                            textoFinal = `Que combo incrível de ${atual.presenteNome}! Muito obrigado, ${atual.nome}!`;
                         } else {
-                            textoFinal = `Muito obrigado pelo presente ${atual.presenteNome}, ${atual.nome}!`;
-                        }
+                            // DE-PARA INTELIGENTE: Cria 2 possibilidades de nome para caçar o arquivo no GitHub
+                            let baseName = atual.presenteNome.toLowerCase().trim().replace(/\s+/g, '_');
+                            nomeComAcento = baseName; // Tenta ex: mãos_fazendo_coração
+                            nomeSemAcento = baseName.normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9_]/g, ''); // Tenta ex: maos_fazendo_coracao
 
+                            if (atual.qtd > 1) {
+                                textoFinal = `Que combo incrível de ${atual.presenteNome}! Muito obrigado, ${atual.nome}!`;
+                            } else {
+                                textoFinal = `Muito obrigado pelo presente ${atual.presenteNome}, ${atual.nome}!`;
+                            }
+                        }
                     } else {
-                        estadoVideo = "resposta";
+                        nomeComAcento = "resposta";
+                        nomeSemAcento = "resposta";
                         textoFinal = atual.texto;
                     }
 
-                    // 2. CHAMA O MOTOR DE CLONAGEM LOCAL
+                    // 2. CHAMA A VOZ
                     let audioPlayer = null;
                     if (cfg.modo === 'local' && cfg.apiLocal) {
                         audioPlayer = await gerarAudioCloneLocal(textoFinal, cfg.apiLocal);
                     }
                     if (!audioPlayer) audioPlayer = new SpeechSynthesisUtterance(textoFinal);
 
-                    // 3. FINALIZADOR BLINDADO (Garante que a fila nunca trave e NÃO "crasha" o player)
+                    // 3. FINALIZADOR BLINDADO
                     let finalizado = false;
                     const finalizar = () => {
                         if (finalizado) return;
                         finalizado = true;
                         if (vidAcao) {
                             vidAcao.style.opacity = "0";
-                            // Apenas pausa o vídeo sem remover o src. O navegador lida com isso em paz.
                             setTimeout(() => { vidAcao.pause(); }, 300);
                         }
                         setTimeout(() => { tocando = false; }, 800);
                     };
 
-                    // 4. ROTEIA O VÍDEO DA AÇÃO (QUEM MANDA NO TEMPO AGORA É O VÍDEO!)
+                    // 4. ROTEADOR DE VÍDEO (AGORA O VÍDEO É O CHEFE DO TEMPO DA TELA)
                     if (vidAcao) {
-                        // Quando a animação do vídeo acabar, ele chama a função de finalizar.
+                        // A AÇÃO SÓ ACABA QUANDO O VÍDEO ACABAR (Ele não some mais pelo meio)
                         vidAcao.onended = finalizar;
 
+                        let try1 = `@${hostArroba}_${nomeComAcento}.mp4`;
+                        let try2 = `@${hostArroba}_${nomeSemAcento}.mp4`;
+                        let try3 = `@${hostArroba}_resposta.mp4`;
+
+                        // CAÇADOR DE ARQUIVOS (Busca sem parar a live)
+                        vidAcao.setAttribute('data-tentativa', '1');
                         vidAcao.onerror = () => {
-                            if (!vidAcao.src.includes('_resposta.mp4')) {
-                                console.warn(`Vídeo da ação falhou. Puxando resposta padrão.`);
-                                vidAcao.src = `IA/Vídeos_Kaveirinha/@${hostArroba}_resposta.mp4`;
-                                let p = vidAcao.play();
-                                if (p) p.catch(()=>{});
+                            let tentativaAtual = vidAcao.getAttribute('data-tentativa');
+                            if (tentativaAtual === '1') {
+                                vidAcao.setAttribute('data-tentativa', '2');
+                                vidAcao.src = try2;
+                            } else if (tentativaAtual === '2') {
+                                console.warn(`Vídeos do presente falharam. Puxando resposta padrão.`);
+                                vidAcao.setAttribute('data-tentativa', '3');
+                                vidAcao.src = try3;
                             } else {
                                 vidAcao.style.opacity = "0";
-                                finalizar(); // Se falhar tudo, encerra e segue a vida
+                                finalizar();
                             }
                         };
 
-                        vidAcao.src = `IA/Vídeos_Kaveirinha/@${hostArroba}_${estadoVideo}.mp4`;
+                        vidAcao.src = try1;
                         vidAcao.currentTime = 0;
                         vidAcao.style.opacity = "1";
 
@@ -2957,15 +2968,15 @@
                         if (mainPlay) mainPlay.catch(()=>{});
                     }
 
-                    // 5. TOCA O ÁUDIO DE FORMA INDEPENDENTE
+                    // 5. TOCA O ÁUDIO SOLTO (Assim não importa se ele for mais rápido ou devagar que o vídeo)
                     if (audioPlayer instanceof SpeechSynthesisUtterance) {
                         window.speechSynthesis.speak(audioPlayer);
                     } else {
                         let pAud = audioPlayer.play();
-                        if (pAud) pAud.catch(e => console.log(e));
+                        if (pAud) pAud.catch(()=>{});
                     }
 
-                    // Trava de segurança ABSOLUTA: Se o vídeo travar e não disparar o 'onended', força o encerramento em 15s.
+                    // SEGURANÇA MÁXIMA: Se o navegador travar o vídeo, força a fila a andar no máximo em 15s.
                     setTimeout(finalizar, 15000);
                 }
             }
