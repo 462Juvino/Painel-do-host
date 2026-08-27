@@ -2823,7 +2823,7 @@
                     // 1. O SEGREDO DO VÍDEO GERAL: Atribuir a fonte apenas 1 vez e deixar o HTML fazer o loop
                     const vidGeral = document.getElementById('vid-geral');
                     if (vidGeral) {
-                        const urlGeral = `IA/Vídeos_Kaveirinha/@${hostArroba}_geral.mp4`;
+                        const urlGeral = \`@${hostArroba}_geral.mp4`;
                         if (vidGeral.getAttribute('src') !== urlGeral) {
                             vidGeral.setAttribute('src', urlGeral);
                         }
@@ -2910,7 +2910,7 @@
 
                         // FALLBACK SIMPLES: Se não achar o vídeo (Erro 404), ele puxa a resposta padrão pra não crashar
                         vidAcao.onerror = () => {
-                            let linkFallback = `IA/Vídeos_Kaveirinha/@${hostArroba}_resposta.mp4`;
+                            let linkFallback = \`@${hostArroba}_resposta.mp4`;
                             if (vidAcao.getAttribute('src') !== linkFallback) {
                                 vidAcao.setAttribute('src', linkFallback);
                             } else {
@@ -2918,7 +2918,7 @@
                             }
                         };
 
-                        vidAcao.setAttribute('src', `IA/Vídeos_Kaveirinha/@${hostArroba}_${estadoVideo}.mp4`);
+                        vidAcao.setAttribute('src', `@${hostArroba}_${estadoVideo}.mp4`);
                         vidAcao.style.opacity = "1";
                     }
 
