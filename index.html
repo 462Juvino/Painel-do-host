@@ -514,6 +514,16 @@
                             <input type="text" id="live-auto-api" value="http://127.0.0.1:8020/gerar" onchange="salvarLiveAuto()" style="margin-top: 5px; background: #111; border: 1px solid #555; color: white; padding: 8px; border-radius: 4px;">
                         </label>
                     </div>
+
+                    <!-- ÁREA DE DOWNLOAD DO EXE -->
+                    <div style="margin-top: 15px; padding: 12px; background: rgba(0, 242, 254, 0.1); border: 1px dashed #00f2fe; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div style="font-size: 12px; color: #ccc;">
+                            <strong style="color: #00f2fe; font-size: 14px;">📥 Servidor de Voz IA (.EXE)</strong><br>
+                            Programa local para gerar vozes ultra-realistas sem delay na live.
+                        </div>
+                        <!-- COLOQUE O LINK DE DOWNLOAD AQUI DENTRO DO href="#" -->
+                        <a href="#" target="_blank" style="background: #00f2fe; color: black; padding: 8px 15px; border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 13px; transition: 0.2s; white-space: nowrap;">Baixar Programa</a>
+                    </div>
                 </div>
 
                 <!-- NOVO: HISTÓRICO DA FILA EM TEMPO REAL -->
@@ -1289,10 +1299,29 @@
             // ==========================================
             // SISTEMA DE MAPEAMENTO DO LIVE AUTO (NPC)
             // ==========================================
+            // ==========================================
+            // SISTEMA DE MAPEAMENTO DO LIVE AUTO (NPC)
+            // ==========================================
             function gerarSlotsVideosNPC() {
                 const grid = document.getElementById('grid-videos-npc');
                 if (!grid) return;
                 let html = '';
+
+                // Puxa o seu usuário do painel automaticamente para montar os nomes!
+                const hostArroba = (localStorage.getItem('rdm_user_tiktok') || localStorage.getItem('rdm_user') || 'usuario').replace('@', '');
+
+                const videosGithubNPC = `
+                    <option value="">📂 Puxar do seu GitHub (@${hostArroba})</option>
+                    <option value="@${hostArroba}_geral.mp4">🌌 Fundo Geral (@${hostArroba}_geral.mp4)</option>
+                    <option value="@${hostArroba}_resposta.mp4">🗣️ Resposta Chat (@${hostArroba}_resposta.mp4)</option>
+                    <option value="@${hostArroba}_bravo.mp4">😡 Reação: Flood (@${hostArroba}_bravo.mp4)</option>
+                    <option value="@${hostArroba}_presente_grande.mp4">🌟 Reação: Super Presente (@${hostArroba}_presente_grande.mp4)</option>
+                    <option value="@${hostArroba}_tiktok.mp4">🎁 Presente: TikTok (@${hostArroba}_tiktok.mp4)</option>
+                    <option value="@${hostArroba}_rosa.mp4">🎁 Presente: Rosa (@${hostArroba}_rosa.mp4)</option>
+                    <option value="@${hostArroba}_coracao.mp4">🎁 Presente: Coração (@${hostArroba}_coracao.mp4)</option>
+                    <option value="@${hostArroba}_chile.mp4">🎁 Presente: Chile (@${hostArroba}_chile.mp4)</option>
+                    <option value="@${hostArroba}_coroa.mp4">🎁 Presente: Coroa (@${hostArroba}_coroa.mp4)</option>
+                `;
 
                 const criarSlot = (id, titulo, isGatilho) => `
                     <div style="background: #222; border: 1px solid #00f2fe; border-radius: 8px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
@@ -1302,6 +1331,11 @@
                             <label style="display: flex; flex-direction: column;"><span style="color: #2ed573;">🎁 Gatilho (Nome do Presente):</span>
                                 <input type="text" id="npc-gatilho-${id}" placeholder="Ex: Rosa" style="background: #111; border: 1px solid #2ed573; color: white; padding: 6px; border-radius: 4px; outline: none;">
                             </label>` : ''}
+
+                            <select onchange="document.getElementById('npc-url-${id}').value = this.value" style="background: #111; border: 1px solid #00f2fe; color: white; padding: 6px; border-radius: 4px; outline: none; cursor: pointer;">
+                                ${videosGithubNPC}
+                            </select>
+
                             <label style="display: flex; flex-direction: column;">🔗 Arquivo GitHub ou Link da Web:
                                 <input type="text" id="npc-url-${id}" placeholder="ex: @kaveirablackops_video.mp4 ou https://..." style="background: #111; border: 1px solid #444; color: white; padding: 6px; border-radius: 4px; outline: none;">
                             </label>
