@@ -2781,20 +2781,10 @@
                 document.getElementById('obs-container').style.padding = '0';
 
                 document.getElementById('obs-container').innerHTML = `
-                    <div id="unlock-overlay" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.9); color:white; display:flex; justify-content:center; align-items:center; z-index:9999; font-size:24px; font-weight:bold; cursor:pointer; text-align:center; padding:20px;" onclick="this.style.display='none'; let v=document.getElementById('vid-geral'); if(v){v.muted=false; v.play();}">
-                        ⚠️ O navegador bloqueou o autoplay.<br><br>👉 CLIQUE AQUI NA TELA PARA INICIAR A ANIMAÇÃO 👈
-                    </div>
                     <div style="width: 100vw; height: 100vh; position: fixed; top: 0; left: 0; overflow: hidden; background: transparent;">
-                        <video id="vid-geral" loop muted playsinline style="position: absolute; top:0; left:0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); opacity: 1; z-index: 1;"></video>
-                        <video id="vid-acao" playsinline style="position: absolute; top:0; left:0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); opacity: 0; z-index: 2; transition: opacity 0.2s;"></video>
+                        <video id="vid-geral" autoplay loop muted playsinline style="position: absolute; top:0; left:0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); opacity: 1; z-index: 1;"></video>
+                        <video id="vid-acao" autoplay muted playsinline style="position: absolute; top:0; left:0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); opacity: 0; z-index: 2; transition: opacity 0.2s;"></video>
                     </div>`;
-
-                setTimeout(() => {
-                    if (navigator.userAgent.includes("OBS")) {
-                        let overlay = document.getElementById('unlock-overlay');
-                        if (overlay) overlay.style.display = 'none';
-                    }
-                }, 500);
 
                 let lastAutoId = 0;
                 let filaExecucao = [];
