@@ -2780,23 +2780,40 @@
             if (viewMode === 'live_auto') {
                 document.getElementById('obs-container').style.padding = '0';
 
-                // HTML Limpo: Sem tela preta, vídeos 100% mudos forçados
                 document.getElementById('obs-container').innerHTML = `
+                    <div id="unlock-overlay" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.9); color:white; display:flex; justify-content:center; align-items:center; z-index:9999; font-size:24px; font-weight:bold; cursor:pointer; text-align:center; padding:20px;" onclick="this.style.display='none'; let v=document.getElementById('vid-geral'); if(v){v.muted=false; v.play();}">
+                        ⚠️ O navegador bloqueou o autoplay.<br><br>👉 CLIQUE AQUI NA TELA PARA INICIAR A ANIMAÇÃO 👈
+                    </div>
                     <div style="width: 100vw; height: 100vh; position: fixed; top: 0; left: 0; overflow: hidden; background: transparent;">
-                        <video id="vid-geral" autoplay loop muted playsinline style="position: absolute; top:0; left:0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); opacity: 1; z-index: 1;"></video>
-                        <video id="vid-acao" autoplay muted playsinline style="position: absolute; top:0; left:0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); opacity: 0; z-index: 2; transition: opacity 0.2s;"></video>
+                        <video id="vid-geral" loop muted playsinline style="position: absolute; top:0; left:0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); opacity: 1; z-index: 1;"></video>
+                        <video id="vid-acao" playsinline style="position: absolute; top:0; left:0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); opacity: 0; z-index: 2; transition: opacity 0.2s;"></video>
                     </div>`;
+
+                setTimeout(() => {
+                    if (navigator.userAgent.includes("OBS")) {
+                        let overlay = document.getElementById('unlock-overlay');
+                        if (overlay) overlay.style.display = 'none';
+                    }
+                }, 500);
 
                 let lastAutoId = 0;
                 let filaExecucao = [];
                 let tocando = false;
 
+                // ⚡ FUNÇÃO RADAR: Checa se o arquivo existe ANTES de travar a tag de vídeo
+                async function checarVideoExiste(url) {
+                    try {
+                        const res = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+                        return res.ok;
+                    } catch(e) { return false; }
+                }
+
                 async function pensarComIA(prompt, cfg) {
                     if (!cfg.gemini) return "Sem chave da API.";
                     let baseUrl = cfg.apiLocal ? cfg.apiLocal.replace('/gerar', '') : "http://127.0.0.1:8020";
                     const url = `${baseUrl}/pensar?prompt=${encodeURIComponent(prompt)}&persona=${encodeURIComponent(cfg.persona)}&api_key=${encodeURIComponent(cfg.gemini)}`;
-
                     try {
+                        console.log("[IA] Enviando prompt...");
                         const controller = new AbortController();
                         const id = setTimeout(() => controller.abort(), 4000);
                         const res = await fetch(url, { signal: controller.signal });
@@ -2804,7 +2821,8 @@
                         const data = await res.json();
                         return data.texto || "Estou sem palavras.";
                     } catch (e) {
-                        return "Minha conexão falhou, desculpe.";
+                        console.error("[IA ERRO] Falha ao processar IA.");
+                        return "Meu cérebro falhou, mas estou aqui.";
                     }
                 }
 
@@ -2830,22 +2848,13 @@
 
                     if (vidGeral) {
                         const urlGeral = `@${hostArroba}_geral.mp4`;
-
-                        // Escuta de Erro e Sucesso para o Vídeo Geral
-                        vidGeral.onplay = () => console.log("🟢 [VÍDEO GERAL] Rodando perfeitamente em loop.");
-                        vidGeral.onerror = () => console.error(`🔴 [VÍDEO GERAL ERRO] O arquivo não foi encontrado na raiz do GitHub. Verifique se o nome exato é: ${urlGeral}`);
-
                         if (vidGeral.getAttribute('data-loaded-src') !== urlGeral) {
-                            console.log(`⏳ [VÍDEO GERAL] Tentando carregar fundo: ${urlGeral}`);
+                            console.log(`[VÍDEO GERAL] Carregando fundo: ${urlGeral}`);
                             vidGeral.setAttribute('data-loaded-src', urlGeral);
                             vidGeral.src = urlGeral;
-                            vidGeral.muted = true;
-                            let playGen = vidGeral.play();
-                            if (playGen !== undefined) playGen.catch(e => console.error("🔴 [VÍDEO GERAL] Navegador bloqueou o play inicial:", e));
-                        } else if (vidGeral.paused) {
-                            vidGeral.muted = true;
-                            let playGen = vidGeral.play();
-                            if (playGen !== undefined) playGen.catch(()=>{});
+                            vidGeral.play().catch(()=>{});
+                        } else if (vidGeral.paused && document.getElementById('unlock-overlay').style.display === 'none') {
+                            vidGeral.play().catch(()=>{});
                         }
                     }
 
@@ -2877,6 +2886,8 @@
                     const hostArroba = (getSafeMem('rdm_user') || 'usuario').replace('@', '');
                     const vidAcao = document.getElementById('vid-acao');
 
+                    console.log(`\n[FILA] Processando ação: ${atual.tipo} | ${atual.nome}`);
+
                     let promptIA = `${cfg.persona}\n\n`;
                     let nomeComAcento = "resposta";
                     let nomeSemAcento = "resposta";
@@ -2896,7 +2907,7 @@
                         if (atual.moedas > 98) {
                             nomeComAcento = "presente_grande";
                             nomeSemAcento = "presente_grande";
-                            textoFinal = `Uau! Muito obrigado pelo presentão, ${atual.nome}! Mandou muito!`;
+                            textoFinal = `Uau! Muito obrigado pelo presentão, ${atual.nome}!`;
                         } else {
                             let base = atual.presenteNome.toLowerCase().trim();
                             nomeComAcento = base.replace(/\s+/g, '_');
@@ -2912,78 +2923,80 @@
                         textoFinal = atual.texto;
                     }
 
+                    console.log(`[VOZ] "${textoFinal}"`);
+
                     let audioPlayer = null;
                     if (cfg.modo === 'local' && cfg.apiLocal) {
                         audioPlayer = await gerarAudioCloneLocal(textoFinal, cfg.apiLocal);
                     }
                     if (!audioPlayer) audioPlayer = new SpeechSynthesisUtterance(textoFinal);
 
-                    let finalizado = false;
+                    let videoTerminado = false;
                     const finalizar = (motivo) => {
-                        if (finalizado) return;
-                        finalizado = true;
-                        console.log(`🛑 [AÇÃO FINALIZADA] Motivo: ${motivo}. Fechando vídeo e liberando motor.`);
+                        if (videoTerminado) return;
+                        videoTerminado = true;
+                        console.log(`🛑 [FIM] Motivo: ${motivo}`);
                         if (vidAcao) {
                             vidAcao.style.opacity = "0";
+                            // Reseta a tag para não travar a próxima ação
                             setTimeout(() => { vidAcao.pause(); vidAcao.removeAttribute('src'); vidAcao.load(); }, 300);
                         }
                         setTimeout(() => { tocando = false; }, 800);
                     };
 
                     if (vidAcao) {
-                        vidAcao.muted = true;
+                        // Garante que o vídeo anterior foi apagado
+                        vidAcao.pause();
+                        vidAcao.removeAttribute('src');
+                        vidAcao.load();
 
-                        // SÓ FINALIZA QUANDO A ANIMAÇÃO ACABAR ATÉ O FIM!
-                        vidAcao.onended = () => finalizar("Vídeo chegou ao fim naturalmente");
+                        vidAcao.onended = () => finalizar("Animação completou com sucesso");
+                        vidAcao.onerror = () => finalizar("Erro de decodificação do Navegador");
+                        vidAcao.muted = true; // Garante silêncio na tag de vídeo
 
                         let try1 = `@${hostArroba}_${nomeComAcento}.mp4`;
                         let try2 = `@${hostArroba}_${nomeSemAcento}.mp4`;
                         let try3 = `@${hostArroba}_resposta.mp4`;
+                        let videoEscolhido = null;
 
-                        vidAcao.setAttribute('data-tentativa', '1');
-
-                        // SE FALHAR (404), ELE AVISA NO CONSOLE E TENTA O PRÓXIMO
-                        vidAcao.onerror = () => {
-                            let t = vidAcao.getAttribute('data-tentativa');
-                            console.warn(`⚠️ [VÍDEO AÇÃO FALHOU] Tentativa ${t} deu erro. O arquivo não existe.`);
-
-                            if (t === '1') {
-                                console.log(`⏳ [VÍDEO AÇÃO] Tentando Opção 2 (Sem Acento): ${try2}`);
-                                vidAcao.setAttribute('data-tentativa', '2');
-                                vidAcao.src = try2;
-                                vidAcao.play().catch(()=>{});
-                            } else if (t === '2') {
-                                console.log(`⏳ [VÍDEO AÇÃO] Tentando Opção 3 (Resposta Padrão): ${try3}`);
-                                vidAcao.setAttribute('data-tentativa', '3');
-                                vidAcao.src = try3;
-                                vidAcao.play().catch(()=>{});
+                        // ⚡ O RADAR ENTRA EM AÇÃO
+                        console.log(`[RADAR] Procurando: ${try1}`);
+                        if (await checarVideoExiste(try1)) {
+                            videoEscolhido = try1;
+                        } else {
+                            console.log(`[RADAR] Procurando: ${try2}`);
+                            if (await checarVideoExiste(try2)) {
+                                videoEscolhido = try2;
                             } else {
-                                console.error(`❌ [VÍDEO AÇÃO ERRO FATAL] Nenhum vídeo foi encontrado no GitHub para esta ação.`);
-                                vidAcao.style.opacity = "0";
-                                finalizar("Vídeo Não Encontrado (404)");
+                                console.log(`[RADAR] Procurando Fallback: ${try3}`);
+                                if (await checarVideoExiste(try3)) {
+                                    videoEscolhido = try3;
+                                }
                             }
-                        };
+                        }
 
-                        vidAcao.onplay = () => console.log(`🟢 [VÍDEO AÇÃO] Vídeo iniciou! Tentativa atual exibida: ${vidAcao.getAttribute('data-tentativa')}`);
-
-                        console.log(`\n⏳ [VÍDEO AÇÃO] Disparando Opção 1 (Original): ${try1}`);
-                        vidAcao.src = try1;
-                        vidAcao.style.opacity = "1";
-                        vidAcao.play().catch(e => console.error("🔴 [VÍDEO AÇÃO] Navegador bloqueou o play:", e));
+                        if (videoEscolhido) {
+                            console.log(`✅ [PLAY] Injetando arquivo válido: ${videoEscolhido}`);
+                            vidAcao.src = videoEscolhido;
+                            vidAcao.style.opacity = "1";
+                            vidAcao.play().catch(e => console.error("🔴 [ERRO PLAY]", e));
+                        } else {
+                            console.warn(`⚠️ NENHUM vídeo encontrado no GitHub para este evento. Rodando apenas o áudio.`);
+                            // Se não tem vídeo, dá só 5 segundos para o áudio falar e avança a fila
+                            setTimeout(() => finalizar("Vídeo não hospedado (404)"), 5000);
+                        }
                     }
 
                     if (audioPlayer instanceof SpeechSynthesisUtterance) {
                         window.speechSynthesis.speak(audioPlayer);
                     } else {
                         let pAud = audioPlayer.play();
-                        if (pAud) pAud.catch(e => console.error("🔴 [ÁUDIO TTS ERRO]:", e));
+                        if (pAud) pAud.catch(()=>{});
                     }
 
+                    // ESCUDO: Se a aba travar totalmente, anda na marra
                     setTimeout(() => {
-                        if (!finalizado) {
-                            console.warn("⚠️ [SEGURANÇA] O vídeo travou. Fechando na marra após 15 segundos.");
-                            finalizar("Estouro de Tempo de Segurança");
-                        }
+                        if (!videoTerminado) finalizar("Estouro de Tempo Limite (15s)");
                     }, 15000);
                 }
             }
