@@ -2937,14 +2937,21 @@
                     const vidGeral = document.getElementById('vid-geral');
 
                     if (vidGeral && vCfg.geral) {
+                        // MÁGICA ANTI-OBS: Força o loop na marra caso o gravador ignore a tag HTML
+                        vidGeral.onended = () => {
+                            vidGeral.currentTime = 0;
+                            vidGeral.play().catch(()=>{});
+                        };
+
                         if (vidGeral.getAttribute('data-loaded-src') !== vCfg.geral) {
                             vidGeral.setAttribute('data-loaded-src', vCfg.geral);
                             vidGeral.src = vCfg.geral;
-                            vidGeral.muted = true; // FORÇA O MUDO PARA O CHROME NÃO BLOQUEAR
+                            vidGeral.muted = true; // FORÇA O MUDO
                             let playGen = vidGeral.play();
                             if (playGen !== undefined) playGen.catch(()=>{});
-                        } else if (vidGeral.paused) {
+                        } else if (vidGeral.paused || vidGeral.ended) {
                             vidGeral.muted = true;
+                            if (vidGeral.ended) vidGeral.currentTime = 0; // Rebobina o vídeo se o OBS travar no final
                             let playGen = vidGeral.play();
                             if (playGen !== undefined) playGen.catch(()=>{});
                         }
@@ -3364,6 +3371,7 @@
                         layout: loadSafe('diretoria_rank_layout', {"gifters":"completo","gifts":"completo","likes":"completo"}),
                         reload: loadSafe('diretoria_comando_reload', '0'), // Envia o gatilho de F5
                         liveauto: loadSafe('diretoria_fila_liveauto', []), // ENVIA A FILA DE BOAS VINDAS
+                        liveautoVideos: loadSafe('diretoria_liveauto_videos', { geral: '', resposta: '', presentes: [] }), // 🔥 ENVIA O MAPEAMENTO DOS VÍDEOS PARA O OBS!
                         batalha: loadSafe('diretoria_batalha', { estado: 'idle', tempoAtual: 0, tempoTotal: 300, auto: false, taps: {}, coins: {} })
                     };
 
@@ -3423,6 +3431,7 @@
                         if(st.sort && st.sort.id) window.NUVEM_OBS['diretoria_sorteio_disparo'] = JSON.stringify(st.sort);
                         if(st.midia && st.midia.id) window.NUVEM_OBS['diretoria_midia_disparo'] = JSON.stringify(st.midia);
                         window.NUVEM_OBS['diretoria_fila_liveauto'] = JSON.stringify(st.liveauto || []);
+                        window.NUVEM_OBS['diretoria_liveauto_videos'] = JSON.stringify(st.liveautoVideos || { geral: '', resposta: '', presentes: [] }); // 🔥 OBS PUXANDO OS VÍDEOS!
 
                         if(st.batalha) window.NUVEM_OBS['diretoria_batalha'] = JSON.stringify(st.batalha);
 
