@@ -551,6 +551,13 @@
                     }, 1000);
                 </script>
 
+                <h3 style="color: #00f2fe; margin-top: 30px; border-top: 1px solid #444; padding-top: 20px;">🎬 Mapeamento de Vídeos do NPC</h3>
+                <p style="font-size: 13px; color: #ccc; margin-bottom: 20px;">Configure o vídeo de Fundo, a Resposta Padrão e até 20 presentes específicos. Você pode colar o Link (ex: @kaveirablackops_rosa.mp4) ou subir o arquivo do PC.</p>
+
+                <button onclick="salvarVideosNPC()" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-bottom: 15px;">💾 Salvar Mapeamento de Vídeos</button>
+
+                <div id="grid-videos-npc" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 15px;"></div>
+
             </div>
         </div>
 
@@ -1279,9 +1286,76 @@
                 alert("✅ As 20 mídias foram salvas com sucesso!");
             }
 
+            // ==========================================
+            // SISTEMA DE MAPEAMENTO DO LIVE AUTO (NPC)
+            // ==========================================
+            function gerarSlotsVideosNPC() {
+                const grid = document.getElementById('grid-videos-npc');
+                if (!grid) return;
+                let html = '';
+
+                const criarSlot = (id, titulo, isGatilho) => `
+                    <div style="background: #222; border: 1px solid #00f2fe; border-radius: 8px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+                        <h4 style="margin: 0 0 10px 0; color: #00f2fe;">${titulo}</h4>
+                        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+                            ${isGatilho ? `
+                            <label style="display: flex; flex-direction: column;"><span style="color: #2ed573;">🎁 Gatilho (Nome do Presente):</span>
+                                <input type="text" id="npc-gatilho-${id}" placeholder="Ex: Rosa" style="background: #111; border: 1px solid #2ed573; color: white; padding: 6px; border-radius: 4px; outline: none;">
+                            </label>` : ''}
+                            <label style="display: flex; flex-direction: column;">🔗 Arquivo GitHub ou Link da Web:
+                                <input type="text" id="npc-url-${id}" placeholder="ex: @kaveirablackops_video.mp4 ou https://..." style="background: #111; border: 1px solid #444; color: white; padding: 6px; border-radius: 4px; outline: none;">
+                            </label>
+                            <label style="display: flex; flex-direction: column;">📁 Arquivo do PC (Máx 3MB):
+                                <input type="file" id="npc-file-${id}" accept="video/*" style="background: #111; border: 1px solid #444; color: white; padding: 4px; border-radius: 4px; outline: none;">
+                            </label>
+                        </div>
+                    </div>`;
+
+                html += criarSlot('geral', '🌌 Fundo Geral (Loop)', false);
+                html += criarSlot('resposta', '🗣️ Resposta Padrão (Chat/Falha)', false);
+                for (let i = 1; i <= 20; i++) {
+                    html += criarSlot(`pres_${i}`, `🎁 Presente Especial ${i}`, true);
+                }
+                grid.innerHTML = html;
+
+                ativarConversorLocal('npc-file-geral', 'npc-url-geral');
+                ativarConversorLocal('npc-file-resposta', 'npc-url-resposta');
+                for (let i = 1; i <= 20; i++) ativarConversorLocal(`npc-file-pres_${i}`, `npc-url-pres_${i}`);
+            }
+
+            function carregarVideosNPC() {
+                const config = JSON.parse(localStorage.getItem('diretoria_liveauto_videos')) || { geral: '', resposta: '', presentes: [] };
+                if (document.getElementById('npc-url-geral')) {
+                    document.getElementById('npc-url-geral').value = config.geral || '';
+                    document.getElementById('npc-url-resposta').value = config.resposta || '';
+                    for (let i = 1; i <= 20; i++) {
+                        if (config.presentes[i - 1]) {
+                            document.getElementById(`npc-gatilho-pres_${i}`).value = config.presentes[i - 1].gatilho || '';
+                            document.getElementById(`npc-url-pres_${i}`).value = config.presentes[i - 1].url || '';
+                        }
+                    }
+                }
+            }
+
+            function salvarVideosNPC() {
+                const config = { geral: '', resposta: '', presentes: [] };
+                config.geral = document.getElementById('npc-url-geral').value;
+                config.resposta = document.getElementById('npc-url-resposta').value;
+                for (let i = 1; i <= 20; i++) {
+                    config.presentes.push({
+                        gatilho: document.getElementById(`npc-gatilho-pres_${i}`).value,
+                        url: document.getElementById(`npc-url-pres_${i}`).value
+                    });
+                }
+                localStorage.setItem('diretoria_liveauto_videos', JSON.stringify(config));
+                alert("✅ Mapeamento do NPC salvo com sucesso!");
+            }
+
             // Inicialização
             gerarSlotsDeMidia();
             carregarMidias();
+            gerarSlotsVideosNPC();
+            carregarVideosNPC();
         </script>
 
     </div>
@@ -2780,6 +2854,7 @@
             if (viewMode === 'live_auto') {
                 document.getElementById('obs-container').style.padding = '0';
 
+                // HTML Limpo: Sem tela preta, vídeos 100% mudos forçados
                 document.getElementById('obs-container').innerHTML = `
                     <div style="width: 100vw; height: 100vh; position: fixed; top: 0; left: 0; overflow: hidden; background: transparent;">
                         <video id="vid-geral" autoplay loop muted playsinline style="position: absolute; top:0; left:0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); opacity: 1; z-index: 1;"></video>
@@ -2790,20 +2865,11 @@
                 let filaExecucao = [];
                 let tocando = false;
 
-                // ⚡ FUNÇÃO RADAR: Checa se o arquivo existe ANTES de travar a tag de vídeo
-                async function checarVideoExiste(url) {
-                    try {
-                        const res = await fetch(url, { method: 'HEAD', cache: 'no-store' });
-                        return res.ok;
-                    } catch(e) { return false; }
-                }
-
                 async function pensarComIA(prompt, cfg) {
                     if (!cfg.gemini) return "Sem chave da API.";
                     let baseUrl = cfg.apiLocal ? cfg.apiLocal.replace('/gerar', '') : "http://127.0.0.1:8020";
                     const url = `${baseUrl}/pensar?prompt=${encodeURIComponent(prompt)}&persona=${encodeURIComponent(cfg.persona)}&api_key=${encodeURIComponent(cfg.gemini)}`;
                     try {
-                        console.log("[IA] Enviando prompt...");
                         const controller = new AbortController();
                         const id = setTimeout(() => controller.abort(), 4000);
                         const res = await fetch(url, { signal: controller.signal });
@@ -2811,8 +2877,7 @@
                         const data = await res.json();
                         return data.texto || "Estou sem palavras.";
                     } catch (e) {
-                        console.error("[IA ERRO] Falha ao processar IA.");
-                        return "Meu cérebro falhou, mas estou aqui.";
+                        return "Minha conexão falhou, desculpe.";
                     }
                 }
 
@@ -2833,18 +2898,21 @@
                 }
 
                 setInterval(() => {
-                    const hostArroba = (getSafeMem('rdm_user') || 'usuario').replace('@', '');
+                    // 1. O SEGREDO DO VÍDEO GERAL: Puxa o mapeamento gravado no painel!
+                    const vCfg = JSON.parse(getSafeMem('diretoria_liveauto_videos')) || { geral: '', resposta: '', presentes: [] };
                     const vidGeral = document.getElementById('vid-geral');
 
-                    if (vidGeral) {
-                        const urlGeral = `@${hostArroba}_geral.mp4`;
-                        if (vidGeral.getAttribute('data-loaded-src') !== urlGeral) {
-                            console.log(`[VÍDEO GERAL] Carregando fundo: ${urlGeral}`);
-                            vidGeral.setAttribute('data-loaded-src', urlGeral);
-                            vidGeral.src = urlGeral;
-                            vidGeral.play().catch(()=>{});
-                        } else if (vidGeral.paused && document.getElementById('unlock-overlay').style.display === 'none') {
-                            vidGeral.play().catch(()=>{});
+                    if (vidGeral && vCfg.geral) {
+                        if (vidGeral.getAttribute('data-loaded-src') !== vCfg.geral) {
+                            vidGeral.setAttribute('data-loaded-src', vCfg.geral);
+                            vidGeral.src = vCfg.geral;
+                            vidGeral.muted = true; // FORÇA O MUDO PARA O CHROME NÃO BLOQUEAR
+                            let playGen = vidGeral.play();
+                            if (playGen !== undefined) playGen.catch(()=>{});
+                        } else if (vidGeral.paused) {
+                            vidGeral.muted = true;
+                            let playGen = vidGeral.play();
+                            if (playGen !== undefined) playGen.catch(()=>{});
                         }
                     }
 
@@ -2856,6 +2924,7 @@
                         }
                     });
 
+                    // 🧠 ORDEM DE PRIORIDADE
                     if (filaExecucao.length > 0) {
                         filaExecucao.sort((a, b) => {
                             const peso = { "presente": 3, "chat": 2, "join": 1 };
@@ -2873,110 +2942,75 @@
                     tocando = true;
                     let atual = filaExecucao.shift();
                     const cfg = JSON.parse(getSafeMem('diretoria_liveauto_config')) || {};
-                    const hostArroba = (getSafeMem('rdm_user') || 'usuario').replace('@', '');
+                    const vCfg = JSON.parse(getSafeMem('diretoria_liveauto_videos')) || { geral: '', resposta: '', presentes: [] };
                     const vidAcao = document.getElementById('vid-acao');
 
-                    console.log(`\n[FILA] Processando ação: ${atual.tipo} | ${atual.nome}`);
-
                     let promptIA = `${cfg.persona}\n\n`;
-                    let nomeComAcento = "resposta";
-                    let nomeSemAcento = "resposta";
+                    let urlVideoEscolhido = vCfg.resposta || ''; // Puxa do painel o Padrão Resposta
                     let textoFinal = "";
 
                     if (atual.tipo === "chat") {
-                        nomeComAcento = atual.flood ? "bravo" : "resposta";
-                        nomeSemAcento = nomeComAcento;
                         if (atual.flood) {
-                            promptIA += `O usuário ${atual.nome} fez flood no chat: "${atual.pergunta}". Dê bronca curta.`;
+                            promptIA += `O usuário ${atual.nome} fez flood no chat: "${atual.pergunta}". Dê uma bronca engraçada nele.`;
                         } else {
-                            promptIA += `Usuário ${atual.nome} disse: "${atual.pergunta}". Responda em 1 frase.`;
+                            promptIA += `O usuário ${atual.nome} disse: "${atual.pergunta}". Dê uma resposta rápida.`;
                         }
                         textoFinal = await pensarComIA(promptIA, cfg);
 
                     } else if (atual.tipo === "presente") {
-                        if (atual.moedas > 98) {
-                            nomeComAcento = "presente_grande";
-                            nomeSemAcento = "presente_grande";
-                            textoFinal = `Uau! Muito obrigado pelo presentão, ${atual.nome}!`;
-                        } else {
-                            let base = atual.presenteNome.toLowerCase().trim();
-                            nomeComAcento = base.replace(/\s+/g, '_');
-                            nomeSemAcento = base.normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '_');
+                        // MÁGICA INTELIGENTE: Procura na lista de vídeos se o usuário mapeou este presente
+                        let presLimpo = atual.presenteNome.toLowerCase().trim();
+                        let mapeado = vCfg.presentes.find(p => p.gatilho && p.gatilho.toLowerCase().trim() === presLimpo);
 
-                            textoFinal = atual.qtd > 1
-                                ? `Que combo de ${atual.presenteNome}! Valeu, ${atual.nome}!`
-                                : `Obrigado pelo ${atual.presenteNome}, ${atual.nome}!`;
+                        if (mapeado && mapeado.url) {
+                            urlVideoEscolhido = mapeado.url; // Se mapeou, usa o vídeo escolhido!
                         }
+
+                        if (atual.moedas > 98) {
+                            textoFinal = `Uau! Muito obrigado pelo presentão, ${atual.nome}!`;
+                        } else if (atual.qtd > 1) {
+                            textoFinal = `Que combo de ${atual.presenteNome}! Muito obrigado, ${atual.nome}!`;
+                        } else {
+                            textoFinal = `Obrigado pelo presente ${atual.presenteNome}, ${atual.nome}!`;
+                        }
+
                     } else {
-                        nomeComAcento = "resposta";
-                        nomeSemAcento = "resposta";
                         textoFinal = atual.texto;
                     }
 
-                    console.log(`[VOZ] "${textoFinal}"`);
-
+                    // 2. CHAMA A VOZ LOCAL OU DO NAVEGADOR
                     let audioPlayer = null;
-                    if (cfg.modo === 'local' && cfg.apiLocal) {
-                        audioPlayer = await gerarAudioCloneLocal(textoFinal, cfg.apiLocal);
-                    }
+                    if (cfg.modo === 'local' && cfg.apiLocal) audioPlayer = await gerarAudioCloneLocal(textoFinal, cfg.apiLocal);
                     if (!audioPlayer) audioPlayer = new SpeechSynthesisUtterance(textoFinal);
 
+                    // 3. O VÍDEO É QUEM MANDA (Só finaliza quando a animação acabar)
                     let videoTerminado = false;
-                    const finalizar = (motivo) => {
+                    const finalizar = () => {
                         if (videoTerminado) return;
                         videoTerminado = true;
-                        console.log(`🛑 [FIM] Motivo: ${motivo}`);
                         if (vidAcao) {
                             vidAcao.style.opacity = "0";
-                            // Reseta a tag para não travar a próxima ação
                             setTimeout(() => { vidAcao.pause(); vidAcao.removeAttribute('src'); vidAcao.load(); }, 300);
                         }
-                        setTimeout(() => { tocando = false; }, 800);
+                        setTimeout(() => { tocando = false; }, 500);
                     };
 
-                    if (vidAcao) {
-                        // Garante que o vídeo anterior foi apagado
-                        vidAcao.pause();
-                        vidAcao.removeAttribute('src');
-                        vidAcao.load();
+                    // 4. ROTEIA O VÍDEO SE ELE TIVER SIDO MAPEADO NO PAINEL
+                    if (vidAcao && urlVideoEscolhido !== '') {
+                        vidAcao.onended = finalizar;
+                        vidAcao.onerror = finalizar; // Se errar o link do painel, fecha logo
+                        vidAcao.muted = true; // GARANTE SILÊNCIO
 
-                        vidAcao.onended = () => finalizar("Animação completou com sucesso");
-                        vidAcao.onerror = () => finalizar("Erro de decodificação do Navegador");
-                        vidAcao.muted = true; // Garante silêncio na tag de vídeo
-
-                        let try1 = `@${hostArroba}_${nomeComAcento}.mp4`;
-                        let try2 = `@${hostArroba}_${nomeSemAcento}.mp4`;
-                        let try3 = `@${hostArroba}_resposta.mp4`;
-                        let videoEscolhido = null;
-
-                        // ⚡ O RADAR ENTRA EM AÇÃO
-                        console.log(`[RADAR] Procurando: ${try1}`);
-                        if (await checarVideoExiste(try1)) {
-                            videoEscolhido = try1;
-                        } else {
-                            console.log(`[RADAR] Procurando: ${try2}`);
-                            if (await checarVideoExiste(try2)) {
-                                videoEscolhido = try2;
-                            } else {
-                                console.log(`[RADAR] Procurando Fallback: ${try3}`);
-                                if (await checarVideoExiste(try3)) {
-                                    videoEscolhido = try3;
-                                }
-                            }
-                        }
-
-                        if (videoEscolhido) {
-                            console.log(`✅ [PLAY] Injetando arquivo válido: ${videoEscolhido}`);
-                            vidAcao.src = videoEscolhido;
-                            vidAcao.style.opacity = "1";
-                            vidAcao.play().catch(e => console.error("🔴 [ERRO PLAY]", e));
-                        } else {
-                            console.warn(`⚠️ NENHUM vídeo encontrado no GitHub para este evento. Rodando apenas o áudio.`);
-                            // Se não tem vídeo, dá só 5 segundos para o áudio falar e avança a fila
-                            setTimeout(() => finalizar("Vídeo não hospedado (404)"), 5000);
-                        }
+                        vidAcao.src = urlVideoEscolhido;
+                        vidAcao.style.opacity = "1";
+                        let mainPlay = vidAcao.play();
+                        if (mainPlay) mainPlay.catch(()=>{});
+                    } else {
+                        // Se a ação for um presente não mapeado, ou a Resposta Padrão estiver vazia, ele só fala e espera 5s
+                        setTimeout(finalizar, 5000);
                     }
 
+                    // 5. TOCA O ÁUDIO INDEPENDENTE
                     if (audioPlayer instanceof SpeechSynthesisUtterance) {
                         window.speechSynthesis.speak(audioPlayer);
                     } else {
@@ -2984,16 +3018,15 @@
                         if (pAud) pAud.catch(()=>{});
                     }
 
-                    // ESCUDO: Se a aba travar totalmente, anda na marra
-                    setTimeout(() => {
-                        if (!videoTerminado) finalizar("Estouro de Tempo Limite (15s)");
-                    }, 15000);
+                    // ESCUDO DE SEGURANÇA: Libera a fila em 15 segundos se a aba travar
+                    setTimeout(finalizar, 15000);
                 }
             }
 
             // ===================================
             // POTES COM MOTOR FÍSICO 2D (Matter.js)
             // ===================================
+
             if (viewMode.startsWith('pote')) {
                 const numPote = viewMode.replace('pote', ''); // 1, 2 ou 3
 
