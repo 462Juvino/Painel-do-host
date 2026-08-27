@@ -2829,16 +2829,20 @@
                     const cfg = JSON.parse(getSafeMem('diretoria_liveauto_config')) || {};
                     const hostArroba = (getSafeMem('rdm_user') || 'usuario').replace('@', '');
 
-                    // Mantém o vídeo base (@usuario_geral.mp4) sempre rodando no fundo
+                    // 1. Mantém o vídeo base rodando no fundo (Proteção contra tela branca)
                     const vidGeral = document.getElementById('vid-geral');
                     if (vidGeral) {
+                        // ADICIONE AQUI O CAMINHO DA SUA PASTA SE NECESSÁRIO (ex: `IA/Vídeos_Kaveirinha/@...`)
                         const urlGeral = `@${hostArroba}_geral.mp4`;
-                        if (!vidGeral.src.endsWith(urlGeral)) {
+
+                        // Usando 'includes' para garantir que ele ache o vídeo sempre
+                        if (!vidGeral.src.includes(urlGeral)) {
                             vidGeral.src = urlGeral;
-                            vidGeral.play().catch(e => console.log(e));
+                            let playGen = vidGeral.play();
+                            if (playGen !== undefined) playGen.catch(e => {});
                         } else if (vidGeral.paused) {
-                            // Defesa: se o navegador/OBS pausar o vídeo do nada, força o Play novamente!
-                            vidGeral.play().catch(e => console.log(e));
+                            let playGen = vidGeral.play();
+                            if (playGen !== undefined) playGen.catch(e => {});
                         }
                     }
 
@@ -2871,13 +2875,13 @@
                     const hostArroba = (getSafeMem('rdm_user') || 'usuario').replace('@', '');
                     const vidAcao = document.getElementById('vid-acao');
 
-                    // FERRAMENTA DE-PARA: Limpa acentos, joga pra minúscula e troca espaço por '_'
+                    // FERRAMENTA DE-PARA: Limpa acentos e arruma o nome do arquivo perfeitamente
                     const limparNomeArquivo = (str) => {
                         return str.normalize('NFD').replace(/[\u0300-\u036f]/g, "") // Remove acentos
-                                  .toLowerCase() // Tudo minúsculo
+                                  .toLowerCase()
                                   .replace(/[^a-z0-9\s-]/g, '') // Remove caracteres especiais
-                                  .trim() // Tira espaços sobrando no começo e fim
-                                  .replace(/\s+/g, '_'); // Troca qualquer espaço restante por '_'
+                                  .trim()
+                                  .replace(/\s+/g, '_'); // Troca espaços por _
                     };
 
                     let promptIA = `${cfg.persona}\n\n`;
@@ -2894,7 +2898,6 @@
                         textoFinal = await pensarComIA(promptIA, cfg);
 
                     } else if (atual.tipo === "presente") {
-                        // Aplica o DE-PARA para bater certinho com nomes como "amo_voce.mp4"
                         estadoVideo = limparNomeArquivo(atual.presenteNome);
 
                         if (atual.moedas > 98) {
@@ -2916,41 +2919,44 @@
                     if (cfg.modo === 'local' && cfg.apiLocal) audioPlayer = await gerarAudioCloneLocal(textoFinal, cfg.apiLocal);
                     if (!audioPlayer) audioPlayer = new SpeechSynthesisUtterance(textoFinal);
 
-                    // A função "finalizar" que devolve o estado para o vídeo geral
+                    // 3. FINALIZADOR LIMPO (EVITA TELA BRANCA E ABORTERROR)
                     const finalizar = () => {
                         if (vidAcao) {
-                            vidAcao.style.opacity = "0"; // Esconde o vídeo da ação e revela o Geral que está atrás
-                            vidAcao.src = ""; // Limpa a URL para forçar o recarregamento na próxima vez
+                            vidAcao.style.opacity = "0";
+                            // IMPORTANTE: Nunca apague o src aqui! Apenas pause o vídeo após a transição.
+                            setTimeout(() => { vidAcao.pause(); }, 300);
                         }
                         setTimeout(() => { tocando = false; }, 800);
                     };
 
-                    // 3. ROTEIA O VÍDEO DA AÇÃO DE FORMA SEGURA
+                    // 4. ROTEIA O VÍDEO DA AÇÃO DE FORMA SEGURA
                     if (vidAcao) {
-                        // Tenta tocar o arquivo específico do evento (ex: @kaveirablackops_amo_voce.mp4)
-                        let tentativaUrl = `@${hostArroba}_${estadoVideo}.mp4`;
-                        vidAcao.src = tentativaUrl;
+                        vidAcao.onerror = null; // Limpa erros antigos
+
+                        // SEUS VÍDEOS ESTÃO EM SUBPASTAS NO GITHUB? COLOQUE O CAMINHO AQUI SE PRECISAR!
+                        let urlPrimaria = `@${hostArroba}_${estadoVideo}.mp4`;
+                        vidAcao.src = urlPrimaria;
+                        vidAcao.currentTime = 0;
                         vidAcao.style.opacity = "1";
 
-                        // O SEGREDO DO FALLBACK SEGURO:
-                        // O evento onstalled ou onerror avisa quando o arquivo MP4 não existe na pasta raiz
+                        // FALLBACK: Se o vídeo não existir (Erro 404), ele puxa a resposta padrão
                         vidAcao.onerror = () => {
-                            // Se a tentativa original falhar E já não for o arquivo "_resposta", ele puxa a "_resposta" por garantia.
-                            if (!tentativaUrl.includes('_resposta.mp4')) {
-                                console.warn(`Vídeo '${tentativaUrl}' não encontrado. Carregando resposta padrão.`);
-                                tentativaUrl = `@${hostArroba}_resposta.mp4`;
-                                vidAcao.src = tentativaUrl;
-                                vidAcao.play().catch(e => console.log("Erro no fallback:", e));
+                            console.warn(`Vídeo não encontrado: ${urlPrimaria}. Usando fallback para resposta.`);
+                            if (!vidAcao.src.includes('_resposta.mp4')) {
+                                vidAcao.src = `@${hostArroba}_resposta.mp4`;
+                                vidAcao.currentTime = 0;
+                                let fallPlay = vidAcao.play();
+                                if(fallPlay !== undefined) fallPlay.catch(e => {});
                             } else {
-                                // Se nem a "_resposta" existir no diretório, ele só esconde a div e deixa o Geral rodando.
-                                vidAcao.style.opacity = "0";
+                                vidAcao.style.opacity = "0"; // Esconde se nem o fallback existir
                             }
                         };
 
-                        vidAcao.play().catch(e => console.log("Tentando tocar a ação:", e));
+                        let mainPlay = vidAcao.play();
+                        if(mainPlay !== undefined) mainPlay.catch(e => {});
                     }
 
-                    // 4. Inicia a fala (que comanda o término do evento)
+                    // 5. REPRODUZ O ÁUDIO E COMANDA O TÉRMINO DA AÇÃO
                     if (audioPlayer instanceof SpeechSynthesisUtterance) {
                         audioPlayer.onend = finalizar;
                         audioPlayer.onerror = finalizar;
