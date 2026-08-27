@@ -2888,180 +2888,54 @@
             if (viewMode === 'live_auto') {
                 document.getElementById('obs-container').style.padding = '0';
 
-                // HTML Limpo: Sem tela preta, vídeos 100% mudos forçados
                 document.getElementById('obs-container').innerHTML = `
                     <div style="width: 100vw; height: 100vh; position: fixed; top: 0; left: 0; overflow: hidden; background: transparent;">
                         <video id="vid-geral" autoplay loop muted playsinline style="position: absolute; top:0; left:0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); opacity: 1; z-index: 1;"></video>
                         <video id="vid-acao" autoplay muted playsinline style="position: absolute; top:0; left:0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); opacity: 0; z-index: 2; transition: opacity 0.2s;"></video>
                     </div>`;
 
-                let lastAutoId = 0;
-                let filaExecucao = [];
-                let tocando = false;
-
-                async function pensarComIA(prompt, cfg) {
-                    if (!cfg.gemini) return "Sem chave da API.";
-                    let baseUrl = cfg.apiLocal ? cfg.apiLocal.replace('/gerar', '') : "http://127.0.0.1:8020";
-                    const url = `${baseUrl}/pensar?prompt=${encodeURIComponent(prompt)}&persona=${encodeURIComponent(cfg.persona)}&api_key=${encodeURIComponent(cfg.gemini)}`;
-                    try {
-                        const controller = new AbortController();
-                        const id = setTimeout(() => controller.abort(), 4000);
-                        const res = await fetch(url, { signal: controller.signal });
-                        clearTimeout(id);
-                        const data = await res.json();
-                        return data.texto || "Estou sem palavras.";
-                    } catch (e) {
-                        return "Minha conexão falhou, desculpe.";
-                    }
-                }
-
-                function gerarAudioCloneLocal(texto, urlApi) {
-                    return new Promise(async (resolve) => {
-                        try {
-                            const controller = new AbortController();
-                            const id = setTimeout(() => controller.abort(), 5000);
-                            const res = await fetch(`${urlApi}?text=${encodeURIComponent(texto)}`, { signal: controller.signal });
-                            clearTimeout(id);
-                            if (!res.ok) throw new Error();
-                            const blob = await res.blob();
-                            const audio = document.createElement('audio');
-                            audio.src = URL.createObjectURL(blob);
-                            resolve(audio);
-                        } catch (e) { resolve(null); }
-                    });
-                }
+                let lastDisparoId = 0;
 
                 setInterval(() => {
-                    // 1. O SEGREDO DO VÍDEO GERAL: Puxa o mapeamento gravado no painel!
                     const vCfg = JSON.parse(getSafeMem('diretoria_liveauto_videos')) || { geral: '', resposta: '', presentes: [] };
                     const vidGeral = document.getElementById('vid-geral');
 
+                    // 1. ESCRAVO LOOP GERAL
                     if (vidGeral && vCfg.geral) {
-                        // MÁGICA ANTI-OBS: Força o loop na marra caso o gravador ignore a tag HTML
-                        vidGeral.onended = () => {
-                            vidGeral.currentTime = 0;
-                            vidGeral.play().catch(()=>{});
-                        };
-
+                        vidGeral.onended = () => { vidGeral.currentTime = 0; vidGeral.play().catch(()=>{}); };
                         if (vidGeral.getAttribute('data-loaded-src') !== vCfg.geral) {
                             vidGeral.setAttribute('data-loaded-src', vCfg.geral);
                             vidGeral.src = vCfg.geral;
-                            vidGeral.muted = true; // FORÇA O MUDO
+                            vidGeral.muted = true;
                             let playGen = vidGeral.play();
                             if (playGen !== undefined) playGen.catch(()=>{});
                         } else if (vidGeral.paused || vidGeral.ended) {
                             vidGeral.muted = true;
-                            if (vidGeral.ended) vidGeral.currentTime = 0; // Rebobina o vídeo se o OBS travar no final
                             let playGen = vidGeral.play();
                             if (playGen !== undefined) playGen.catch(()=>{});
                         }
                     }
 
-                    let filaNuvem = JSON.parse(getSafeMem('diretoria_fila_liveauto')) || [];
-                    filaNuvem.forEach(item => {
-                        if (item.id > lastAutoId) {
-                            lastAutoId = item.id;
-                            filaExecucao.push(item);
+                    // 2. ESCUTA A ORDEM DO CÉREBRO (CHROME -> FIREBASE -> OBS)
+                    const disparo = JSON.parse(getSafeMem('diretoria_liveauto_disparo'));
+                    if (disparo && disparo.id !== lastDisparoId) {
+                        lastDisparoId = disparo.id;
+                        const vidAcao = document.getElementById('vid-acao');
+
+                        if (vidAcao && disparo.url) {
+                            vidAcao.onended = () => {
+                                vidAcao.style.opacity = "0";
+                                setTimeout(() => { vidAcao.pause(); vidAcao.removeAttribute('src'); vidAcao.load(); }, 300);
+                            };
+                            vidAcao.onerror = () => { vidAcao.style.opacity = "0"; }; // Se o link for quebrado 404, só esconde. O chrome já tocou o audio
+
+                            vidAcao.muted = true;
+                            vidAcao.src = disparo.url;
+                            vidAcao.style.opacity = "1";
+                            vidAcao.play().catch(()=>{});
                         }
-                    });
-
-                    // 🧠 ORDEM DE PRIORIDADE
-                    if (filaExecucao.length > 0) {
-                        filaExecucao.sort((a, b) => {
-                            const peso = { "presente": 3, "chat": 2, "join": 1 };
-                            const pesoA = peso[a.tipo] || 0;
-                            const pesoB = peso[b.tipo] || 0;
-                            if (pesoA !== pesoB) return pesoB - pesoA;
-                            return a.id - b.id;
-                        });
                     }
-
-                    if (!tocando && filaExecucao.length > 0) tocarProximoAuto();
                 }, 500);
-
-                async function tocarProximoAuto() {
-                    tocando = true;
-                    let atual = filaExecucao.shift();
-                    const cfg = JSON.parse(getSafeMem('diretoria_liveauto_config')) || {};
-                    const vCfg = JSON.parse(getSafeMem('diretoria_liveauto_videos')) || { geral: '', resposta: '', presentes: [] };
-                    const vidAcao = document.getElementById('vid-acao');
-
-                    let promptIA = `${cfg.persona}\n\n`;
-                    let urlVideoEscolhido = vCfg.resposta || ''; // Puxa do painel o Padrão Resposta
-                    let textoFinal = "";
-
-                    if (atual.tipo === "chat") {
-                        if (atual.flood) {
-                            promptIA += `O usuário ${atual.nome} fez flood no chat: "${atual.pergunta}". Dê uma bronca engraçada nele.`;
-                        } else {
-                            promptIA += `O usuário ${atual.nome} disse: "${atual.pergunta}". Dê uma resposta rápida.`;
-                        }
-                        textoFinal = await pensarComIA(promptIA, cfg);
-
-                    } else if (atual.tipo === "presente") {
-                        // MÁGICA INTELIGENTE: Procura na lista de vídeos se o usuário mapeou este presente
-                        let presLimpo = atual.presenteNome.toLowerCase().trim();
-                        let mapeado = vCfg.presentes.find(p => p.gatilho && p.gatilho.toLowerCase().trim() === presLimpo);
-
-                        if (mapeado && mapeado.url) {
-                            urlVideoEscolhido = mapeado.url; // Se mapeou, usa o vídeo escolhido!
-                        }
-
-                        if (atual.moedas > 98) {
-                            textoFinal = `Uau! Muito obrigado pelo presentão, ${atual.nome}!`;
-                        } else if (atual.qtd > 1) {
-                            textoFinal = `Que combo de ${atual.presenteNome}! Muito obrigado, ${atual.nome}!`;
-                        } else {
-                            textoFinal = `Obrigado pelo presente ${atual.presenteNome}, ${atual.nome}!`;
-                        }
-
-                    } else {
-                        textoFinal = atual.texto;
-                    }
-
-                    // 2. CHAMA A VOZ LOCAL OU DO NAVEGADOR
-                    let audioPlayer = null;
-                    if (cfg.modo === 'local' && cfg.apiLocal) audioPlayer = await gerarAudioCloneLocal(textoFinal, cfg.apiLocal);
-                    if (!audioPlayer) audioPlayer = new SpeechSynthesisUtterance(textoFinal);
-
-                    // 3. O VÍDEO É QUEM MANDA (Só finaliza quando a animação acabar)
-                    let videoTerminado = false;
-                    const finalizar = () => {
-                        if (videoTerminado) return;
-                        videoTerminado = true;
-                        if (vidAcao) {
-                            vidAcao.style.opacity = "0";
-                            setTimeout(() => { vidAcao.pause(); vidAcao.removeAttribute('src'); vidAcao.load(); }, 300);
-                        }
-                        setTimeout(() => { tocando = false; }, 500);
-                    };
-
-                    // 4. ROTEIA O VÍDEO SE ELE TIVER SIDO MAPEADO NO PAINEL
-                    if (vidAcao && urlVideoEscolhido !== '') {
-                        vidAcao.onended = finalizar;
-                        vidAcao.onerror = finalizar; // Se errar o link do painel, fecha logo
-                        vidAcao.muted = true; // GARANTE SILÊNCIO
-
-                        vidAcao.src = urlVideoEscolhido;
-                        vidAcao.style.opacity = "1";
-                        let mainPlay = vidAcao.play();
-                        if (mainPlay) mainPlay.catch(()=>{});
-                    } else {
-                        // Se a ação for um presente não mapeado, ou a Resposta Padrão estiver vazia, ele só fala e espera 5s
-                        setTimeout(finalizar, 5000);
-                    }
-
-                    // 5. TOCA O ÁUDIO INDEPENDENTE
-                    if (audioPlayer instanceof SpeechSynthesisUtterance) {
-                        window.speechSynthesis.speak(audioPlayer);
-                    } else {
-                        let pAud = audioPlayer.play();
-                        if (pAud) pAud.catch(()=>{});
-                    }
-
-                    // ESCUDO DE SEGURANÇA: Libera a fila em 15 segundos se a aba travar
-                    setTimeout(finalizar, 15000);
-                }
             }
 
             // ===================================
@@ -3371,7 +3245,8 @@
                         layout: loadSafe('diretoria_rank_layout', {"gifters":"completo","gifts":"completo","likes":"completo"}),
                         reload: loadSafe('diretoria_comando_reload', '0'), // Envia o gatilho de F5
                         liveauto: loadSafe('diretoria_fila_liveauto', []), // ENVIA A FILA DE BOAS VINDAS
-                        liveautoVideos: loadSafe('diretoria_liveauto_videos', { geral: '', resposta: '', presentes: [] }), // 🔥 ENVIA O MAPEAMENTO DOS VÍDEOS PARA O OBS!
+                        liveautoVideos: loadSafe('diretoria_liveauto_videos', { geral: '', resposta: '', presentes: [] }), // 🔥 ENVIA O MAPEAMENTO
+                        liveautoDisparo: loadSafe('diretoria_liveauto_disparo', {}), // 🔥 ENVIA A ORDEM PRO OBS TOCAR
                         batalha: loadSafe('diretoria_batalha', { estado: 'idle', tempoAtual: 0, tempoTotal: 300, auto: false, taps: {}, coins: {} })
                     };
 
@@ -3386,6 +3261,136 @@
                     setTimeout(sincronizarPainel, 1500);
                 }
             }
+
+            // ==========================================
+            // MOTOR CÉREBRO NPC (RODA APENAS NO CHROME)
+            // ==========================================
+            let lastAutoIdChrome = 0;
+            let filaExecucaoChrome = [];
+            let tocandoChrome = false;
+
+            async function pensarComIAChrome(prompt, cfg) {
+                if (!cfg.gemini) return "Sem chave da API.";
+                let baseUrl = cfg.apiLocal ? cfg.apiLocal.replace('/gerar', '') : "http://127.0.0.1:8020";
+                const url = `${baseUrl}/pensar?prompt=${encodeURIComponent(prompt)}&persona=${encodeURIComponent(cfg.persona)}&api_key=${encodeURIComponent(cfg.gemini)}`;
+                try {
+                    const controller = new AbortController();
+                    const id = setTimeout(() => controller.abort(), 4000);
+                    const res = await fetch(url, { signal: controller.signal });
+                    clearTimeout(id);
+                    const data = await res.json();
+                    return data.texto || "Estou sem palavras.";
+                } catch (e) {
+                    return "Minha conexão falhou.";
+                }
+            }
+
+            function gerarAudioCloneLocalChrome(texto, urlApi) {
+                return new Promise(async (resolve) => {
+                    try {
+                        const controller = new AbortController();
+                        const id = setTimeout(() => controller.abort(), 5000);
+                        const res = await fetch(`${urlApi}?text=${encodeURIComponent(texto)}`, { signal: controller.signal });
+                        clearTimeout(id);
+                        if (!res.ok) throw new Error();
+                        const blob = await res.blob();
+                        const audio = document.createElement('audio');
+                        audio.src = URL.createObjectURL(blob);
+                        resolve(audio);
+                    } catch (e) { resolve(null); }
+                });
+            }
+
+            setInterval(() => {
+                let filaLocal = JSON.parse(localStorage.getItem('diretoria_fila_liveauto')) || [];
+                filaLocal.forEach(item => {
+                    if (item.id > lastAutoIdChrome) {
+                        lastAutoIdChrome = item.id;
+                        filaExecucaoChrome.push(item);
+                    }
+                });
+
+                if (filaExecucaoChrome.length > 0 && !tocandoChrome) {
+                    filaExecucaoChrome.sort((a, b) => {
+                        const peso = { "presente": 3, "chat": 2, "join": 1 };
+                        return (peso[b.tipo] || 0) - (peso[a.tipo] || 0) || (a.id - b.id);
+                    });
+                    processarFilaNPCChrome();
+                }
+            }, 500);
+
+            async function processarFilaNPCChrome() {
+                tocandoChrome = true;
+                let atual = filaExecucaoChrome.shift();
+                const cfg = JSON.parse(localStorage.getItem('diretoria_liveauto_config')) || {};
+                const vCfg = JSON.parse(localStorage.getItem('diretoria_liveauto_videos')) || { geral: '', resposta: '', presentes: [] };
+                const hostArroba = (localStorage.getItem('rdm_user') || 'usuario').replace('@', '');
+
+                let promptIA = `${cfg.persona}\n\n`;
+                let urlVideoEscolhido = vCfg.resposta || '';
+                let textoFinal = "";
+
+                if (atual.tipo === "chat") {
+                    if (atual.flood) {
+                        promptIA += `O usuário ${atual.nome} fez flood: "${atual.pergunta}". Dê bronca curta.`;
+                    } else {
+                        promptIA += `Usuário ${atual.nome} disse: "${atual.pergunta}". Responda em 1 frase.`;
+                    }
+                    textoFinal = await pensarComIAChrome(promptIA, cfg);
+                } else if (atual.tipo === "presente") {
+                    let presLimpo = atual.presenteNome.toLowerCase().trim();
+                    let mapeado = vCfg.presentes.find(p => p.gatilho && p.gatilho.toLowerCase().trim() === presLimpo);
+
+                    if (mapeado && mapeado.url) {
+                        urlVideoEscolhido = mapeado.url;
+                    } else {
+                        // Se não mapeou no painel, ele tenta adivinhar o arquivo no GitHub
+                        let nomeSemAcento = presLimpo.normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '_');
+                        urlVideoEscolhido = `@${hostArroba}_${nomeSemAcento}.mp4`;
+                    }
+
+                    if (atual.moedas > 98) {
+                        textoFinal = `Uau! Muito obrigado pelo presentão, ${atual.nome}!`;
+                    } else if (atual.qtd > 1) {
+                        textoFinal = `Que combo de ${atual.presenteNome}! Valeu, ${atual.nome}!`;
+                    } else {
+                        textoFinal = `Obrigado pelo presente ${atual.presenteNome}, ${atual.nome}!`;
+                    }
+                } else {
+                    textoFinal = atual.texto;
+                }
+
+                // ⚡ DISPARA O SINAL PRO OBS (Firebase leva isso e o TikTok lê na hora)
+                if (urlVideoEscolhido !== '') {
+                    localStorage.setItem('diretoria_liveauto_disparo', JSON.stringify({ id: Date.now(), url: urlVideoEscolhido }));
+                }
+
+                // 🔊 CHROME TOCA O ÁUDIO NA SUA MÁQUINA
+                let audioPlayer = null;
+                if (cfg.modo === 'local' && cfg.apiLocal) audioPlayer = await gerarAudioCloneLocalChrome(textoFinal, cfg.apiLocal);
+                if (!audioPlayer) audioPlayer = new SpeechSynthesisUtterance(textoFinal);
+
+                let audioTerminado = false;
+                const finalizarChrome = () => {
+                    if (audioTerminado) return;
+                    audioTerminado = true;
+                    setTimeout(() => { tocandoChrome = false; }, 1500); // 1.5s de respiro pra próxima fala
+                };
+
+                if (audioPlayer instanceof SpeechSynthesisUtterance) {
+                    audioPlayer.onend = finalizarChrome;
+                    audioPlayer.onerror = finalizarChrome;
+                    window.speechSynthesis.speak(audioPlayer);
+                    setTimeout(finalizarChrome, 12000);
+                } else {
+                    audioPlayer.onended = finalizarChrome;
+                    audioPlayer.onerror = finalizarChrome;
+                    let pAud = audioPlayer.play();
+                    if (pAud) pAud.catch(finalizarChrome);
+                    setTimeout(finalizarChrome, 12000);
+                }
+            }
+
             sincronizarPainel(); // Aciona o motor do Painel
 
         } else {
@@ -3431,10 +3436,12 @@
                         if(st.sort && st.sort.id) window.NUVEM_OBS['diretoria_sorteio_disparo'] = JSON.stringify(st.sort);
                         if(st.midia && st.midia.id) window.NUVEM_OBS['diretoria_midia_disparo'] = JSON.stringify(st.midia);
                         window.NUVEM_OBS['diretoria_fila_liveauto'] = JSON.stringify(st.liveauto || []);
-                        window.NUVEM_OBS['diretoria_liveauto_videos'] = JSON.stringify(st.liveautoVideos || { geral: '', resposta: '', presentes: [] }); // 🔥 OBS PUXANDO OS VÍDEOS!
+
+                        // 🔥 OBS RECEBENDO O SINAL DO CÉREBRO
+                        window.NUVEM_OBS['diretoria_liveauto_videos'] = JSON.stringify(st.liveautoVideos || { geral: '', resposta: '', presentes: [] });
+                        if(st.liveautoDisparo && st.liveautoDisparo.id) window.NUVEM_OBS['diretoria_liveauto_disparo'] = JSON.stringify(st.liveautoDisparo);
 
                         if(st.batalha) window.NUVEM_OBS['diretoria_batalha'] = JSON.stringify(st.batalha);
-
                         try {
                             localStorage.setItem('diretoria_rankings', window.NUVEM_OBS['diretoria_rankings']);
                             localStorage.setItem('diretoria_users_meta', window.NUVEM_OBS['diretoria_users_meta']);
