@@ -2571,8 +2571,8 @@
                         }
                     }
                 }
-                // Bloqueia a sobreposição caso a view atual seja mídia, potes, letreiro, gerador, sorteio ou podio
-                if (viewMode !== 'midia' && !viewMode.startsWith('pote') && viewMode !== 'gerador' && viewMode !== 'letreiro' && viewMode !== 'sorteio' && viewMode !== 'podio_fas') {
+                // Bloqueia a sobreposição caso a view atual seja mídia, potes, letreiro, gerador, sorteio, podio ou live_auto
+                if (viewMode !== 'midia' && !viewMode.startsWith('pote') && viewMode !== 'gerador' && viewMode !== 'letreiro' && viewMode !== 'sorteio' && viewMode !== 'podio_fas' && viewMode !== 'live_auto') {
                     document.getElementById('obs-container').innerHTML = html;
                 }
             }, 1000);
