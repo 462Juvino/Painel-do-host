@@ -2778,14 +2778,12 @@
             }
 
             if (viewMode === 'live_auto') {
-                // BLINDAGEM DO FLOOD: Apenas altera o container, mantendo o painel invisível e seguro!
                 document.getElementById('obs-container').style.padding = '0';
+                // Adicionado z-index e garantido que os vídeos fiquem fixos na tela
                 document.getElementById('obs-container').innerHTML = `
-                    <div style="width: 100vw; height: 100vh; position: relative; overflow: hidden; background: transparent;">
-                        <!-- Vídeo que fica sempre em Loop no fundo (Geral) -->
-                        <video id="vid-geral" autoplay loop muted style="position: absolute; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); opacity: 1; transition: opacity 0.3s;"></video>
-                        <!-- Vídeo que sobrepõe quando a IA age (Falando, Bravo, Rosa, etc) -->
-                        <video id="vid-acao" autoplay loop muted style="position: absolute; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); opacity: 0; transition: opacity 0.3s;"></video>
+                    <div style="width: 100vw; height: 100vh; position: fixed; top: 0; left: 0; overflow: hidden; background: transparent;">
+                        <video id="vid-geral" autoplay loop muted playsinline style="position: absolute; top:0; left:0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); opacity: 1; z-index: 1;"></video>
+                        <video id="vid-acao" autoplay muted playsinline style="position: absolute; top:0; left:0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); opacity: 0; z-index: 2; transition: opacity 0.2s;"></video>
                     </div>`;
 
                 let lastAutoId = 0;
@@ -2873,6 +2871,15 @@
                     const hostArroba = (getSafeMem('rdm_user') || 'usuario').replace('@', '');
                     const vidAcao = document.getElementById('vid-acao');
 
+                    // FERRAMENTA DE-PARA: Limpa acentos, joga pra minúscula e troca espaço por '_'
+                    const limparNomeArquivo = (str) => {
+                        return str.normalize('NFD').replace(/[\u0300-\u036f]/g, "") // Remove acentos
+                                  .toLowerCase() // Tudo minúsculo
+                                  .replace(/[^a-z0-9\s-]/g, '') // Remove caracteres especiais
+                                  .trim() // Tira espaços sobrando no começo e fim
+                                  .replace(/\s+/g, '_'); // Troca qualquer espaço restante por '_'
+                    };
+
                     let promptIA = `${cfg.persona}\n\n`;
                     let estadoVideo = "resposta";
                     let textoFinal = "";
@@ -2887,7 +2894,8 @@
                         textoFinal = await pensarComIA(promptIA, cfg);
 
                     } else if (atual.tipo === "presente") {
-                        estadoVideo = atual.presenteNome.toLowerCase().trim().replace(/ /g, '_');
+                        // Aplica o DE-PARA para bater certinho com nomes como "amo_voce.mp4"
+                        estadoVideo = limparNomeArquivo(atual.presenteNome);
 
                         if (atual.moedas > 98) {
                             estadoVideo = "presente_grande";
@@ -2908,32 +2916,41 @@
                     if (cfg.modo === 'local' && cfg.apiLocal) audioPlayer = await gerarAudioCloneLocal(textoFinal, cfg.apiLocal);
                     if (!audioPlayer) audioPlayer = new SpeechSynthesisUtterance(textoFinal);
 
-                    // 3. ROTEIA O VÍDEO DA AÇÃO (BLINDADO CONTRA ARQUIVOS INEXISTENTES)
-                    if (vidAcao) {
-                        vidAcao.src = `@${hostArroba}_${estadoVideo}.mp4`;
-                        vidAcao.currentTime = 0; // Volta o vídeo pro começo!
-                        vidAcao.style.opacity = "1";
-
-                        // SE O VÍDEO NÃO EXISTIR OU O NOME ESTIVER ERRADO, PUXA O "_RESPOSTA" AUTOMATICAMENTE
-                        vidAcao.onerror = () => {
-                            if (!vidAcao.src.includes('_resposta.mp4')) {
-                                vidAcao.src = `@${hostArroba}_resposta.mp4`;
-                                vidAcao.currentTime = 0;
-                                vidAcao.play().catch(e => {});
-                            } else {
-                                vidAcao.style.opacity = "0"; // Se nem resposta existir, esconde
-                            }
-                        };
-
-                        vidAcao.play().catch(e => console.log("Erro ao tocar vídeo da ação:", e));
-                    }
-
-                    // 4. REPRODUZ
+                    // A função "finalizar" que devolve o estado para o vídeo geral
                     const finalizar = () => {
-                        if (vidAcao) vidAcao.style.opacity = "0"; // Esconde a ação, voltando pro GERAL
+                        if (vidAcao) {
+                            vidAcao.style.opacity = "0"; // Esconde o vídeo da ação e revela o Geral que está atrás
+                            vidAcao.src = ""; // Limpa a URL para forçar o recarregamento na próxima vez
+                        }
                         setTimeout(() => { tocando = false; }, 800);
                     };
 
+                    // 3. ROTEIA O VÍDEO DA AÇÃO DE FORMA SEGURA
+                    if (vidAcao) {
+                        // Tenta tocar o arquivo específico do evento (ex: @kaveirablackops_amo_voce.mp4)
+                        let tentativaUrl = `@${hostArroba}_${estadoVideo}.mp4`;
+                        vidAcao.src = tentativaUrl;
+                        vidAcao.style.opacity = "1";
+
+                        // O SEGREDO DO FALLBACK SEGURO:
+                        // O evento onstalled ou onerror avisa quando o arquivo MP4 não existe na pasta raiz
+                        vidAcao.onerror = () => {
+                            // Se a tentativa original falhar E já não for o arquivo "_resposta", ele puxa a "_resposta" por garantia.
+                            if (!tentativaUrl.includes('_resposta.mp4')) {
+                                console.warn(`Vídeo '${tentativaUrl}' não encontrado. Carregando resposta padrão.`);
+                                tentativaUrl = `@${hostArroba}_resposta.mp4`;
+                                vidAcao.src = tentativaUrl;
+                                vidAcao.play().catch(e => console.log("Erro no fallback:", e));
+                            } else {
+                                // Se nem a "_resposta" existir no diretório, ele só esconde a div e deixa o Geral rodando.
+                                vidAcao.style.opacity = "0";
+                            }
+                        };
+
+                        vidAcao.play().catch(e => console.log("Tentando tocar a ação:", e));
+                    }
+
+                    // 4. Inicia a fala (que comanda o término do evento)
                     if (audioPlayer instanceof SpeechSynthesisUtterance) {
                         audioPlayer.onend = finalizar;
                         audioPlayer.onerror = finalizar;
