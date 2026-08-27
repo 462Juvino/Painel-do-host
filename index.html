@@ -2829,15 +2829,19 @@
                     const vidGeral = document.getElementById('vid-geral');
 
                     if (vidGeral) {
-                        // VÍDEO GERAL NA RAIZ (SOLTO NO GITHUB)
                         const urlGeral = `@${hostArroba}_geral.mp4`;
 
+                        // Escuta de Erro e Sucesso para o Vídeo Geral
+                        vidGeral.onplay = () => console.log("🟢 [VÍDEO GERAL] Rodando perfeitamente em loop.");
+                        vidGeral.onerror = () => console.error(`🔴 [VÍDEO GERAL ERRO] O arquivo não foi encontrado na raiz do GitHub. Verifique se o nome exato é: ${urlGeral}`);
+
                         if (vidGeral.getAttribute('data-loaded-src') !== urlGeral) {
+                            console.log(`⏳ [VÍDEO GERAL] Tentando carregar fundo: ${urlGeral}`);
                             vidGeral.setAttribute('data-loaded-src', urlGeral);
                             vidGeral.src = urlGeral;
-                            vidGeral.muted = true; // FORÇA O MUDO PARA O CHROME NÃO BLOQUEAR
+                            vidGeral.muted = true;
                             let playGen = vidGeral.play();
-                            if (playGen !== undefined) playGen.catch(()=>{});
+                            if (playGen !== undefined) playGen.catch(e => console.error("🔴 [VÍDEO GERAL] Navegador bloqueou o play inicial:", e));
                         } else if (vidGeral.paused) {
                             vidGeral.muted = true;
                             let playGen = vidGeral.play();
@@ -2915,56 +2919,72 @@
                     if (!audioPlayer) audioPlayer = new SpeechSynthesisUtterance(textoFinal);
 
                     let finalizado = false;
-                    const finalizar = () => {
+                    const finalizar = (motivo) => {
                         if (finalizado) return;
                         finalizado = true;
+                        console.log(`🛑 [AÇÃO FINALIZADA] Motivo: ${motivo}. Fechando vídeo e liberando motor.`);
                         if (vidAcao) {
                             vidAcao.style.opacity = "0";
-                            setTimeout(() => { vidAcao.pause(); }, 300);
+                            setTimeout(() => { vidAcao.pause(); vidAcao.removeAttribute('src'); vidAcao.load(); }, 300);
                         }
                         setTimeout(() => { tocando = false; }, 800);
                     };
 
                     if (vidAcao) {
-                        vidAcao.onended = finalizar;
-                        vidAcao.muted = true; // GARANTE QUE A AÇÃO SEJA MUDA
+                        vidAcao.muted = true;
 
-                        // Busca na RAIZ do Github
+                        // SÓ FINALIZA QUANDO A ANIMAÇÃO ACABAR ATÉ O FIM!
+                        vidAcao.onended = () => finalizar("Vídeo chegou ao fim naturalmente");
+
                         let try1 = `@${hostArroba}_${nomeComAcento}.mp4`;
                         let try2 = `@${hostArroba}_${nomeSemAcento}.mp4`;
                         let try3 = `@${hostArroba}_resposta.mp4`;
 
                         vidAcao.setAttribute('data-tentativa', '1');
+
+                        // SE FALHAR (404), ELE AVISA NO CONSOLE E TENTA O PRÓXIMO
                         vidAcao.onerror = () => {
                             let t = vidAcao.getAttribute('data-tentativa');
+                            console.warn(`⚠️ [VÍDEO AÇÃO FALHOU] Tentativa ${t} deu erro. O arquivo não existe.`);
+
                             if (t === '1') {
+                                console.log(`⏳ [VÍDEO AÇÃO] Tentando Opção 2 (Sem Acento): ${try2}`);
                                 vidAcao.setAttribute('data-tentativa', '2');
                                 vidAcao.src = try2;
+                                vidAcao.play().catch(()=>{});
                             } else if (t === '2') {
+                                console.log(`⏳ [VÍDEO AÇÃO] Tentando Opção 3 (Resposta Padrão): ${try3}`);
                                 vidAcao.setAttribute('data-tentativa', '3');
                                 vidAcao.src = try3;
+                                vidAcao.play().catch(()=>{});
                             } else {
+                                console.error(`❌ [VÍDEO AÇÃO ERRO FATAL] Nenhum vídeo foi encontrado no GitHub para esta ação.`);
                                 vidAcao.style.opacity = "0";
-                                finalizar();
+                                finalizar("Vídeo Não Encontrado (404)");
                             }
                         };
 
-                        vidAcao.src = try1;
-                        vidAcao.currentTime = 0;
-                        vidAcao.style.opacity = "1";
+                        vidAcao.onplay = () => console.log(`🟢 [VÍDEO AÇÃO] Vídeo iniciou! Tentativa atual exibida: ${vidAcao.getAttribute('data-tentativa')}`);
 
-                        let mainPlay = vidAcao.play();
-                        if (mainPlay) mainPlay.catch(()=>{});
+                        console.log(`\n⏳ [VÍDEO AÇÃO] Disparando Opção 1 (Original): ${try1}`);
+                        vidAcao.src = try1;
+                        vidAcao.style.opacity = "1";
+                        vidAcao.play().catch(e => console.error("🔴 [VÍDEO AÇÃO] Navegador bloqueou o play:", e));
                     }
 
                     if (audioPlayer instanceof SpeechSynthesisUtterance) {
                         window.speechSynthesis.speak(audioPlayer);
                     } else {
                         let pAud = audioPlayer.play();
-                        if (pAud) pAud.catch(()=>{});
+                        if (pAud) pAud.catch(e => console.error("🔴 [ÁUDIO TTS ERRO]:", e));
                     }
 
-                    setTimeout(finalizar, 15000);
+                    setTimeout(() => {
+                        if (!finalizado) {
+                            console.warn("⚠️ [SEGURANÇA] O vídeo travou. Fechando na marra após 15 segundos.");
+                            finalizar("Estouro de Tempo de Segurança");
+                        }
+                    }, 15000);
                 }
             }
 
