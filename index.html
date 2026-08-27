@@ -2820,12 +2820,15 @@
                 setInterval(() => {
                     const hostArroba = (getSafeMem('rdm_user') || 'usuario').replace('@', '');
 
-                    // 1. O SEGREDO DO VÍDEO GERAL: Atribuir a fonte apenas 1 vez e deixar o HTML fazer o loop
+                    // 1. O SEGREDO DO VÍDEO GERAL: Se ele pausar sozinho, toma um tranco e volta a tocar!
                     const vidGeral = document.getElementById('vid-geral');
                     if (vidGeral) {
-                        const urlGeral = \`@${hostArroba}_geral.mp4`;
-                        if (vidGeral.getAttribute('src') !== urlGeral) {
-                            vidGeral.setAttribute('src', urlGeral);
+                        const urlGeral = `@${hostArroba}_geral.mp4`;
+                        if (!vidGeral.src.includes(urlGeral)) {
+                            vidGeral.src = urlGeral;
+                            vidGeral.play().catch(()=>{});
+                        } else if (vidGeral.paused) {
+                            vidGeral.play().catch(()=>{});
                         }
                     }
 
@@ -2908,17 +2911,18 @@
                     if (vidAcao) {
                         vidAcao.onended = finalizar;
 
-                        // FALLBACK SIMPLES: Se não achar o vídeo (Erro 404), ele puxa a resposta padrão pra não crashar
+                        // FALLBACK SIMPLES: Caminho na raiz e força o play para não engasgar
                         vidAcao.onerror = () => {
-                            let linkFallback = \`@${hostArroba}_resposta.mp4`;
-                            if (vidAcao.getAttribute('src') !== linkFallback) {
-                                vidAcao.setAttribute('src', linkFallback);
+                            let linkFallback = `@${hostArroba}_resposta.mp4`;
+                            if (!vidAcao.src.includes(linkFallback)) {
+                                vidAcao.src = linkFallback;
+                                vidAcao.play().catch(()=>{});
                             } else {
                                 finalizar(); // Se falhar até o fallback, encerra a ação
                             }
                         };
 
-                        vidAcao.setAttribute('src', `@${hostArroba}_${estadoVideo}.mp4`);
+                        vidAcao.src = `@${hostArroba}_${estadoVideo}.mp4`;
                         vidAcao.style.opacity = "1";
                     }
 
