@@ -2835,9 +2835,11 @@
                     const vidGeral = document.getElementById('vid-geral');
                     if (vidGeral) {
                         const urlGeral = `@${hostArroba}_geral.mp4`;
-                        // Verifica pelo final do link para evitar bug e força o Play
                         if (!vidGeral.src.endsWith(urlGeral)) {
                             vidGeral.src = urlGeral;
+                            vidGeral.play().catch(e => console.log(e));
+                        } else if (vidGeral.paused) {
+                            // Defesa: se o navegador/OBS pausar o vídeo do nada, força o Play novamente!
                             vidGeral.play().catch(e => console.log(e));
                         }
                     }
@@ -2853,15 +2855,11 @@
                     // 🧠 MOTOR DE PRIORIDADE MÁXIMA
                     if (filaExecucao.length > 0) {
                         filaExecucao.sort((a, b) => {
-                            // Define o peso de cada ação
                             const peso = { "presente": 3, "chat": 2, "join": 1 };
                             const pesoA = peso[a.tipo] || 0;
                             const pesoB = peso[b.tipo] || 0;
-
-                            if (pesoA !== pesoB) {
-                                return pesoB - pesoA; // Quem tem maior peso fura a fila e sobe!
-                            }
-                            return a.id - b.id; // Se forem do mesmo tipo, respeita a ordem de chegada
+                            if (pesoA !== pesoB) return pesoB - pesoA;
+                            return a.id - b.id;
                         });
                     }
 
@@ -2872,12 +2870,11 @@
                     tocando = true;
                     let atual = filaExecucao.shift();
                     const cfg = JSON.parse(getSafeMem('diretoria_liveauto_config')) || {};
-                    const hostArroba = (getSafeMem('rdm_user') || 'usuario').replace('@', ''); // CORREÇÃO DA VARIÁVEL
-                    const vidGeral = document.getElementById('vid-geral');
+                    const hostArroba = (getSafeMem('rdm_user') || 'usuario').replace('@', '');
                     const vidAcao = document.getElementById('vid-acao');
 
                     let promptIA = `${cfg.persona}\n\n`;
-                    let estadoVideo = "resposta"; // Mudado para o singular (Bate com seu arquivo)
+                    let estadoVideo = "resposta";
                     let textoFinal = "";
 
                     if (atual.tipo === "chat") {
@@ -2890,11 +2887,10 @@
                         textoFinal = await pensarComIA(promptIA, cfg);
 
                     } else if (atual.tipo === "presente") {
-                        // Substitui espaços por _ e MANTÉM OS ACENTOS para bater exato com o seu arquivo!
                         estadoVideo = atual.presenteNome.toLowerCase().trim().replace(/ /g, '_');
 
                         if (atual.moedas > 98) {
-                            estadoVideo = "presente_grande"; // Aciona o vídeo épico!
+                            estadoVideo = "presente_grande";
                             textoFinal = `Nossa! Muito obrigado pelo super presente, ${atual.nome}! Mandou muito bem com esse ${atual.presenteNome}!`;
                         } else if (atual.qtd > 1) {
                             textoFinal = `Que combo incrível de ${atual.presenteNome}! Muito obrigado, ${atual.nome}!`;
@@ -2912,10 +2908,23 @@
                     if (cfg.modo === 'local' && cfg.apiLocal) audioPlayer = await gerarAudioCloneLocal(textoFinal, cfg.apiLocal);
                     if (!audioPlayer) audioPlayer = new SpeechSynthesisUtterance(textoFinal);
 
-                    // 3. ROTEIA O VÍDEO DA AÇÃO E FORÇA O PLAY
+                    // 3. ROTEIA O VÍDEO DA AÇÃO (BLINDADO CONTRA ARQUIVOS INEXISTENTES)
                     if (vidAcao) {
                         vidAcao.src = `@${hostArroba}_${estadoVideo}.mp4`;
+                        vidAcao.currentTime = 0; // Volta o vídeo pro começo!
                         vidAcao.style.opacity = "1";
+
+                        // SE O VÍDEO NÃO EXISTIR OU O NOME ESTIVER ERRADO, PUXA O "_RESPOSTA" AUTOMATICAMENTE
+                        vidAcao.onerror = () => {
+                            if (!vidAcao.src.includes('_resposta.mp4')) {
+                                vidAcao.src = `@${hostArroba}_resposta.mp4`;
+                                vidAcao.currentTime = 0;
+                                vidAcao.play().catch(e => {});
+                            } else {
+                                vidAcao.style.opacity = "0"; // Se nem resposta existir, esconde
+                            }
+                        };
+
                         vidAcao.play().catch(e => console.log("Erro ao tocar vídeo da ação:", e));
                     }
 
