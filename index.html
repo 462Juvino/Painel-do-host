@@ -2829,12 +2829,11 @@
                     const cfg = JSON.parse(getSafeMem('diretoria_liveauto_config')) || {};
                     const hostArroba = (getSafeMem('rdm_user') || 'usuario').replace('@', '');
 
-                    // 1. CORREÇÃO DO LOOP INFINITO DO GERAL: Usa trava invisível para não piscar!
+                    // 1. VÍDEO GERAL BLINDADO: Caminho ajustado para a sua pasta do GitHub
                     const vidGeral = document.getElementById('vid-geral');
                     if (vidGeral) {
-                        const urlGeral = `@${hostArroba}_geral.mp4`;
+                        const urlGeral = `IA/Vídeos_Kaveirinha/@${hostArroba}_geral.mp4`;
 
-                        // Checa o atributo real em vez do src embaralhado pelo navegador
                         if (vidGeral.getAttribute('data-loaded-src') !== urlGeral) {
                             vidGeral.setAttribute('data-loaded-src', urlGeral);
                             vidGeral.src = urlGeral;
@@ -2875,9 +2874,12 @@
                     const hostArroba = (getSafeMem('rdm_user') || 'usuario').replace('@', '');
                     const vidAcao = document.getElementById('vid-acao');
 
-                    // FERRAMENTA DE-PARA: Tenta manter exatamente como o TikTok manda, mas limpa os espaços
+                    // FERRAMENTA DE-PARA: Limpa acentos e arruma o nome do arquivo perfeitamente
                     const formatarNome = (str) => {
-                        return str.toLowerCase().trim().replace(/\s+/g, '_');
+                        return str.normalize('NFD').replace(/[\u0300-\u036f]/g, "") // Remove acentos do nome que vem do TikTok
+                                  .toLowerCase().trim()
+                                  .replace(/[^a-z0-9\s-]/g, '')
+                                  .replace(/\s+/g, '_');
                     };
 
                     let promptIA = `${cfg.persona}\n\n`;
@@ -2910,63 +2912,61 @@
                         textoFinal = atual.texto;
                     }
 
-                    // 2. MOTOR DE CLONAGEM E VOZ
+                    // 2. CHAMA O MOTOR DE CLONAGEM LOCAL
                     let audioPlayer = null;
                     if (cfg.modo === 'local' && cfg.apiLocal) {
                         audioPlayer = await gerarAudioCloneLocal(textoFinal, cfg.apiLocal);
                     }
                     if (!audioPlayer) audioPlayer = new SpeechSynthesisUtterance(textoFinal);
 
-                    // 3. FINALIZADOR BLINDADO (Garante que a fila nunca trave)
+                    // 3. FINALIZADOR BLINDADO (Garante que a fila nunca trave e NÃO "crasha" o player)
                     let finalizado = false;
                     const finalizar = () => {
                         if (finalizado) return;
                         finalizado = true;
                         if (vidAcao) {
                             vidAcao.style.opacity = "0";
-                            // Oculta suavemente antes de apagar a fonte para não estourar o AbortError do navegador
-                            setTimeout(() => { vidAcao.removeAttribute('src'); vidAcao.load(); }, 300);
+                            // Apenas pausa o vídeo sem remover o src. O navegador lida com isso em paz.
+                            setTimeout(() => { vidAcao.pause(); }, 300);
                         }
                         setTimeout(() => { tocando = false; }, 800);
                     };
 
-                    // 4. ROTEIA O VÍDEO DA AÇÃO (SEGURO CONTRA 404 E ABORTERROR)
+                    // 4. ROTEIA O VÍDEO DA AÇÃO (QUEM MANDA NO TEMPO AGORA É O VÍDEO!)
                     if (vidAcao) {
+                        // Quando a animação do vídeo acabar, ele chama a função de finalizar.
+                        vidAcao.onended = finalizar;
+
                         vidAcao.onerror = () => {
-                            // Se der 404 no vídeo (porque os acentos do GitHub estão bagunçados), puxa a resposta padrão e não quebra a live!
                             if (!vidAcao.src.includes('_resposta.mp4')) {
-                                console.warn(`Vídeo falhou. Usando fallback de resposta.`);
-                                vidAcao.src = `@${hostArroba}_resposta.mp4`;
+                                console.warn(`Vídeo da ação falhou. Puxando resposta padrão.`);
+                                vidAcao.src = `IA/Vídeos_Kaveirinha/@${hostArroba}_resposta.mp4`;
                                 let p = vidAcao.play();
                                 if (p) p.catch(()=>{});
                             } else {
-                                vidAcao.style.opacity = "0"; // Esconde se nem o fallback funcionar
+                                vidAcao.style.opacity = "0";
+                                finalizar(); // Se falhar tudo, encerra e segue a vida
                             }
                         };
 
-                        vidAcao.src = `@${hostArroba}_${estadoVideo}.mp4`;
+                        vidAcao.src = `IA/Vídeos_Kaveirinha/@${hostArroba}_${estadoVideo}.mp4`;
                         vidAcao.currentTime = 0;
                         vidAcao.style.opacity = "1";
 
                         let mainPlay = vidAcao.play();
-                        if (mainPlay) mainPlay.catch(()=>{}); // Suprime os erros visuais chatos do console
+                        if (mainPlay) mainPlay.catch(()=>{});
                     }
 
-                    // 5. TOCA O ÁUDIO
+                    // 5. TOCA O ÁUDIO DE FORMA INDEPENDENTE
                     if (audioPlayer instanceof SpeechSynthesisUtterance) {
-                        audioPlayer.onend = finalizar;
-                        audioPlayer.onerror = finalizar;
                         window.speechSynthesis.speak(audioPlayer);
-
-                        // DESTRAVADOR DA NARRATIVA: Se a voz do PC engasgar e não avisar que terminou, forçamos o encerramento em x segundos para não travar a live!
-                        let tempoCalculado = Math.max(3000, textoFinal.length * 90);
-                        setTimeout(finalizar, tempoCalculado);
                     } else {
-                        audioPlayer.onended = finalizar;
-                        audioPlayer.onerror = finalizar;
                         let pAud = audioPlayer.play();
-                        if (pAud) pAud.catch(finalizar);
+                        if (pAud) pAud.catch(e => console.log(e));
                     }
+
+                    // Trava de segurança ABSOLUTA: Se o vídeo travar e não disparar o 'onended', força o encerramento em 15s.
+                    setTimeout(finalizar, 15000);
                 }
             }
 
