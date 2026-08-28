@@ -3339,7 +3339,8 @@
                 const url = `${baseUrl}/pensar?prompt=${encodeURIComponent(prompt)}&persona=${encodeURIComponent(cfg.persona)}&api_key=${encodeURIComponent(cfg.gemini)}`;
                 try {
                     const controller = new AbortController();
-                    const id = setTimeout(() => controller.abort(), 4000);
+                    // 🔥 AUMENTADO: De 4s para 15s. Dá tempo de sobra pro Google pensar sem o painel cancelar a conexão!
+                    const id = setTimeout(() => controller.abort(), 15000);
                     const res = await fetch(url, { signal: controller.signal });
                     clearTimeout(id);
                     const data = await res.json();
