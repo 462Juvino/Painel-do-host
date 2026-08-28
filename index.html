@@ -41,7 +41,14 @@
             flex-direction: column;
             box-shadow: 2px 0 10px rgba(0,0,0,0.5);
             z-index: 100;
+            overflow-y: auto; /* 🔥 Adiciona a barra de rolagem se não couber na tela */
         }
+
+        /* Estiliza a barra de rolagem do menu para ficar elegante e não quebrar o layout */
+        #sidebar::-webkit-scrollbar { width: 6px; }
+        #sidebar::-webkit-scrollbar-track { background: transparent; }
+        #sidebar::-webkit-scrollbar-thumb { background: #555; border-radius: 10px; }
+        #sidebar::-webkit-scrollbar-thumb:hover { background: #0088ff; }
 
         .logo-area {
             text-align: center;
@@ -477,19 +484,13 @@
 
                 <!-- CONFIGURAÇÃO DA INTELIGÊNCIA -->
                 <div style="background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444;">
-                    <h4 style="margin: 0 0 10px 0; color: #a855f7;">🧠 Cérebro e Fala</h4>
+                    <h4 style="margin: 0 0 10px 0; color: #a855f7;">🧠 Cérebro Offline (Banco de Dados)</h4>
+                    <p style="font-size: 11px; color: #aaa; margin-top: 0;">Chega de APIs caindo! Defina as respostas da sua IA diretamente aqui.</p>
 
-                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; flex: 1;">
-                            Palavra-Chave (Chat):
-                            <input type="text" id="live-auto-keyword" value="kaveirinha" onchange="salvarLiveAuto()" style="margin-top: 5px; background: #111; border: 1px solid #00f2fe; color: white; padding: 8px; border-radius: 4px;">
-                        </label>
-                        <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; flex: 2;">
-                            Chave API Gemini:
-                            <span style="font-size: 10px;"><a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#00f2fe;">Criar Chave Gratuita</a></span>
-                            <input type="password" id="live-auto-gemini" placeholder="Cole sua API Key aqui..." onchange="salvarLiveAuto()" style="margin-top: 5px; background: #111; border: 1px solid #555; color: white; padding: 8px; border-radius: 4px;">
-                        </label>
-                    </div>
+                    <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; margin-bottom: 10px;">
+                        Palavra-Chave (Para o bot te ouvir no chat):
+                        <input type="text" id="live-auto-keyword" value="kaveirinha" onchange="salvarLiveAuto()" style="margin-top: 5px; background: #111; border: 1px solid #00f2fe; color: white; padding: 8px; border-radius: 4px;">
+                    </label>
 
                     <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; margin-bottom: 10px;">
                         Texto de Boas-Vindas (Use <strong style="color: #00f2fe;">{nome}</strong>):
@@ -497,8 +498,28 @@
                     </label>
 
                     <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; margin-bottom: 10px;">
-                        Personalidade da IA:
-                        <input type="text" id="live-auto-persona" value="Você é sarcástico. Responda em no máximo 2 frases." onchange="salvarLiveAuto()" style="margin-top: 5px; background: #111; border: 1px solid #555; color: white; padding: 8px; border-radius: 4px;">
+                        <strong style="color: #fff; margin-bottom: 5px;">Perguntas e Respostas (Gatilhos do Chat):</strong>
+                        <span style="font-size: 11px; color: #aaa; margin-bottom: 5px;">Formato: palavra-chave | Resposta. (Uma por linha. Use {nome} se quiser)</span>
+                        <textarea id="live-auto-qa" rows="5" onchange="salvarLiveAuto()" style="background: #111; border: 1px solid #00f2fe; color: white; padding: 8px; border-radius: 4px; resize: vertical; font-family: monospace;">
+                        idade | Eu sou uma inteligência artificial, não tenho idade!
+                        mora | Eu moro dentro do computador do host.
+                        nome | Meu nome é Diretoria, a melhor IA do TikTok!
+                        batalha | Vamos pra cima deles, senta o dedo na tela!
+                        sim | Que bom que concorda comigo, {nome}!
+                        nao | Ah, que pena, {nome}.
+                        </textarea>
+                    </label>
+
+                    <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; margin-bottom: 10px;">
+                        <strong style="color: #fff; margin-bottom: 5px;">Respostas Genéricas (Quando não achar a palavra-chave):</strong>
+                        <span style="font-size: 11px; color: #aaa; margin-bottom: 5px;">Uma por linha. Ele vai sortear uma delas se não achar resposta exata.</span>
+                        <textarea id="live-auto-genericas" rows="4" onchange="salvarLiveAuto()" style="background: #111; border: 1px solid #f39c12; color: white; padding: 8px; border-radius: 4px; resize: vertical; font-family: monospace;">
+                        Interessante... me conta mais sobre isso!
+                        Achei meio duvidoso, mas vou concordar.
+                        Você fala cada coisa, viu {nome}!
+                        Não entendi direito, manda um presente pra eu pensar melhor.
+                        Com certeza absoluta, {nome}!
+                        </textarea>
                     </label>
 
                     <div style="display: flex; gap: 10px;">
@@ -1540,8 +1561,8 @@
                 ativo: document.getElementById('live-auto-ativo').checked,
                 keyword: document.getElementById('live-auto-keyword').value,
                 texto: document.getElementById('live-auto-texto').value,
-                gemini: document.getElementById('live-auto-gemini').value,
-                persona: document.getElementById('live-auto-persona').value,
+                qa: document.getElementById('live-auto-qa').value,
+                genericas: document.getElementById('live-auto-genericas').value,
                 modo: document.getElementById('live-auto-modo').value,
                 apiLocal: document.getElementById('live-auto-api').value
             };
@@ -1553,8 +1574,8 @@
                 if(document.getElementById('live-auto-ativo')) document.getElementById('live-auto-ativo').checked = conf.ativo;
                 if(document.getElementById('live-auto-keyword')) document.getElementById('live-auto-keyword').value = conf.keyword || 'kaveirinha';
                 if(document.getElementById('live-auto-texto')) document.getElementById('live-auto-texto').value = conf.texto || 'Seja muito bem vindo à live, {nome}!';
-                if(document.getElementById('live-auto-gemini')) document.getElementById('live-auto-gemini').value = conf.gemini || '';
-                if(document.getElementById('live-auto-persona')) document.getElementById('live-auto-persona').value = conf.persona || '';
+                if(document.getElementById('live-auto-qa')) document.getElementById('live-auto-qa').value = conf.qa || 'idade | Eu sou uma inteligência artificial, não tenho idade!\nmora | Eu moro dentro do computador do host.\nnome | Meu nome é Diretoria, a melhor IA do TikTok!\nbatalha | Vamos pra cima deles, senta o dedo na tela!\nsim | Que bom que concorda comigo, {nome}!\nnao | Ah, que pena, {nome}.';
+                if(document.getElementById('live-auto-genericas')) document.getElementById('live-auto-genericas').value = conf.genericas || 'Interessante... me conta mais sobre isso!\nAchei meio duvidoso, mas vou concordar.\nVocê fala cada coisa, viu {nome}!\nNão entendi direito, manda um presente pra eu pensar melhor.\nCom certeza absoluta, {nome}!';
                 if(document.getElementById('live-auto-modo')) document.getElementById('live-auto-modo').value = conf.modo || 'local';
                 if(document.getElementById('live-auto-api')) document.getElementById('live-auto-api').value = conf.apiLocal || 'http://127.0.0.1:8020/gerar';
             }
@@ -2090,7 +2111,10 @@
                 // BOAS-VINDAS APENAS NO 1º COMENTÁRIO DA LIVE
                 // ==========================================
                 let confAuto = JSON.parse(localStorage.getItem('diretoria_liveauto_config'));
-                if (confAuto && confAuto.ativo && !isOBS) {
+                let sinalOBS = parseInt(localStorage.getItem('obs_liveauto_heartbeat')) || 0;
+                let obsAberto = (Date.now() - sinalOBS) < 5000; // Checa se o OBS piscou nos últimos 5 segs
+
+                if (confAuto && confAuto.ativo && !isOBS && obsAberto) {
                     // Checa se a pessoa ainda não recebeu as boas-vindas nesta live
                     if (!ramData.usersMeta[user].welcomed) {
                         ramData.usersMeta[user].welcomed = true; // Marca como cumprimentada
@@ -2121,7 +2145,7 @@
                 // LÓGICA DO NPC (PALAVRA-CHAVE LIMPA E FLOOD)
                 // ==========================================
 
-                if (confAuto && confAuto.ativo && confAuto.keyword) {
+                if (confAuto && confAuto.ativo && confAuto.keyword && obsAberto) {
                     const key = confAuto.keyword.toLowerCase().trim();
 
                     if (msgLimpa.includes(key)) {
@@ -2230,7 +2254,10 @@
 
                 // O COMBO ACABOU! AGORA SIM MANDAMOS PARA O CÉREBRO NPC AGRADECER 1 ÚNICA VEZ
                 let confAutoGift = JSON.parse(localStorage.getItem('diretoria_liveauto_config'));
-                if (confAutoGift && confAutoGift.ativo) {
+                let sinalOBSGift = parseInt(localStorage.getItem('obs_liveauto_heartbeat')) || 0;
+                let obsAbertoGift = (Date.now() - sinalOBSGift) < 5000;
+
+                if (confAutoGift && confAutoGift.ativo && obsAbertoGift) {
                     ramData.filaLiveAuto.push({
                         id: (window.autoIdCounter = (window.autoIdCounter || Date.now()) + 1),
                         nome: nomeLimpoNPC,
@@ -2897,6 +2924,9 @@
                 let lastDisparoId = 0;
 
                 setInterval(() => {
+                    // 🔥 SENSOR DE PRESENÇA: Avisa o Cérebro no Chrome que o OBS está ligado!
+                    localStorage.setItem('obs_liveauto_heartbeat', Date.now().toString());
+
                     const vCfg = JSON.parse(getSafeMem('diretoria_liveauto_videos')) || { geral: '', resposta: '', presentes: [] };
                     const vidGeral = document.getElementById('vid-geral');
 
@@ -3334,141 +3364,38 @@
                 "Eu podia estar roubando, eu podia estar matando, mas tô aqui pedindo tap tap na humildade."
             ];
 
-            async function pensarComIAChrome(prompt, cfg) {
-                if (!cfg.gemini) return "Sem chave da API.";
-                let baseUrl = cfg.apiLocal ? cfg.apiLocal.replace('/gerar', '') : "http://127.0.0.1:8020";
-                const url = `${baseUrl}/pensar?prompt=${encodeURIComponent(prompt)}&persona=${encodeURIComponent(cfg.persona)}&api_key=${encodeURIComponent(cfg.gemini)}`;
-                try {
-                    const controller = new AbortController();
-                    // 20 segundos de paciência pro Chrome não dar timeout antes do Python
-                    const id = setTimeout(() => controller.abort(), 20000);
-                    const res = await fetch(url, { signal: controller.signal });
-                    clearTimeout(id);
-                    const data = await res.json();
-                    return data.texto || "Estou sem palavras.";
-                } catch (e) {
-                    // Se chegar aqui, a rede do PC inteiro caiu.
-                    return "Tive um branco de memória agora.";
-                }
-            }
+            // O CÉREBRO AGORA É 100% OFFLINE! Não bate mais no servidor!
+            async function pensarComIAChrome(pergunta, cfg, nomeUsuario) {
+                const perguntaLimpa = pergunta.toLowerCase().trim();
+                const linhasQA = (cfg.qa || "").split('\n');
 
-            function gerarAudioCloneLocalChrome(texto, urlApi) {
-                return new Promise(async (resolve) => {
-                    try {
-                        const controller = new AbortController();
-                        const id = setTimeout(() => controller.abort(), 5000);
-                        const res = await fetch(`${urlApi}?text=${encodeURIComponent(texto)}`, { signal: controller.signal });
-                        clearTimeout(id);
-                        if (!res.ok) throw new Error();
-                        const blob = await res.blob();
-                        const audio = document.createElement('audio');
-                        audio.src = URL.createObjectURL(blob);
-                        resolve(audio);
-                    } catch (e) { resolve(null); }
-                });
-            }
+                // 1. Procura uma resposta exata no banco de dados
+                for (let linha of linhasQA) {
+                    if (linha.includes('|')) {
+                        let partes = linha.split('|');
+                        let chave = partes[0].trim().toLowerCase();
+                        let resposta = partes[1].trim();
 
-            // ⚡ GERADOR DE FRASES MISTURADAS (A cada 30 segundos joga uma piada no fundo da fila)
-            setInterval(() => {
-                let confAuto = JSON.parse(localStorage.getItem('diretoria_liveauto_config'));
-                if (confAuto && confAuto.ativo) {
-                    // Conta quantos ociosos já tem na fila pra não acumular infinito
-                    let ociososNaFila = filaExecucaoChrome.filter(i => i.tipo === "ocioso").length;
-
-                    if (ociososNaFila < 1) { // Só injeta se não tiver nenhuma piada esperando
-                        let fraseAleatoria = frasesOciosas[Math.floor(Math.random() * frasesOciosas.length)];
-                        filaExecucaoChrome.push({
-                            id: Date.now() + Math.random(),
-                            tipo: "ocioso",
-                            texto: fraseAleatoria
-                        });
-                    }
-                }
-            }, 30000);
-
-            // MOTOR PRINCIPAL DA FILA
-            setInterval(() => {
-                let filaLocal = JSON.parse(localStorage.getItem('diretoria_fila_liveauto')) || [];
-                let temNovo = false;
-
-                filaLocal.forEach(item => {
-                    if (item.id > lastAutoIdChrome) {
-                        lastAutoIdChrome = item.id;
-                        filaExecucaoChrome.push(item);
-                        temNovo = true;
-                    }
-                });
-
-                // ⚡ SISTEMA DE INTERRUPÇÃO (CORTA A PIADA PRA OUVIR O PRESENTE)
-                if (temNovo) {
-                    if (tocandoChrome && isIdlePlaying) {
-                        if (playerAudioChrome instanceof SpeechSynthesisUtterance) {
-                            window.speechSynthesis.cancel();
-                        } else if (playerAudioChrome) {
-                            playerAudioChrome.pause();
-                            playerAudioChrome.currentTime = 0;
+                        if (chave !== "" && perguntaLimpa.includes(chave)) {
+                            return resposta.replace(/{nome}/g, nomeUsuario);
                         }
-                        // Grita pro OBS esvaziar a tela na hora!
-                        localStorage.setItem('diretoria_liveauto_disparo', JSON.stringify({ id: Date.now(), url: 'ESCONDER' }));
-                        tocandoChrome = false;
-                        isIdlePlaying = false;
                     }
                 }
 
-                if (filaExecucaoChrome.length > 0 && !tocandoChrome) {
-                    processarFilaNPCChrome();
-                }
-            }, 500);
-
-            async function processarFilaNPCChrome() {
-                tocandoChrome = true;
-
-                // ⚡ MISTURADOR DINÂMICO (Impede repetição chata de Boas Vindas)
-                let indexToPlay = 0;
-                let pIdx = filaExecucaoChrome.findIndex(i => i.tipo === 'presente');
-
-                if (pIdx !== -1) {
-                    indexToPlay = pIdx; // Presente é Rei, fura a fila!
-                } else {
-                    let cIdx = filaExecucaoChrome.findIndex(i => i.tipo === 'chat');
-                    let jIdx = filaExecucaoChrome.findIndex(i => i.tipo === 'join');
-                    let oIdx = filaExecucaoChrome.findIndex(i => i.tipo === 'ocioso');
-
-                    // Tenta não repetir a mesma coisa da última vez
-                    if (lastPlayedType === 'join') {
-                        if (cIdx !== -1) indexToPlay = cIdx;
-                        else if (oIdx !== -1) indexToPlay = oIdx;
-                    } else if (lastPlayedType === 'chat') {
-                        if (jIdx !== -1) indexToPlay = jIdx;
-                        else if (oIdx !== -1) indexToPlay = oIdx;
-                    } else {
-                        if (cIdx !== -1) indexToPlay = cIdx;
-                        else if (jIdx !== -1) indexToPlay = jIdx;
-                    }
+                // 2. Se não achou palavra-chave, sorteia uma genérica
+                const linhasGen = (cfg.genericas || "Interessante...").split('\n').filter(l => l.trim() !== "");
+                if (linhasGen.length > 0) {
+                    let respostaGen = linhasGen[Math.floor(Math.random() * linhasGen.length)].trim();
+                    return respostaGen.replace(/{nome}/g, nomeUsuario);
                 }
 
-                let atual = filaExecucaoChrome.splice(indexToPlay, 1)[0];
-                lastPlayedType = atual.tipo;
-                isIdlePlaying = (atual.tipo === "ocioso");
+                return `Interessante, ${nomeUsuario}!`;
+            }
 
-                const cfg = JSON.parse(localStorage.getItem('diretoria_liveauto_config')) || {};
-                const vCfg = JSON.parse(localStorage.getItem('diretoria_liveauto_videos')) || { geral: '', resposta: '', presentes: [] };
-                const hostArroba = (localStorage.getItem('rdm_user') || 'usuario').replace('@', '');
-
-                let promptIA = `${cfg.persona}\n\n`;
-                let urlVideoEscolhido = vCfg.resposta || '';
-                let textoFinal = "";
-
-                if (atual.tipo === "ocioso") {
-                    textoFinal = atual.texto;
-                    urlVideoEscolhido = vCfg.resposta || ''; // Frases ociosas usam o seu vídeo de fala padrão
+            // ... na lógica dentro de processarFilaNPCChrome(): ...
                 } else if (atual.tipo === "chat") {
-                    if (atual.flood) {
-                        promptIA += `O usuário ${atual.nome} fez flood: "${atual.pergunta}". Dê bronca curta.`;
-                    } else {
-                        promptIA += `Usuário ${atual.nome} disse: "${atual.pergunta}". Responda em 1 frase.`;
-                    }
-                    textoFinal = await pensarComIAChrome(promptIA, cfg);
+                    // Chama o banco de dados interno!
+                    textoFinal = await pensarComIAChrome(atual.pergunta, cfg, atual.nome);
                 } else if (atual.tipo === "presente") {
                     let presLimpo = atual.presenteNome.toLowerCase().trim();
                     let mapeado = vCfg.presentes.find(p => p.gatilho && p.gatilho.toLowerCase().trim() === presLimpo);
