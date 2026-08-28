@@ -3365,6 +3365,25 @@
                 });
             }
 
+            // ⚡ GERADOR DE FRASES MISTURADAS (A cada 30 segundos joga uma piada no fundo da fila)
+            setInterval(() => {
+                let confAuto = JSON.parse(localStorage.getItem('diretoria_liveauto_config'));
+                if (confAuto && confAuto.ativo) {
+                    // Conta quantos ociosos já tem na fila pra não acumular infinito
+                    let ociososNaFila = filaExecucaoChrome.filter(i => i.tipo === "ocioso").length;
+
+                    if (ociososNaFila < 1) { // Só injeta se não tiver nenhuma piada esperando
+                        let fraseAleatoria = frasesOciosas[Math.floor(Math.random() * frasesOciosas.length)];
+                        filaExecucaoChrome.push({
+                            id: Date.now() + Math.random(),
+                            tipo: "ocioso",
+                            texto: fraseAleatoria
+                        });
+                    }
+                }
+            }, 30000);
+
+            // MOTOR PRINCIPAL DA FILA
             setInterval(() => {
                 let filaLocal = JSON.parse(localStorage.getItem('diretoria_fila_liveauto')) || [];
                 let temNovo = false;
@@ -3377,10 +3396,8 @@
                     }
                 });
 
-                // ⚡ SISTEMA DE INTERRUPÇÃO (CALA A BOCA DO BOT PRA OUVIR O PRESENTE)
+                // ⚡ SISTEMA DE INTERRUPÇÃO (CORTA A PIADA PRA OUVIR O PRESENTE)
                 if (temNovo) {
-                    tempoUltimaAcao = Date.now();
-
                     if (tocandoChrome && isIdlePlaying) {
                         if (playerAudioChrome instanceof SpeechSynthesisUtterance) {
                             window.speechSynthesis.cancel();
@@ -3396,27 +3413,12 @@
                 }
 
                 if (filaExecucaoChrome.length > 0 && !tocandoChrome) {
+                    // Ordena: Presente (3) > Chat (2) > Boas-Vindas (1) > Piadas (0)
                     filaExecucaoChrome.sort((a, b) => {
                         const peso = { "presente": 3, "chat": 2, "join": 1, "ocioso": 0 };
                         return (peso[b.tipo] || 0) - (peso[a.tipo] || 0) || (a.id - b.id);
                     });
                     processarFilaNPCChrome();
-                } else if (filaExecucaoChrome.length === 0 && !tocandoChrome) {
-                    // SILÊNCIO NA LIVE: Dispara piada a cada 40 segundos
-                    if (Date.now() - tempoUltimaAcao > 40000) {
-                        let confAuto = JSON.parse(localStorage.getItem('diretoria_liveauto_config'));
-                        if (confAuto && confAuto.ativo) {
-                            let fraseAleatoria = frasesOciosas[Math.floor(Math.random() * frasesOciosas.length)];
-                            filaExecucaoChrome.push({
-                                id: Date.now(),
-                                tipo: "ocioso",
-                                texto: fraseAleatoria
-                            });
-                            tempoUltimaAcao = Date.now();
-                        } else {
-                            tempoUltimaAcao = Date.now(); // Mantém o relógio girando mesmo com Cérebro desligado
-                        }
-                    }
                 }
             }, 500);
 
