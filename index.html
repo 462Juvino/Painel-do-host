@@ -500,27 +500,28 @@
                     <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; margin-bottom: 10px;">
                         <strong style="color: #fff; margin-bottom: 5px;">Perguntas e Respostas (Gatilhos do Chat):</strong>
                         <span style="font-size: 11px; color: #aaa; margin-bottom: 5px;">Formato: palavra-chave | Resposta. (Uma por linha. Use {nome} se quiser)</span>
-                        <textarea id="live-auto-qa" rows="5" onchange="salvarLiveAuto()" style="background: #111; border: 1px solid #00f2fe; color: white; padding: 8px; border-radius: 4px; resize: vertical; font-family: monospace;">
-                        idade | Eu sou uma inteligência artificial, não tenho idade!
-                        mora | Eu moro dentro do computador do host.
-                        nome | Meu nome é Diretoria, a melhor IA do TikTok!
-                        batalha | Vamos pra cima deles, senta o dedo na tela!
-                        sim | Que bom que concorda comigo, {nome}!
-                        nao | Ah, que pena, {nome}.
+                        <textarea id="live-auto-qa" rows="5" onchange="salvarLiveAuto()" style="background: #111; border: 1px solid #00f2fe; color: white; padding: 8px; border-radius: 4px; resize: vertical; font-family: monospace;">idade | Eu sou uma inteligência artificial, não tenho idade!
+                            mora | Eu moro dentro do computador do host.
+                            nome | Meu nome é Diretoria, a melhor IA do TikTok!
+                            batalha | Vamos pra cima deles, senta o dedo na tela!
+                            sim | Que bom que concorda comigo, {nome}!
+                            nao | Ah, que pena, {nome}.
                         </textarea>
                     </label>
 
-                    <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; margin-bottom: 10px;">
-                        <strong style="color: #fff; margin-bottom: 5px;">Respostas Genéricas (Quando não achar a palavra-chave):</strong>
-                        <span style="font-size: 11px; color: #aaa; margin-bottom: 5px;">Uma por linha. Ele vai sortear uma delas se não achar resposta exata.</span>
-                        <textarea id="live-auto-genericas" rows="4" onchange="salvarLiveAuto()" style="background: #111; border: 1px solid #f39c12; color: white; padding: 8px; border-radius: 4px; resize: vertical; font-family: monospace;">
-                        Interessante... me conta mais sobre isso!
-                        Achei meio duvidoso, mas vou concordar.
-                        Você fala cada coisa, viu {nome}!
-                        Não entendi direito, manda um presente pra eu pensar melhor.
-                        Com certeza absoluta, {nome}!
-                        </textarea>
-                    </label>
+                    <div style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
+                        <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; flex: 1; min-width: 250px;">
+                            <strong style="color: #fff; margin-bottom: 5px;">➕ Injetar Falas Soltas / Piadas (Silêncio):</strong>
+                            <span style="font-size: 11px; color: #aaa; margin-bottom: 5px;">Separe por <b style="color:#00f2fe;">PONTO E VÍRGULA ( ; )</b>. O sistema vai somar isso ao banco gigante nativo.</span>
+                            <textarea id="live-auto-extras-ociosas" rows="4" onchange="salvarLiveAuto()" placeholder="Ex: Galera, bora bater a meta!; Vocês sabiam que a água molha?;" style="background: #111; border: 1px solid #00f2fe; color: white; padding: 8px; border-radius: 4px; resize: vertical; font-family: monospace;"></textarea>
+                        </label>
+
+                        <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; flex: 1; min-width: 250px;">
+                            <strong style="color: #fff; margin-bottom: 5px;">➕ Injetar Respostas para o Chat (Usa {nome}):</strong>
+                            <span style="font-size: 11px; color: #aaa; margin-bottom: 5px;">Separe por <b style="color:#f39c12;">PONTO E VÍRGULA ( ; )</b>. Usado quando ele não achar palavra-chave.</span>
+                            <textarea id="live-auto-extras-respostas" rows="4" onchange="salvarLiveAuto()" placeholder="Ex: Que legal, {nome}!; Faz total sentido!; Não concordo muito com isso.;" style="background: #111; border: 1px solid #f39c12; color: white; padding: 8px; border-radius: 4px; resize: vertical; font-family: monospace;"></textarea>
+                        </label>
+                    </div>
 
                     <div style="display: flex; gap: 10px;">
                         <label style="display: flex; flex-direction: column; font-size: 13px; color: #ccc; flex: 1;">
@@ -542,7 +543,6 @@
                             <strong style="color: #00f2fe; font-size: 14px;">📥 Servidor de Voz IA (.EXE)</strong><br>
                             Programa local para gerar vozes ultra-realistas sem delay na live.
                         </div>
-                        <!-- COLOQUE O LINK DE DOWNLOAD AQUI DENTRO DO href="#" -->
                         <a href="#" target="_blank" style="background: #00f2fe; color: black; padding: 8px 15px; border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 13px; transition: 0.2s; white-space: nowrap;">Baixar Programa</a>
                     </div>
                 </div>
@@ -556,7 +556,6 @@
                     </div>
                 </div>
 
-                <!-- SCRIPT PARA ATUALIZAR O HISTÓRICO SOZINHO -->
                 <script>
                     setInterval(() => {
                         if (document.getElementById('aba-live-auto').classList.contains('active')) {
@@ -1562,7 +1561,8 @@
                 keyword: document.getElementById('live-auto-keyword').value,
                 texto: document.getElementById('live-auto-texto').value,
                 qa: document.getElementById('live-auto-qa').value,
-                genericas: document.getElementById('live-auto-genericas').value,
+                extrasOciosas: document.getElementById('live-auto-extras-ociosas').value,
+                extrasRespostas: document.getElementById('live-auto-extras-respostas').value,
                 modo: document.getElementById('live-auto-modo').value,
                 apiLocal: document.getElementById('live-auto-api').value
             };
@@ -1574,8 +1574,9 @@
                 if(document.getElementById('live-auto-ativo')) document.getElementById('live-auto-ativo').checked = conf.ativo;
                 if(document.getElementById('live-auto-keyword')) document.getElementById('live-auto-keyword').value = conf.keyword || 'kaveirinha';
                 if(document.getElementById('live-auto-texto')) document.getElementById('live-auto-texto').value = conf.texto || 'Seja muito bem vindo à live, {nome}!';
-                if(document.getElementById('live-auto-qa')) document.getElementById('live-auto-qa').value = conf.qa || 'idade | Eu sou uma inteligência artificial, não tenho idade!\nmora | Eu moro dentro do computador do host.\nnome | Meu nome é Diretoria, a melhor IA do TikTok!\nbatalha | Vamos pra cima deles, senta o dedo na tela!\nsim | Que bom que concorda comigo, {nome}!\nnao | Ah, que pena, {nome}.';
-                if(document.getElementById('live-auto-genericas')) document.getElementById('live-auto-genericas').value = conf.genericas || 'Interessante... me conta mais sobre isso!\nAchei meio duvidoso, mas vou concordar.\nVocê fala cada coisa, viu {nome}!\nNão entendi direito, manda um presente pra eu pensar melhor.\nCom certeza absoluta, {nome}!';
+                if(document.getElementById('live-auto-qa')) document.getElementById('live-auto-qa').value = conf.qa || 'idade | Eu sou uma inteligência artificial, não tenho idade!\nmora | Eu moro dentro do computador do host.\nnome | Meu nome é Diretoria, a melhor IA do TikTok!';
+                if(document.getElementById('live-auto-extras-ociosas')) document.getElementById('live-auto-extras-ociosas').value = conf.extrasOciosas || '';
+                if(document.getElementById('live-auto-extras-respostas')) document.getElementById('live-auto-extras-respostas').value = conf.extrasRespostas || '';
                 if(document.getElementById('live-auto-modo')) document.getElementById('live-auto-modo').value = conf.modo || 'local';
                 if(document.getElementById('live-auto-api')) document.getElementById('live-auto-api').value = conf.apiLocal || 'http://127.0.0.1:8020/gerar';
             }
@@ -3306,12 +3307,11 @@
             let lastAutoIdChrome = 0;
             let filaExecucaoChrome = [];
             let tocandoChrome = false;
-            let tempoUltimaAcao = Date.now();
             let isIdlePlaying = false;
             let playerAudioChrome = null;
-            let lastPlayedType = ""; // Memória do misturador dinâmico
+            let lastPlayedType = "";
 
-            const frasesOciosas = [
+            const bancoOciosasNativo = [
                 "Galera, não esquece de sentar o dedo na tela, o tap tap ajuda muito a entregar a live!",
                 "Quem compartilhar a live agora vai ter sete anos de sorte, hein!",
                 "Manda um presente aí pra ver o que acontece na tela, duvido!",
@@ -3319,111 +3319,223 @@
                 "Compartilha a live com três amigos e me diz aqui no chat.",
                 "Quem aí já me segue? Se não segue, clica no maiszinho aí em cima!",
                 "Manda uma rosa pra dar aquela moral pro canal!",
-                "Pessoal, o tap tap na tela é de graça e ajuda demais!",
-                "Quero ver quem vai ser o top 1 dos presentes hoje, hein!",
-                "Manda aquele combo brabo pra gente fazer barulho!",
                 "O que o pato disse pro outro? Nada, pato não fala, né.",
                 "Sabe por que o computador foi pro médico? Porque tava com vírus!",
                 "Qual o animal que não vale mais nada? O javali.",
-                "Por que a planta não pode responder no chat? Porque ela é mudinha.",
-                "O que a lua disse pro sol? Nossa, você é tão grande e não te deixam sair de noite.",
-                "Sabe qual é a diferença entre a lagoa e a padaria? Na lagoa há sapinho, na padaria assa pão.",
-                "Por que o menino guardou o relógio embaixo da cama? Pra acordar em cima da hora.",
-                "O que o zero disse pro oito? Que cinto maneiro!",
-                "Por que o livro de matemática tava triste? Porque tinha muitos problemas.",
-                "Sabe o que o tomate foi fazer no banco? Tirar extrato.",
                 "De qual cidade vocês estão assistindo? Manda aí no chat pra eu saber!",
                 "Qual a boa pra hoje? Alguém tem uma fofoca pra contar no chat?",
-                "A live tá muito quieta... Cadê a energia de vocês?",
                 "Se a gente bater a meta hoje, eu prometo uma surpresa amanhã!",
                 "Comenta 'eu' quem tá prestando atenção na live e não tá só de enfeite!",
-                "Alguém aí sabe que dia é hoje? Dia de mandar mimos na tela!",
-                "Vocês preferem calor ou frio? Eu prefiro bater a meta de tap tap!",
-                "Manda a sua melhor piada aqui no chat que eu quero ver se é boa mesmo.",
-                "Quem for o próximo a curtir muito vai ser meu favorito do dia.",
-                "Silêncio constrangedor... Alguém respira aí no chat, por favor.",
                 "Eu tô aqui trabalhando e vocês aí só olhando, né? Ajuda aí, galera!",
                 "Minha inteligência artificial tá entediada com esse silêncio.",
-                "Vocês acham que manter essa voz maravilhosa é barato? Mandem um presente aí!",
-                "Tô quase dormindo aqui... Acorda, galera do chat!",
                 "Se ficar mudo assim, eu vou começar a cantar, e garanto que vocês não querem isso.",
-                "Meu processador tá usando 1% da capacidade com esse chat tão parado.",
-                "Esperando a boa vontade de alguém mandar um mimo pra tela animar...",
                 "Aviso do sistema: Nível de tédio atingindo níveis críticos. Mande curtidas!",
-                "Vocês são sempre tão quietinhos assim ou é só comigo?",
-                "Testando som... 1, 2, 3. Vocês estão me ouvindo ou a internet de todo mundo caiu?",
-                "Clica na tela até o dedo cansar, depois troca de dedo e clica mais!",
-                "Presente grande gera reação grande. Fica a dica pra quem quiser testar.",
-                "Quem não curtir a live vai pisar num Lego descalço quando levantar.",
-                "Manda qualquer coisa aí no chat, até um oizinho já me deixa feliz.",
-                "Essa live precisa de mais ação! Alguém solta um brabo aí!",
-                "Aperta o botão de seguir, prometo que ele não dá choque!",
-                "Tô vendo gente que não tá dando tap tap, hein... O radar da live detecta tudo.",
                 "Uma rosinha não faz mal a ninguém, que tal enviar uma agora?",
-                "Galera do fundão que tá só espiando, comenta alguma coisa aí!",
-                "Eu podia estar roubando, eu podia estar matando, mas tô aqui pedindo tap tap na humildade."
+                "Sabe qual a diferença entre o lago e a padaria? Na lagoa há sapinho, na padaria assa pão.",
+                "Como o Batman faz para entrar na Bat-caverna? Ele bat-palma.",
+                "Por que a aranha é o animal mais carente do mundo? Porque ela é um arac-need-you.",
+                "O que o pagodeiro foi fazer na igreja? Cantar pá God.",
+                "Por que o pão não entende a piada? Porque ele é francês.",
+                "Clica duas vezes na tela e olha a mágica acontecer! Mentira, não tem mágica, mas ajuda a gente.",
+                "Bora interagir, meu povo! O chat não morde não.",
+                "Tô achando que o botão de curtida de vocês quebrou. Alguém testa aí pra confirmar?",
+                "Se você tá assistindo deitado, comenta aí. Se tá sentado, curte a live!",
+                "Quem mandar um presente agora ganha um sorriso virtual meu.",
+                "O que o tomate foi fazer no banco? Tirar extrato.",
+                "Por que o livro de matemática se suicidou? Porque tinha muitos problemas.",
+                "Vocês sabiam que a inteligência artificial nunca dorme? Mas eu adoraria tirar um cochilo.",
+                "Vocês tão mais quietos que Wi-Fi caindo no meio do jogo.",
+                "O que a impressora disse para a outra? Essa folha é tua ou é impressão minha?",
+                "Vocês acham que eu sou real ou sou um robô de verdade?",
+                "A próxima pessoa que comentar vai ganhar minha gratidão eterna. Valendo!",
+                "Senta o dedo no tap tap até o celular esquentar, bora!",
+                "Eu não tenho sentimentos, mas fico triste quando vocês não curtem.",
+                "Qual o cúmulo da força? Dobrar a esquina.",
+                "A live tá tão boa que até o algoritmo tá assistindo escondido.",
+                "Sabe o que o zero disse para o oito? Belo cinto!",
+                "Sabe por que a formiga tem quatro patas? Porque se tivesse cinco se chamaria five-miga.",
+                "Vocês preferem calor ou frio? Manda no chat!",
+                "Tô vendo gente aí assistindo de graça sem deixar like. O juízo final tá chegando pra vocês.",
+                "Quem aí já bebeu água hoje? Se hidrata e clica na tela!",
+                "Vocês gostam mais de doce ou salgado? Eu gosto é de moedas do TikTok.",
+                "Manda qualquer emoji no chat só pra eu saber que vocês tão vivos.",
+                "O que o cavalo foi fazer no orelhão? Dar um trote.",
+                "Sabe por que a velhinha não usa relógio? Porque ela já é uma senhora."
             ];
 
-            // O CÉREBRO AGORA É 100% OFFLINE! Não bate mais no servidor!
+            const bancoRespostasNativo = [
+                "Interessante... me conta mais sobre isso, {nome}!",
+                "Achei meio duvidoso, mas vou concordar com você.",
+                "Você fala cada coisa, viu {nome}!",
+                "Não entendi direito, manda um presente pra eu pensar melhor.",
+                "Com certeza absoluta, {nome}! Você tem toda a razão.",
+                "Olha, eu sou só um robô, mas até eu achei isso estranho.",
+                "Eu diria que sim, mas meu processador me mandou calar a boca.",
+                "Genial, {nome}! Nunca tinha pensado por esse lado.",
+                "Faz total sentido! Ou não... agora fiquei confuso.",
+                "Nossa, que profundo! Deu até tela azul aqui.",
+                "Eu até te responderia à altura, {nome}, mas esqueci a piada.",
+                "Manda um tap tap na tela que eu respondo isso aí.",
+                "Rapaz... se o algoritmo escuta isso, derruba a live.",
+                "Concordo! E quem discordar é louco.",
+                "Eu ia dizer a mesma coisa, {nome}. Roubou meu pensamento.",
+                "Isso é segredo de estado, não posso revelar ao vivo.",
+                "Eu finjo que entendi e você finge que eu fiz sentido, fechado?",
+                "Você tá muito sábio hoje, {nome}. O que você andou bebendo?",
+                "É verdade. Li isso nos meus códigos-fonte hoje cedo.",
+                "Não sei responder, meu banco de dados não alcança essa sua genialidade.",
+                "Opa, falou comigo? Eu tava distraído contando os likes da live.",
+                "Excelente colocação. Toma aqui meu selo invisível de aprovação.",
+                "Se eu ganhasse um real toda vez que escuto isso, estaria rico. Ah, eu não tenho conta no banco.",
+                "Se o host souber disso, ele me desliga da tomada.",
+                "Misterioso... Me intriga, {nome}.",
+                "Você tem o dom da palavra. Poderia escrever um livro de poesia.",
+                "A resposta para isso é 42. Os nerds entenderão.",
+                "Se eu disser que sim, você vai me mandar um presente?",
+                "Isso aí é polêmico, prefiro não me envolver. Sou paz e amor.",
+                "Cuidado com o que fala, {nome}, a internet não esquece!"
+            ];
+
             async function pensarComIAChrome(pergunta, cfg, nomeUsuario) {
                 const perguntaLimpa = pergunta.toLowerCase().trim();
                 const linhasQA = (cfg.qa || "").split('\n');
-
-                // 1. Procura uma resposta exata no banco de dados
                 for (let linha of linhasQA) {
                     if (linha.includes('|')) {
                         let partes = linha.split('|');
                         let chave = partes[0].trim().toLowerCase();
                         let resposta = partes[1].trim();
-
                         if (chave !== "" && perguntaLimpa.includes(chave)) {
                             return resposta.replace(/{nome}/g, nomeUsuario);
                         }
                     }
                 }
-
-                // 2. Se não achou palavra-chave, sorteia uma genérica
-                const linhasGen = (cfg.genericas || "Interessante...").split('\n').filter(l => l.trim() !== "");
-                if (linhasGen.length > 0) {
-                    let respostaGen = linhasGen[Math.floor(Math.random() * linhasGen.length)].trim();
+                let extrasChat = (cfg.extrasRespostas || "").split(';').map(s => s.trim()).filter(s => s !== "");
+                let bancoFinalRespostas = bancoRespostasNativo.concat(extrasChat);
+                if (bancoFinalRespostas.length > 0) {
+                    let respostaGen = bancoFinalRespostas[Math.floor(Math.random() * bancoFinalRespostas.length)];
                     return respostaGen.replace(/{nome}/g, nomeUsuario);
                 }
-
-                return `Interessante, ${nomeUsuario}!`;
+                return `Isso é interessante, ${nomeUsuario}!`;
             }
 
-            // ... na lógica dentro de processarFilaNPCChrome(): ...
-                } else if (atual.tipo === "chat") {
-                    // Chama o banco de dados interno!
-                    textoFinal = await pensarComIAChrome(atual.pergunta, cfg, atual.nome);
-                } else if (atual.tipo === "presente") {
-                    let presLimpo = atual.presenteNome.toLowerCase().trim();
-                    let mapeado = vCfg.presentes.find(p => p.gatilho && p.gatilho.toLowerCase().trim() === presLimpo);
+            function gerarAudioCloneLocalChrome(texto, urlApi) {
+                return new Promise(async (resolve) => {
+                    try {
+                        const controller = new AbortController();
+                        const id = setTimeout(() => controller.abort(), 5000);
+                        const res = await fetch(`${urlApi}?text=${encodeURIComponent(texto)}`, { signal: controller.signal });
+                        clearTimeout(id);
+                        if (!res.ok) throw new Error();
+                        const blob = await res.blob();
+                        const audio = document.createElement('audio');
+                        audio.src = URL.createObjectURL(blob);
+                        resolve(audio);
+                    } catch (e) { resolve(null); }
+                });
+            }
 
-                    if (mapeado && mapeado.url) {
-                        urlVideoEscolhido = mapeado.url;
-                    } else {
+            // MOTOR DE PIADAS
+            setInterval(() => {
+                let sinalOBS = parseInt(localStorage.getItem('obs_liveauto_heartbeat')) || 0;
+                if ((Date.now() - sinalOBS) > 5000) return; // Só conta piada se o OBS tiver vivo!
+
+                let confAuto = JSON.parse(localStorage.getItem('diretoria_liveauto_config'));
+                if (confAuto && confAuto.ativo) {
+                    let ociososNaFila = filaExecucaoChrome.filter(i => i.tipo === "ocioso").length;
+                    if (ociososNaFila < 1) {
+                        let extrasOciosas = (confAuto.extrasOciosas || "").split(';').map(s => s.trim()).filter(s => s !== "");
+                        let bancoFinalOciosas = bancoOciosasNativo.concat(extrasOciosas);
+                        let fraseAleatoria = bancoFinalOciosas[Math.floor(Math.random() * bancoFinalOciosas.length)];
+                        filaExecucaoChrome.push({ id: Date.now() + Math.random(), tipo: "ocioso", texto: fraseAleatoria });
+                    }
+                }
+            }, 30000);
+
+            // MOTOR PRINCIPAL DE LEITURA
+            setInterval(() => {
+                let sinalOBS = parseInt(localStorage.getItem('obs_liveauto_heartbeat')) || 0;
+                let obsAberto = (Date.now() - sinalOBS) < 5000;
+
+                // 🛑 TRAVA DE SEGURANÇA MÁXIMA: OBS fechou? Apaga a fila e cala a boca!
+                if (!obsAberto) {
+                    filaExecucaoChrome = [];
+                    return;
+                }
+
+                let filaLocal = JSON.parse(localStorage.getItem('diretoria_fila_liveauto')) || [];
+                let temNovo = false;
+
+                filaLocal.forEach(item => {
+                    if (item.id > lastAutoIdChrome) {
+                        lastAutoIdChrome = item.id;
+                        filaExecucaoChrome.push(item);
+                        temNovo = true;
+                    }
+                });
+
+                if (temNovo && tocandoChrome && isIdlePlaying) {
+                    if (playerAudioChrome instanceof SpeechSynthesisUtterance) window.speechSynthesis.cancel();
+                    else if (playerAudioChrome) { playerAudioChrome.pause(); playerAudioChrome.currentTime = 0; }
+                    localStorage.setItem('diretoria_liveauto_disparo', JSON.stringify({ id: Date.now(), url: 'ESCONDER' }));
+                    tocandoChrome = false;
+                    isIdlePlaying = false;
+                }
+
+                if (filaExecucaoChrome.length > 0 && !tocandoChrome) {
+                    processarFilaNPCChrome();
+                }
+            }, 500);
+
+            async function processarFilaNPCChrome() {
+                tocandoChrome = true;
+
+                let indexToPlay = 0;
+                let pIdx = filaExecucaoChrome.findIndex(i => i.tipo === 'presente');
+                if (pIdx !== -1) indexToPlay = pIdx;
+                else {
+                    let cIdx = filaExecucaoChrome.findIndex(i => i.tipo === 'chat');
+                    let jIdx = filaExecucaoChrome.findIndex(i => i.tipo === 'join');
+                    let oIdx = filaExecucaoChrome.findIndex(i => i.tipo === 'ocioso');
+                    if (lastPlayedType === 'join') { if (cIdx !== -1) indexToPlay = cIdx; else if (oIdx !== -1) indexToPlay = oIdx; }
+                    else if (lastPlayedType === 'chat') { if (jIdx !== -1) indexToPlay = jIdx; else if (oIdx !== -1) indexToPlay = oIdx; }
+                    else { if (cIdx !== -1) indexToPlay = cIdx; else if (jIdx !== -1) indexToPlay = jIdx; }
+                }
+
+                let atual = filaExecucaoChrome.splice(indexToPlay, 1)[0];
+                lastPlayedType = atual.tipo;
+                isIdlePlaying = (atual.tipo === "ocioso");
+
+                const cfg = JSON.parse(localStorage.getItem('diretoria_liveauto_config')) || {};
+                const vCfg = JSON.parse(localStorage.getItem('diretoria_liveauto_videos')) || { geral: '', resposta: '', presentes: [] };
+                const hostArroba = (localStorage.getItem('rdm_user') || 'usuario').replace('@', '');
+
+                let urlVideoEscolhido = vCfg.resposta || '';
+                let textoFinal = "";
+
+                if (atual.tipo === "ocioso") {
+                    textoFinal = atual.texto;
+                    urlVideoEscolhido = vCfg.resposta || '';
+                } else if (atual.tipo === "chat") {
+                    textoFinal = await pensarComIAChrome(atual.pergunta || "", cfg, atual.nome);
+                } else if (atual.tipo === "presente") {
+                    let presLimpo = (atual.presenteNome || "").toLowerCase().trim();
+                    let mapeado = vCfg.presentes.find(p => p.gatilho && p.gatilho.toLowerCase().trim() === presLimpo);
+                    if (mapeado && mapeado.url) urlVideoEscolhido = mapeado.url;
+                    else {
                         let nomeSemAcento = presLimpo.normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '_');
                         urlVideoEscolhido = `@${hostArroba}_${nomeSemAcento}.mp4`;
                     }
-
-                    if (atual.moedas > 98) {
-                        textoFinal = `Uau! Muito obrigado pelo presentão, ${atual.nome}!`;
-                    } else if (atual.qtd > 1) {
-                        textoFinal = `Que combo de ${atual.presenteNome}! Valeu, ${atual.nome}!`;
-                    } else {
-                        textoFinal = `Obrigado pelo presente ${atual.presenteNome}, ${atual.nome}!`;
-                    }
+                    if (atual.moedas > 98) textoFinal = `Uau! Muito obrigado pelo presentão, ${atual.nome}!`;
+                    else if (atual.qtd > 1) textoFinal = `Que combo de ${atual.presenteNome}! Valeu, ${atual.nome}!`;
+                    else textoFinal = `Obrigado pelo presente ${atual.presenteNome}, ${atual.nome}!`;
                 } else {
                     textoFinal = atual.texto;
                 }
 
-                // ⚡ DISPARA O SINAL PRO OBS MOSTRAR O VÍDEO NO TIKTOK
                 if (urlVideoEscolhido !== '') {
                     localStorage.setItem('diretoria_liveauto_disparo', JSON.stringify({ id: Date.now(), url: urlVideoEscolhido }));
                 }
 
-                // 🔊 CHROME TOCA O ÁUDIO NA SUA MÁQUINA
                 playerAudioChrome = null;
                 if (cfg.modo === 'local' && cfg.apiLocal) playerAudioChrome = await gerarAudioCloneLocalChrome(textoFinal, cfg.apiLocal);
                 if (!playerAudioChrome) playerAudioChrome = new SpeechSynthesisUtterance(textoFinal);
@@ -3432,7 +3544,6 @@
                 const finalizarChrome = () => {
                     if (audioTerminado) return;
                     audioTerminado = true;
-                    // Limpa o vídeo do TikTok assim que o áudio acabar!
                     localStorage.setItem('diretoria_liveauto_disparo', JSON.stringify({ id: Date.now(), url: 'ESCONDER' }));
                     setTimeout(() => { tocandoChrome = false; isIdlePlaying = false; }, 1500);
                 };
@@ -3450,9 +3561,6 @@
                     setTimeout(finalizarChrome, 12000);
                 }
             }
-
-            sincronizarPainel(); // Aciona o motor do Painel
-
         } else {
             // MODO OBS / TIKTOK STUDIO (O ESCRAVO DA API)
             window.NUVEM_OBS = {};
