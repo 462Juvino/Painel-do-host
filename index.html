@@ -3279,6 +3279,7 @@
             let tempoUltimaAcao = Date.now();
             let isIdlePlaying = false;
             let playerAudioChrome = null;
+            let lastPlayedType = ""; // Memória do misturador dinâmico
 
             const frasesOciosas = [
                 "Galera, não esquece de sentar o dedo na tela, o tap tap ajuda muito a entregar a live!",
@@ -3339,14 +3340,15 @@
                 const url = `${baseUrl}/pensar?prompt=${encodeURIComponent(prompt)}&persona=${encodeURIComponent(cfg.persona)}&api_key=${encodeURIComponent(cfg.gemini)}`;
                 try {
                     const controller = new AbortController();
-                    // 🔥 AUMENTADO: De 4s para 15s. Dá tempo de sobra pro Google pensar sem o painel cancelar a conexão!
-                    const id = setTimeout(() => controller.abort(), 15000);
+                    // 20 segundos de paciência pro Chrome não dar timeout antes do Python
+                    const id = setTimeout(() => controller.abort(), 20000);
                     const res = await fetch(url, { signal: controller.signal });
                     clearTimeout(id);
                     const data = await res.json();
                     return data.texto || "Estou sem palavras.";
                 } catch (e) {
-                    return "Minha conexão falhou.";
+                    // Se chegar aqui, a rede do PC inteiro caiu.
+                    return "Tive um branco de memória agora.";
                 }
             }
 
@@ -3414,19 +3416,40 @@
                 }
 
                 if (filaExecucaoChrome.length > 0 && !tocandoChrome) {
-                    // Ordena: Presente (3) > Chat (2) > Boas-Vindas (1) > Piadas (0)
-                    filaExecucaoChrome.sort((a, b) => {
-                        const peso = { "presente": 3, "chat": 2, "join": 1, "ocioso": 0 };
-                        return (peso[b.tipo] || 0) - (peso[a.tipo] || 0) || (a.id - b.id);
-                    });
                     processarFilaNPCChrome();
                 }
             }, 500);
 
             async function processarFilaNPCChrome() {
                 tocandoChrome = true;
-                let atual = filaExecucaoChrome.shift();
-                isIdlePlaying = (atual.tipo === "ocioso"); // Marca que a Piada tá rodando (e é fraca)
+
+                // ⚡ MISTURADOR DINÂMICO (Impede repetição chata de Boas Vindas)
+                let indexToPlay = 0;
+                let pIdx = filaExecucaoChrome.findIndex(i => i.tipo === 'presente');
+
+                if (pIdx !== -1) {
+                    indexToPlay = pIdx; // Presente é Rei, fura a fila!
+                } else {
+                    let cIdx = filaExecucaoChrome.findIndex(i => i.tipo === 'chat');
+                    let jIdx = filaExecucaoChrome.findIndex(i => i.tipo === 'join');
+                    let oIdx = filaExecucaoChrome.findIndex(i => i.tipo === 'ocioso');
+
+                    // Tenta não repetir a mesma coisa da última vez
+                    if (lastPlayedType === 'join') {
+                        if (cIdx !== -1) indexToPlay = cIdx;
+                        else if (oIdx !== -1) indexToPlay = oIdx;
+                    } else if (lastPlayedType === 'chat') {
+                        if (jIdx !== -1) indexToPlay = jIdx;
+                        else if (oIdx !== -1) indexToPlay = oIdx;
+                    } else {
+                        if (cIdx !== -1) indexToPlay = cIdx;
+                        else if (jIdx !== -1) indexToPlay = jIdx;
+                    }
+                }
+
+                let atual = filaExecucaoChrome.splice(indexToPlay, 1)[0];
+                lastPlayedType = atual.tipo;
+                isIdlePlaying = (atual.tipo === "ocioso");
 
                 const cfg = JSON.parse(localStorage.getItem('diretoria_liveauto_config')) || {};
                 const vCfg = JSON.parse(localStorage.getItem('diretoria_liveauto_videos')) || { geral: '', resposta: '', presentes: [] };
