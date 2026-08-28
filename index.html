@@ -2922,17 +2922,25 @@
                         lastDisparoId = disparo.id;
                         const vidAcao = document.getElementById('vid-acao');
 
-                        if (vidAcao && disparo.url) {
-                            vidAcao.onended = () => {
+                        if (vidAcao) {
+                            // 🛑 SINAL DE CORTE: Se a piada foi interrompida ou o áudio acabou, tira o vídeo da tela!
+                            if (disparo.url === 'ESCONDER') {
                                 vidAcao.style.opacity = "0";
                                 setTimeout(() => { vidAcao.pause(); vidAcao.removeAttribute('src'); vidAcao.load(); }, 300);
-                            };
-                            vidAcao.onerror = () => { vidAcao.style.opacity = "0"; }; // Se o link for quebrado 404, só esconde. O chrome já tocou o audio
+                            }
+                            // ▶️ SINAL DE PLAY: Roda a animação
+                            else if (disparo.url) {
+                                vidAcao.onended = () => {
+                                    vidAcao.style.opacity = "0";
+                                    setTimeout(() => { vidAcao.pause(); vidAcao.removeAttribute('src'); vidAcao.load(); }, 300);
+                                };
+                                vidAcao.onerror = () => { vidAcao.style.opacity = "0"; };
 
-                            vidAcao.muted = true;
-                            vidAcao.src = disparo.url;
-                            vidAcao.style.opacity = "1";
-                            vidAcao.play().catch(()=>{});
+                                vidAcao.muted = true;
+                                vidAcao.src = disparo.url;
+                                vidAcao.style.opacity = "1";
+                                vidAcao.play().catch(()=>{});
+                            }
                         }
                     }
                 }, 500);
@@ -3268,6 +3276,62 @@
             let lastAutoIdChrome = 0;
             let filaExecucaoChrome = [];
             let tocandoChrome = false;
+            let tempoUltimaAcao = Date.now();
+            let isIdlePlaying = false;
+            let playerAudioChrome = null;
+
+            const frasesOciosas = [
+                "Galera, não esquece de sentar o dedo na tela, o tap tap ajuda muito a entregar a live!",
+                "Quem compartilhar a live agora vai ter sete anos de sorte, hein!",
+                "Manda um presente aí pra ver o que acontece na tela, duvido!",
+                "Bora bater a meta de curtidas, tropa! Tap tap na tela!",
+                "Compartilha a live com três amigos e me diz aqui no chat.",
+                "Quem aí já me segue? Se não segue, clica no maiszinho aí em cima!",
+                "Manda uma rosa pra dar aquela moral pro canal!",
+                "Pessoal, o tap tap na tela é de graça e ajuda demais!",
+                "Quero ver quem vai ser o top 1 dos presentes hoje, hein!",
+                "Manda aquele combo brabo pra gente fazer barulho!",
+                "O que o pato disse pro outro? Nada, pato não fala, né.",
+                "Sabe por que o computador foi pro médico? Porque tava com vírus!",
+                "Qual o animal que não vale mais nada? O javali.",
+                "Por que a planta não pode responder no chat? Porque ela é mudinha.",
+                "O que a lua disse pro sol? Nossa, você é tão grande e não te deixam sair de noite.",
+                "Sabe qual é a diferença entre a lagoa e a padaria? Na lagoa há sapinho, na padaria assa pão.",
+                "Por que o menino guardou o relógio embaixo da cama? Pra acordar em cima da hora.",
+                "O que o zero disse pro oito? Que cinto maneiro!",
+                "Por que o livro de matemática tava triste? Porque tinha muitos problemas.",
+                "Sabe o que o tomate foi fazer no banco? Tirar extrato.",
+                "De qual cidade vocês estão assistindo? Manda aí no chat pra eu saber!",
+                "Qual a boa pra hoje? Alguém tem uma fofoca pra contar no chat?",
+                "A live tá muito quieta... Cadê a energia de vocês?",
+                "Se a gente bater a meta hoje, eu prometo uma surpresa amanhã!",
+                "Comenta 'eu' quem tá prestando atenção na live e não tá só de enfeite!",
+                "Alguém aí sabe que dia é hoje? Dia de mandar mimos na tela!",
+                "Vocês preferem calor ou frio? Eu prefiro bater a meta de tap tap!",
+                "Manda a sua melhor piada aqui no chat que eu quero ver se é boa mesmo.",
+                "Quem for o próximo a curtir muito vai ser meu favorito do dia.",
+                "Silêncio constrangedor... Alguém respira aí no chat, por favor.",
+                "Eu tô aqui trabalhando e vocês aí só olhando, né? Ajuda aí, galera!",
+                "Minha inteligência artificial tá entediada com esse silêncio.",
+                "Vocês acham que manter essa voz maravilhosa é barato? Mandem um presente aí!",
+                "Tô quase dormindo aqui... Acorda, galera do chat!",
+                "Se ficar mudo assim, eu vou começar a cantar, e garanto que vocês não querem isso.",
+                "Meu processador tá usando 1% da capacidade com esse chat tão parado.",
+                "Esperando a boa vontade de alguém mandar um mimo pra tela animar...",
+                "Aviso do sistema: Nível de tédio atingindo níveis críticos. Mande curtidas!",
+                "Vocês são sempre tão quietinhos assim ou é só comigo?",
+                "Testando som... 1, 2, 3. Vocês estão me ouvindo ou a internet de todo mundo caiu?",
+                "Clica na tela até o dedo cansar, depois troca de dedo e clica mais!",
+                "Presente grande gera reação grande. Fica a dica pra quem quiser testar.",
+                "Quem não curtir a live vai pisar num Lego descalço quando levantar.",
+                "Manda qualquer coisa aí no chat, até um oizinho já me deixa feliz.",
+                "Essa live precisa de mais ação! Alguém solta um brabo aí!",
+                "Aperta o botão de seguir, prometo que ele não dá choque!",
+                "Tô vendo gente que não tá dando tap tap, hein... O radar da live detecta tudo.",
+                "Uma rosinha não faz mal a ninguém, que tal enviar uma agora?",
+                "Galera do fundão que tá só espiando, comenta alguma coisa aí!",
+                "Eu podia estar roubando, eu podia estar matando, mas tô aqui pedindo tap tap na humildade."
+            ];
 
             async function pensarComIAChrome(prompt, cfg) {
                 if (!cfg.gemini) return "Sem chave da API.";
@@ -3303,25 +3367,64 @@
 
             setInterval(() => {
                 let filaLocal = JSON.parse(localStorage.getItem('diretoria_fila_liveauto')) || [];
+                let temNovo = false;
+
                 filaLocal.forEach(item => {
                     if (item.id > lastAutoIdChrome) {
                         lastAutoIdChrome = item.id;
                         filaExecucaoChrome.push(item);
+                        temNovo = true;
                     }
                 });
 
+                // ⚡ SISTEMA DE INTERRUPÇÃO (CALA A BOCA DO BOT PRA OUVIR O PRESENTE)
+                if (temNovo) {
+                    tempoUltimaAcao = Date.now();
+
+                    if (tocandoChrome && isIdlePlaying) {
+                        if (playerAudioChrome instanceof SpeechSynthesisUtterance) {
+                            window.speechSynthesis.cancel();
+                        } else if (playerAudioChrome) {
+                            playerAudioChrome.pause();
+                            playerAudioChrome.currentTime = 0;
+                        }
+                        // Grita pro OBS esvaziar a tela na hora!
+                        localStorage.setItem('diretoria_liveauto_disparo', JSON.stringify({ id: Date.now(), url: 'ESCONDER' }));
+                        tocandoChrome = false;
+                        isIdlePlaying = false;
+                    }
+                }
+
                 if (filaExecucaoChrome.length > 0 && !tocandoChrome) {
                     filaExecucaoChrome.sort((a, b) => {
-                        const peso = { "presente": 3, "chat": 2, "join": 1 };
+                        const peso = { "presente": 3, "chat": 2, "join": 1, "ocioso": 0 };
                         return (peso[b.tipo] || 0) - (peso[a.tipo] || 0) || (a.id - b.id);
                     });
                     processarFilaNPCChrome();
+                } else if (filaExecucaoChrome.length === 0 && !tocandoChrome) {
+                    // SILÊNCIO NA LIVE: Dispara piada a cada 40 segundos
+                    if (Date.now() - tempoUltimaAcao > 40000) {
+                        let confAuto = JSON.parse(localStorage.getItem('diretoria_liveauto_config'));
+                        if (confAuto && confAuto.ativo) {
+                            let fraseAleatoria = frasesOciosas[Math.floor(Math.random() * frasesOciosas.length)];
+                            filaExecucaoChrome.push({
+                                id: Date.now(),
+                                tipo: "ocioso",
+                                texto: fraseAleatoria
+                            });
+                            tempoUltimaAcao = Date.now();
+                        } else {
+                            tempoUltimaAcao = Date.now(); // Mantém o relógio girando mesmo com Cérebro desligado
+                        }
+                    }
                 }
             }, 500);
 
             async function processarFilaNPCChrome() {
                 tocandoChrome = true;
                 let atual = filaExecucaoChrome.shift();
+                isIdlePlaying = (atual.tipo === "ocioso"); // Marca que a Piada tá rodando (e é fraca)
+
                 const cfg = JSON.parse(localStorage.getItem('diretoria_liveauto_config')) || {};
                 const vCfg = JSON.parse(localStorage.getItem('diretoria_liveauto_videos')) || { geral: '', resposta: '', presentes: [] };
                 const hostArroba = (localStorage.getItem('rdm_user') || 'usuario').replace('@', '');
@@ -3330,7 +3433,10 @@
                 let urlVideoEscolhido = vCfg.resposta || '';
                 let textoFinal = "";
 
-                if (atual.tipo === "chat") {
+                if (atual.tipo === "ocioso") {
+                    textoFinal = atual.texto;
+                    urlVideoEscolhido = vCfg.resposta || ''; // Frases ociosas usam o seu vídeo de fala padrão
+                } else if (atual.tipo === "chat") {
                     if (atual.flood) {
                         promptIA += `O usuário ${atual.nome} fez flood: "${atual.pergunta}". Dê bronca curta.`;
                     } else {
@@ -3344,7 +3450,6 @@
                     if (mapeado && mapeado.url) {
                         urlVideoEscolhido = mapeado.url;
                     } else {
-                        // Se não mapeou no painel, ele tenta adivinhar o arquivo no GitHub
                         let nomeSemAcento = presLimpo.normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '_');
                         urlVideoEscolhido = `@${hostArroba}_${nomeSemAcento}.mp4`;
                     }
@@ -3360,32 +3465,34 @@
                     textoFinal = atual.texto;
                 }
 
-                // ⚡ DISPARA O SINAL PRO OBS (Firebase leva isso e o TikTok lê na hora)
+                // ⚡ DISPARA O SINAL PRO OBS MOSTRAR O VÍDEO NO TIKTOK
                 if (urlVideoEscolhido !== '') {
                     localStorage.setItem('diretoria_liveauto_disparo', JSON.stringify({ id: Date.now(), url: urlVideoEscolhido }));
                 }
 
                 // 🔊 CHROME TOCA O ÁUDIO NA SUA MÁQUINA
-                let audioPlayer = null;
-                if (cfg.modo === 'local' && cfg.apiLocal) audioPlayer = await gerarAudioCloneLocalChrome(textoFinal, cfg.apiLocal);
-                if (!audioPlayer) audioPlayer = new SpeechSynthesisUtterance(textoFinal);
+                playerAudioChrome = null;
+                if (cfg.modo === 'local' && cfg.apiLocal) playerAudioChrome = await gerarAudioCloneLocalChrome(textoFinal, cfg.apiLocal);
+                if (!playerAudioChrome) playerAudioChrome = new SpeechSynthesisUtterance(textoFinal);
 
                 let audioTerminado = false;
                 const finalizarChrome = () => {
                     if (audioTerminado) return;
                     audioTerminado = true;
-                    setTimeout(() => { tocandoChrome = false; }, 1500); // 1.5s de respiro pra próxima fala
+                    // Limpa o vídeo do TikTok assim que o áudio acabar!
+                    localStorage.setItem('diretoria_liveauto_disparo', JSON.stringify({ id: Date.now(), url: 'ESCONDER' }));
+                    setTimeout(() => { tocandoChrome = false; isIdlePlaying = false; }, 1500);
                 };
 
-                if (audioPlayer instanceof SpeechSynthesisUtterance) {
-                    audioPlayer.onend = finalizarChrome;
-                    audioPlayer.onerror = finalizarChrome;
-                    window.speechSynthesis.speak(audioPlayer);
+                if (playerAudioChrome instanceof SpeechSynthesisUtterance) {
+                    playerAudioChrome.onend = finalizarChrome;
+                    playerAudioChrome.onerror = finalizarChrome;
+                    window.speechSynthesis.speak(playerAudioChrome);
                     setTimeout(finalizarChrome, 12000);
                 } else {
-                    audioPlayer.onended = finalizarChrome;
-                    audioPlayer.onerror = finalizarChrome;
-                    let pAud = audioPlayer.play();
+                    playerAudioChrome.onended = finalizarChrome;
+                    playerAudioChrome.onerror = finalizarChrome;
+                    let pAud = playerAudioChrome.play();
                     if (pAud) pAud.catch(finalizarChrome);
                     setTimeout(finalizarChrome, 12000);
                 }
