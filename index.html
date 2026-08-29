@@ -1453,7 +1453,8 @@ nao | Ah, que pena, {nome}.
         // GERADOR DE LINKS AUTOMÁTICOS
         // ==========================================
         function copiarLinkOBS(viewName) {
-            let baseUrl = window.location.href.split('?')[0];
+            // A MÁGICA: O split('#')[0] arranca qualquer âncora fantasma antes de gerar o link!
+            let baseUrl = window.location.href.split('?')[0].split('#')[0];
             const user = localStorage.getItem('rdm_user_tiktok') || localStorage.getItem('rdm_user') || 'visitante';
 
             let linkFinal = `${baseUrl}?u=${user}&p=pro&view=${viewName}`;
@@ -1519,6 +1520,9 @@ nao | Ah, que pena, {nome}.
         let vozesFiltradas = []; // Nova lista que guarda apenas PT e EN
 
         function carregarVozes() {
+            // Escudo: Se for o navegador capado do OBS, ele aborta a missão sem dar erro fatal!
+            if (!('speechSynthesis' in window)) return;
+
             const vozesBrutas = window.speechSynthesis.getVoices();
             const seletor = document.getElementById('seletor-vozes');
             const seletorAuto = document.getElementById('live-auto-voz');
@@ -1527,13 +1531,11 @@ nao | Ah, que pena, {nome}.
             vozesFiltradas = [];
 
             vozesBrutas.forEach((voz) => {
-                // Puxa o máximo de vozes possíveis que começam com 'pt' (Português) ou 'en' (Inglês)
                 if (voz.lang.startsWith('pt') || voz.lang.startsWith('en')) {
                     vozesFiltradas.push(voz);
                     const option = document.createElement('option');
-                    option.value = vozesFiltradas.length - 1; // Salva a posição correta
+                    option.value = vozesFiltradas.length - 1;
 
-                    // Tenta colocar um emoji para ajudar a identificar o gênero pelo nome da voz
                     const nomeLower = voz.name.toLowerCase();
                     let emoji = '👤';
                     if (nomeLower.includes('female') || nomeLower.includes('zira') || nomeLower.includes('maria') || nomeLower.includes('francisca') || nomeLower.includes('leila') || nomeLower.includes('yara') || nomeLower.includes('brenda') || nomeLower.includes('elza')) {
@@ -1553,40 +1555,14 @@ nao | Ah, que pena, {nome}.
                     }
                 }
             });
-            carregarLiveAuto(); // Chama a restauração dos dados na tela
+            carregarLiveAuto();
         }
 
-        function salvarLiveAuto() {
-            const conf = {
-                ativo: document.getElementById('live-auto-ativo').checked,
-                keyword: document.getElementById('live-auto-keyword').value,
-                texto: document.getElementById('live-auto-texto').value,
-                qa: document.getElementById('live-auto-qa').value,
-                extrasOciosas: document.getElementById('live-auto-extras-ociosas').value,
-                extrasRespostas: document.getElementById('live-auto-extras-respostas').value,
-                modo: document.getElementById('live-auto-modo').value,
-                apiLocal: document.getElementById('live-auto-api').value
-            };
-            localStorage.setItem('diretoria_liveauto_config', JSON.stringify(conf));
-        }
-        function carregarLiveAuto() {
-            const conf = JSON.parse(localStorage.getItem('diretoria_liveauto_config'));
-            if (conf) {
-                if(document.getElementById('live-auto-ativo')) document.getElementById('live-auto-ativo').checked = conf.ativo;
-                if(document.getElementById('live-auto-keyword')) document.getElementById('live-auto-keyword').value = conf.keyword || 'kaveirinha';
-                if(document.getElementById('live-auto-texto')) document.getElementById('live-auto-texto').value = conf.texto || 'Seja muito bem vindo à live, {nome}!';
-                if(document.getElementById('live-auto-qa')) document.getElementById('live-auto-qa').value = conf.qa || 'idade | Eu sou uma inteligência artificial, não tenho idade!\nmora | Eu moro dentro do computador do host.\nnome | Meu nome é Diretoria, a melhor IA do TikTok!';
-                if(document.getElementById('live-auto-extras-ociosas')) document.getElementById('live-auto-extras-ociosas').value = conf.extrasOciosas || '';
-                if(document.getElementById('live-auto-extras-respostas')) document.getElementById('live-auto-extras-respostas').value = conf.extrasRespostas || '';
-                if(document.getElementById('live-auto-modo')) document.getElementById('live-auto-modo').value = conf.modo || 'local';
-                if(document.getElementById('live-auto-api')) document.getElementById('live-auto-api').value = conf.apiLocal || 'http://127.0.0.1:8020/gerar';
+        if ('speechSynthesis' in window) {
+            carregarVozes();
+            if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                window.speechSynthesis.onvoiceschanged = carregarVozes;
             }
-        }
-
-        // O navegador às vezes demora um tempinho para baixar a lista de vozes
-        carregarVozes();
-        if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = carregarVozes;
         }
 
         function togglePausarNarrador() {
@@ -1606,52 +1582,63 @@ nao | Ah, que pena, {nome}.
             }
         }
 
-        // Fila inteligente para o Narrador não falar 10 coisas ao mesmo tempo
-        let filaNarrador = Promise.resolve();
+        // FILA MESTRA UNIFICADA (NARRADOR + NPC)
+        window.FilaMestraIA = Promise.resolve();
+        window.itensNaFilaIA = 0;
+        window.motorDeVozOcupado = false;
 
         function falar(texto) {
             if (narradorPausado) return;
 
-            filaNarrador = filaNarrador.then(async () => {
-                if (narradorPausado) return;
+            // Limite rigoroso: Toca os 3 primeiros que estão em cache. Se acumular mais, ele pula as mensagens
+            // para não criar um delay infinito e não sobrepor áudios na live!
+            if (window.itensNaFilaIA >= 3) {
+                console.log("Fila de voz cheia. Mensagem ignorada para evitar sobreposição.");
+                return;
+            }
 
-                // 1. Tenta puxar a configuração da IA lá da aba Live Auto
+            window.itensNaFilaIA++;
+
+            window.FilaMestraIA = window.FilaMestraIA.then(async () => {
+                if (narradorPausado) { window.itensNaFilaIA--; return; }
+                window.motorDeVozOcupado = true;
+
                 let cfg = null;
                 try { cfg = JSON.parse(localStorage.getItem('diretoria_liveauto_config')); } catch(e) {}
 
-                // 2. Se a IA estiver em modo 'local', tenta gerar o áudio realista primeiro!
+                // 1. Tenta usar o Python (Sem limite de 5s, ele vai aguardar até o Python gerar)
                 if (cfg && cfg.modo === 'local' && cfg.apiLocal) {
                     try {
-                        const controller = new AbortController();
-                        const id = setTimeout(() => controller.abort(), 5000); // Dá 5 segs de limite
-                        const res = await fetch(`${cfg.apiLocal}?text=${encodeURIComponent(texto)}`, { signal: controller.signal });
-                        clearTimeout(id);
+                        const res = await fetch(`${cfg.apiLocal}?text=${encodeURIComponent(texto)}`);
 
                         if (res.ok) {
                             const blob = await res.blob();
                             const audio = document.createElement('audio');
                             audio.src = URL.createObjectURL(blob);
 
-                            // Toca a IA e espera acabar para ir para a próxima mensagem
                             await new Promise((resolve) => {
                                 audio.onended = resolve;
                                 audio.onerror = resolve;
-                                audio.play().catch(() => {
-                                    // Se o navegador bloquear o autoplay, força o fallback
-                                    falarNativoFallback(texto, resolve);
-                                });
+                                audio.play().catch(() => falarNativoFallback(texto, resolve));
                             });
-                            return; // Sai da função, a IA já deu conta do recado!
+
+                            window.motorDeVozOcupado = false;
+                            window.itensNaFilaIA--;
+                            return; // Sucesso com Python!
                         }
                     } catch (e) {
-                        console.log("IA de Voz offline ou ocupada. Acionando voz do navegador.");
+                        // Se cair aqui, é porque o Python está FECHADO.
+                        console.log("Servidor IA desligado. Acionando voz do navegador.");
                     }
                 }
 
-                // 3. FALLBACK: Se não tem IA, a IA falhou, ou o modo é 'nativo', usa a voz mecânica
+                // 2. Fallback Automático caso o Python esteja fechado
                 await new Promise((resolve) => {
                     falarNativoFallback(texto, resolve);
                 });
+
+                window.motorDeVozOcupado = false;
+                window.itensNaFilaIA--;
             });
         }
 
@@ -3429,20 +3416,17 @@ nao | Ah, que pena, {nome}.
                 return `Isso é interessante, ${nomeUsuario}!`;
             }
 
-            // 👇 COLE ESTA FUNÇÃO AQUI 👇
+            // FUNÇÃO DO CÉREBRO: Removemos o timer de 5s para não pular enquanto o Python processa.
             function gerarAudioCloneLocalChrome(texto, urlApi) {
                 return new Promise(async (resolve) => {
                     try {
-                        const controller = new AbortController();
-                        const id = setTimeout(() => controller.abort(), 5000);
-                        const res = await fetch(`${urlApi}?text=${encodeURIComponent(texto)}`, { signal: controller.signal });
-                        clearTimeout(id);
+                        const res = await fetch(`${urlApi}?text=${encodeURIComponent(texto)}`);
                         if (!res.ok) throw new Error();
                         const blob = await res.blob();
                         const audio = document.createElement('audio');
                         audio.src = URL.createObjectURL(blob);
                         resolve(audio);
-                    } catch (e) { resolve(null); }
+                    } catch (e) { resolve(null); } // Só dá null se o Python estiver fechado (cai no Catch instantâneo)
                 });
             }
 
@@ -3486,7 +3470,7 @@ nao | Ah, que pena, {nome}.
                 }
             }, 15000); // Reduzimos o tempo de 30 para 25 segundos para ele ser mais tagarela!
 
-            // MOTOR PRINCIPAL DE LEITURA
+            // MOTOR PRINCIPAL DE LEITURA (AGORA SINCRONIZADO NA FILA MESTRA)
             setInterval(() => {
                 let sinalOBS = parseInt(localStorage.getItem('obs_liveauto_heartbeat')) || 0;
                 let obsAberto = (Date.now() - sinalOBS) < 5000;
@@ -3508,21 +3492,25 @@ nao | Ah, que pena, {nome}.
                     }
                 });
 
-                if (temNovo && tocandoChrome && isIdlePlaying) {
-                    if (playerAudioChrome instanceof SpeechSynthesisUtterance) window.speechSynthesis.cancel();
-                    else if (playerAudioChrome) { playerAudioChrome.pause(); playerAudioChrome.currentTime = 0; }
-                    localStorage.setItem('diretoria_liveauto_disparo', JSON.stringify({ id: Date.now(), url: 'ESCONDER' }));
-                    tocandoChrome = false;
-                    isIdlePlaying = false;
+                // Se houver uma piada/ocioso tocando, e chegou algo na live (chat/presente), interrompe o ocioso!
+                if (temNovo && isIdlePlaying && window.motorDeVozOcupado) {
+                    if (playerAudioChrome instanceof SpeechSynthesisUtterance) {
+                        window.speechSynthesis.cancel();
+                    } else if (playerAudioChrome) {
+                        playerAudioChrome.pause();
+                        playerAudioChrome.currentTime = 0;
+                        if(playerAudioChrome.onended) playerAudioChrome.onended(); // Força a liberação da Fila Mestra
+                    }
                 }
 
-                if (filaExecucaoChrome.length > 0 && !tocandoChrome) {
+                // Se a fila mestra global estiver cheia ou já estiver tocando um NPC, espera!
+                if (filaExecucaoChrome.length > 0 && window.itensNaFilaIA < 3 && !tocandoChrome) {
                     processarFilaNPCChrome();
                 }
             }, 500);
 
             async function processarFilaNPCChrome() {
-                tocandoChrome = true;
+                tocandoChrome = true; // Trava o interval do NPC
 
                 let indexToPlay = 0;
                 let pIdx = filaExecucaoChrome.findIndex(i => i.tipo === 'presente');
@@ -3537,66 +3525,74 @@ nao | Ah, que pena, {nome}.
                 }
 
                 let atual = filaExecucaoChrome.splice(indexToPlay, 1)[0];
-                lastPlayedType = atual.tipo;
-                isIdlePlaying = (atual.tipo === "ocioso");
 
-                const cfg = JSON.parse(localStorage.getItem('diretoria_liveauto_config')) || {};
-                const vCfg = JSON.parse(localStorage.getItem('diretoria_liveauto_videos')) || { geral: '', resposta: '', presentes: [] };
-                const hostArroba = (localStorage.getItem('rdm_user') || 'usuario').replace('@', '');
+                // Joga a ordem do NPC dentro da Fila Mestra para NUNCA atropelar o Narrador
+                window.itensNaFilaIA++;
 
-                let urlVideoEscolhido = vCfg.resposta || '';
-                let textoFinal = "";
+                window.FilaMestraIA = window.FilaMestraIA.then(async () => {
+                    window.motorDeVozOcupado = true;
+                    lastPlayedType = atual.tipo;
+                    isIdlePlaying = (atual.tipo === "ocioso");
 
-                if (atual.tipo === "ocioso") {
-                    textoFinal = atual.texto;
-                    urlVideoEscolhido = vCfg.resposta || '';
-                } else if (atual.tipo === "chat") {
-                    textoFinal = await pensarComIAChrome(atual.pergunta || "", cfg, atual.nome);
-                } else if (atual.tipo === "presente") {
-                    let presLimpo = (atual.presenteNome || "").toLowerCase().trim();
-                    let mapeado = vCfg.presentes.find(p => p.gatilho && p.gatilho.toLowerCase().trim() === presLimpo);
-                    if (mapeado && mapeado.url) urlVideoEscolhido = mapeado.url;
-                    else {
-                        let nomeSemAcento = presLimpo.normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '_');
-                        urlVideoEscolhido = `@${hostArroba}_${nomeSemAcento}.mp4`;
+                    const cfg = JSON.parse(localStorage.getItem('diretoria_liveauto_config')) || {};
+                    const vCfg = JSON.parse(localStorage.getItem('diretoria_liveauto_videos')) || { geral: '', resposta: '', presentes: [] };
+                    const hostArroba = (localStorage.getItem('rdm_user') || 'usuario').replace('@', '');
+
+                    let urlVideoEscolhido = vCfg.resposta || '';
+                    let textoFinal = "";
+
+                    if (atual.tipo === "ocioso") {
+                        textoFinal = atual.texto;
+                        urlVideoEscolhido = vCfg.resposta || '';
+                    } else if (atual.tipo === "chat") {
+                        textoFinal = await pensarComIAChrome(atual.pergunta || "", cfg, atual.nome);
+                    } else if (atual.tipo === "presente") {
+                        let presLimpo = (atual.presenteNome || "").toLowerCase().trim();
+                        let mapeado = vCfg.presentes.find(p => p.gatilho && p.gatilho.toLowerCase().trim() === presLimpo);
+                        if (mapeado && mapeado.url) urlVideoEscolhido = mapeado.url;
+                        else {
+                            let nomeSemAcento = presLimpo.normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '_');
+                            urlVideoEscolhido = `@${hostArroba}_${nomeSemAcento}.mp4`;
+                        }
+                        if (atual.moedas > 98) textoFinal = `Uau! Muito obrigado pelo presentão, ${atual.nome}!`;
+                        else if (atual.qtd > 1) textoFinal = `Que combo de ${atual.presenteNome}! Valeu, ${atual.nome}!`;
+                        else textoFinal = `Obrigado pelo presente ${atual.presenteNome}, ${atual.nome}!`;
+                    } else {
+                        textoFinal = atual.texto;
                     }
-                    if (atual.moedas > 98) textoFinal = `Uau! Muito obrigado pelo presentão, ${atual.nome}!`;
-                    else if (atual.qtd > 1) textoFinal = `Que combo de ${atual.presenteNome}! Valeu, ${atual.nome}!`;
-                    else textoFinal = `Obrigado pelo presente ${atual.presenteNome}, ${atual.nome}!`;
-                } else {
-                    textoFinal = atual.texto;
-                }
 
-                if (urlVideoEscolhido !== '') {
-                    localStorage.setItem('diretoria_liveauto_disparo', JSON.stringify({ id: Date.now(), url: urlVideoEscolhido }));
-                }
+                    if (urlVideoEscolhido !== '') {
+                        localStorage.setItem('diretoria_liveauto_disparo', JSON.stringify({ id: Date.now(), url: urlVideoEscolhido }));
+                    }
 
-                playerAudioChrome = null;
-                if (cfg.modo === 'local' && cfg.apiLocal) playerAudioChrome = await gerarAudioCloneLocalChrome(textoFinal, cfg.apiLocal);
-                if (!playerAudioChrome) playerAudioChrome = new SpeechSynthesisUtterance(textoFinal);
+                    playerAudioChrome = null;
+                    if (cfg.modo === 'local' && cfg.apiLocal) playerAudioChrome = await gerarAudioCloneLocalChrome(textoFinal, cfg.apiLocal);
+                    if (!playerAudioChrome) playerAudioChrome = new SpeechSynthesisUtterance(textoFinal);
 
-                let audioTerminado = false;
-                const finalizarChrome = () => {
-                    if (audioTerminado) return;
-                    audioTerminado = true;
-                    localStorage.setItem('diretoria_liveauto_disparo', JSON.stringify({ id: Date.now(), url: 'ESCONDER' }));
-                    setTimeout(() => { tocandoChrome = false; isIdlePlaying = false; }, 1500);
-                };
+                    let audioTerminado = false;
+                    const finalizarChrome = () => {
+                        if (audioTerminado) return;
+                        audioTerminado = true;
+                        localStorage.setItem('diretoria_liveauto_disparo', JSON.stringify({ id: Date.now(), url: 'ESCONDER' }));
 
-                if (playerAudioChrome instanceof SpeechSynthesisUtterance) {
-                    playerAudioChrome.onend = finalizarChrome;
-                    playerAudioChrome.onerror = finalizarChrome;
-                    window.speechSynthesis.speak(playerAudioChrome);
-                    setTimeout(finalizarChrome, 12000);
-                } else {
-                    playerAudioChrome.onended = finalizarChrome;
-                    playerAudioChrome.onerror = finalizarChrome;
-                    let pAud = playerAudioChrome.play();
-                    if (pAud) pAud.catch(finalizarChrome);
-                    setTimeout(finalizarChrome, 12000);
-                }
-            }
-        } else {
+                        window.motorDeVozOcupado = false;
+                        window.itensNaFilaIA--;
+                        tocandoChrome = false;
+                        isIdlePlaying = false;
+                    };
+
+                    if (playerAudioChrome instanceof SpeechSynthesisUtterance) {
+                        playerAudioChrome.onend = finalizarChrome;
+                        playerAudioChrome.onerror = finalizarChrome;
+                        window.speechSynthesis.speak(playerAudioChrome);
+                    } else {
+                        playerAudioChrome.onended = finalizarChrome;
+                        playerAudioChrome.onerror = finalizarChrome;
+                        let pAud = playerAudioChrome.play();
+                        if (pAud) pAud.catch(finalizarChrome);
+                    }
+                });
+            } else {
             // MODO OBS / TIKTOK STUDIO (O ESCRAVO DA API)
             window.NUVEM_OBS = {};
             let ultimaOrdemReload = null; // Memória para o gatilho de F5
