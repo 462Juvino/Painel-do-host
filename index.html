@@ -3463,12 +3463,13 @@ nao | Ah, que pena, {nome}.
                 });
             }
 
-            // ==========================================
-            // NOVO MOTOR DINÂMICO DE OCIOSIDADE E PIADAS
-            // ==========================================
+            // VARIÁVEL DE MEMÓRIA PARA NÃO REPETIR FRASES
+            window.ultimaFraseOciosa = "";
+
+            // MOTOR DE PIADAS E ENGAJAMENTO
             setInterval(() => {
                 let sinalOBS = parseInt(localStorage.getItem('obs_liveauto_heartbeat')) || 0;
-                if ((Date.now() - sinalOBS) > 5000) return; // Só fala se o OBS tiver vivo!
+                if ((Date.now() - sinalOBS) > 5000) return; // Só conta piada se o OBS tiver vivo!
 
                 let confAuto = JSON.parse(localStorage.getItem('diretoria_liveauto_config'));
                 if (confAuto && confAuto.ativo) {
@@ -3477,31 +3478,35 @@ nao | Ah, que pena, {nome}.
                     if (ociososNaFila < 1) {
                         let fraseGerada = "";
                         let roleta = Math.random();
+                        let opcoesDisponiveis = [];
 
-                        // 33% de chance de cobrar engajamento da live
+                        // Sorteia a categoria
                         if (roleta < 0.33) {
-                            fraseGerada = bancoEngajamento[Math.floor(Math.random() * bancoEngajamento.length)];
-                        }
-                        // 33% de chance de fazer uma interação/pergunta pro chat
-                        else if (roleta < 0.66) {
-                            fraseGerada = bancoInteracao[Math.floor(Math.random() * bancoInteracao.length)];
-                        }
-                        // 34% de chance de quebrar o gelo e contar uma piada
-                        else {
-                            let piadaSorteada = bancoPiadas[Math.floor(Math.random() * bancoPiadas.length)];
-                            fraseGerada = `Vamos quebrar esse clima de velório com uma piadinha. ${piadaSorteada} Hahahaha! Muito boa né?`;
+                            opcoesDisponiveis = bancoEngajamento;
+                        } else if (roleta < 0.66) {
+                            opcoesDisponiveis = bancoInteracao;
+                        } else {
+                            // Concatena as piadas com o texto de introdução
+                            opcoesDisponiveis = bancoPiadas.map(p => `Vamos quebrar esse clima de velório com uma piadinha. ${p} Hahahaha! Muito boa né?`);
                         }
 
-                        // Adiciona as frases extras que o cliente digitar no painel (se houver)
+                        // Sobrescreve se o usuário usar falas manuais extras
                         let extrasOciosas = (confAuto.extrasOciosas || "").split(';').map(s => s.trim()).filter(s => s !== "");
                         if (extrasOciosas.length > 0 && Math.random() > 0.7) {
-                            fraseGerada = extrasOciosas[Math.floor(Math.random() * extrasOciosas.length)];
+                            opcoesDisponiveis = extrasOciosas;
                         }
+
+                        // FILTRO ANTI-REPETIÇÃO: Tira a última frase que foi dita da lista
+                        let opcoesFiltradas = opcoesDisponiveis.filter(f => f !== window.ultimaFraseOciosa);
+                        if (opcoesFiltradas.length === 0) opcoesFiltradas = opcoesDisponiveis; // Previne erro se a lista tiver só 1 item
+
+                        fraseGerada = opcoesFiltradas[Math.floor(Math.random() * opcoesFiltradas.length)];
+                        window.ultimaFraseOciosa = fraseGerada; // Salva na memória
 
                         filaExecucaoChrome.push({ id: Date.now() + Math.random(), tipo: "ocioso", texto: fraseGerada });
                     }
                 }
-            }, 15000); // Reduzimos o tempo de 30 para 25 segundos para ele ser mais tagarela!
+            }, 15000); // Roda a cada 15 segundos
 
             // MOTOR PRINCIPAL DE LEITURA
             setInterval(() => {
@@ -3588,6 +3593,13 @@ nao | Ah, que pena, {nome}.
                     localStorage.setItem('diretoria_liveauto_disparo', JSON.stringify({ id: Date.now(), url: urlVideoEscolhido }));
                 }
 
+                // --- PROTEÇÃO ANTI-SOBREPOSIÇÃO ---
+                // Muta e descarta o áudio antigo imediatamente caso ele tenha engasgado
+                if (window.audioNPCAntigo) {
+                    window.audioNPCAntigo.pause();
+                    window.audioNPCAntigo.src = '';
+                }
+
                 playerAudioChrome = null;
                 if (cfg.modo === 'local' && cfg.apiLocal) playerAudioChrome = await gerarAudioCloneLocalChrome(textoFinal, cfg.apiLocal);
                 if (!playerAudioChrome) playerAudioChrome = new SpeechSynthesisUtterance(textoFinal);
@@ -3597,6 +3609,12 @@ nao | Ah, que pena, {nome}.
                     if (audioTerminado) return;
                     audioTerminado = true;
                     localStorage.setItem('diretoria_liveauto_disparo', JSON.stringify({ id: Date.now(), url: 'ESCONDER' }));
+
+                    // FORÇA PAUSAR O ÁUDIO ATUAL QUANDO A FUNÇÃO FINALIZA
+                    if (playerAudioChrome instanceof HTMLAudioElement) {
+                        playerAudioChrome.pause();
+                    }
+
                     setTimeout(() => { tocandoChrome = false; isIdlePlaying = false; }, 1500);
                 };
 
@@ -3604,13 +3622,16 @@ nao | Ah, que pena, {nome}.
                     playerAudioChrome.onend = finalizarChrome;
                     playerAudioChrome.onerror = finalizarChrome;
                     window.speechSynthesis.speak(playerAudioChrome);
-                    setTimeout(finalizarChrome, 12000);
+                    setTimeout(finalizarChrome, 15000); // Teto de segurança para as vozes de navegador
                 } else {
+                    window.audioNPCAntigo = playerAudioChrome; // Salva o áudio novo na memória anti-sobreposição
                     playerAudioChrome.onended = finalizarChrome;
                     playerAudioChrome.onerror = finalizarChrome;
                     let pAud = playerAudioChrome.play();
                     if (pAud) pAud.catch(finalizarChrome);
-                    setTimeout(finalizarChrome, 12000);
+
+                    // Aumentamos o teto para 30s. Se estourar 30s, encerra e pausa obrigatoriamente.
+                    setTimeout(finalizarChrome, 30000);
                 }
             }
         } else {
