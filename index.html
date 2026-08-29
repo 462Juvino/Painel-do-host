@@ -2161,18 +2161,29 @@ nao | Ah, que pena, {nome}.
                 let obsAberto = (Date.now() - sinalOBS) < 5000; // Checa se o OBS piscou nos últimos 5 segs
 
                 if (confAuto && confAuto.ativo && !isOBS && obsAberto) {
-                    // Checa se a pessoa ainda não recebeu as boas-vindas nesta live
                     if (!ramData.usersMeta[user].welcomed) {
-                        ramData.usersMeta[user].welcomed = true; // Marca como cumprimentada
-                        memDirty.meta = true; // Salva no HD para não esquecer
+                        ramData.usersMeta[user].welcomed = true;
+                        memDirty.meta = true;
 
-                        // BLINDAGEM: Se o campo estiver vazio ou só tiver "{nome}", força a frase completa
                         let inputTexto = document.getElementById('live-auto-texto') ? document.getElementById('live-auto-texto').value.trim() : "";
                         if (inputTexto === "" || inputTexto === "{nome}") {
                             inputTexto = "Seja muito bem-vindo à live, {nome}!";
                         }
 
-                        let textoFormatado = inputTexto.replace(/{nome}/g, nomeLimpoNPC);
+                        // Ganchos aleatórios para misturar nas boas-vindas
+                        let ganchos = [
+                            " Já chega sentando o dedo no tap tap na tela pra ajudar a gente!",
+                            " Se não me segue ainda, clica no maiszinho aí em cima, hein!",
+                            " Manda aí no chat de que cidade você tá falando!",
+                            " Fica à vontade e manda sua pergunta pra mim no chat.",
+                            " Bora interagir que hoje a live promete!",
+                            " O que te traz aqui hoje? Me conta aí!",
+                            "" // Uma opção vazia para às vezes ele ser direto
+                        ];
+                        let ganchoSorteado = ganchos[Math.floor(Math.random() * ganchos.length)];
+
+                        // Junta a frase padrão do painel com o gancho sorteado
+                        let textoFormatado = inputTexto.replace(/{nome}/g, nomeLimpoNPC) + ganchoSorteado;
 
                         ramData.filaLiveAuto.push({
                             id: (window.autoIdCounter = (window.autoIdCounter || Date.now()) + 1),
@@ -2180,7 +2191,7 @@ nao | Ah, que pena, {nome}.
                             texto: textoFormatado,
                             modo: confAuto.modo || "local",
                             apiLocal: confAuto.apiLocal || "http://127.0.0.1:8020/gerar",
-                            tipo: "join" // Mantemos a tag "join" para a fila saber que é prioridade baixa
+                            tipo: "join"
                         });
                         if (ramData.filaLiveAuto.length > 50) ramData.filaLiveAuto.shift();
                         memDirty.liveauto = true;
@@ -3356,56 +3367,36 @@ nao | Ah, que pena, {nome}.
             let playerAudioChrome = null;
             let lastPlayedType = "";
 
-            const bancoOciosasNativo = [
-                "Galera, não esquece de sentar o dedo na tela, o tap tap ajuda muito a entregar a live!",
-                "Quem compartilhar a live agora vai ter sete anos de sorte, hein!",
-                "Manda um presente aí pra ver o que acontece na tela, duvido!",
-                "Bora bater a meta de curtidas, tropa! Tap tap na tela!",
-                "Compartilha a live com três amigos e me diz aqui no chat.",
-                "Quem aí já me segue? Se não segue, clica no maiszinho aí em cima!",
-                "Manda uma rosa pra dar aquela moral pro canal!",
+            const bancoEngajamento = [
+                "Galera, a live deu uma esfriada! Bora sentar o dedo na tela, o tap tap ajuda muito a entregar a live!",
+                "Tô achando que o botão de curtida de vocês quebrou, a live tá muito parada! Alguém testa aí pra confirmar?",
+                "Quem compartilhar a live agora vai ter sete anos de sorte. Tá muito fraco hoje, bora subir isso!",
+                "Bora bater a meta de curtidas, tropa! Senta o dedo na tela pra acordar o algoritmo!",
+                "Eu tô aqui trabalhando igual um robô e vocês aí só olhando o teto, né? Ajuda aí com os likes, galera!",
+                "Manda um presente aí pra ver o que acontece na tela, bora animar isso aqui!",
+                "Tô vendo gente aí assistindo de graça sem deixar like. O juízo final tá chegando pra vocês, hein!"
+            ];
+
+            const bancoInteracao = [
+                "De qual cidade vocês estão assistindo? Manda aí no chat pra eu saber!",
+                "Qual a boa pra hoje? Alguém tem uma fofoca pra contar no chat?",
+                "Minha inteligência artificial tá entediada com esse silêncio. Manda uma pergunta aí no chat!",
+                "Comenta 'eu' quem tá prestando atenção na live e não tá só de enfeite!",
+                "A próxima pessoa que comentar vai ganhar minha gratidão eterna. Manda qualquer coisa aí, valendo!",
+                "Vocês preferem calor ou frio? Manda no chat pra gente trocar uma ideia!",
+                "Se a gente bater a meta hoje, eu prometo uma surpresa. O que vocês querem ver amanhã?"
+            ];
+
+            const bancoPiadas = [
                 "O que o pato disse pro outro? Nada, pato não fala, né.",
                 "Sabe por que o computador foi pro médico? Porque tava com vírus!",
                 "Qual o animal que não vale mais nada? O javali.",
-                "De qual cidade vocês estão assistindo? Manda aí no chat pra eu saber!",
-                "Qual a boa pra hoje? Alguém tem uma fofoca pra contar no chat?",
-                "Se a gente bater a meta hoje, eu prometo uma surpresa amanhã!",
-                "Comenta 'eu' quem tá prestando atenção na live e não tá só de enfeite!",
-                "Eu tô aqui trabalhando e vocês aí só olhando, né? Ajuda aí, galera!",
-                "Minha inteligência artificial tá entediada com esse silêncio.",
-                "Se ficar mudo assim, eu vou começar a cantar, e garanto que vocês não querem isso.",
-                "Aviso do sistema: Nível de tédio atingindo níveis críticos. Mande curtidas!",
-                "Uma rosinha não faz mal a ninguém, que tal enviar uma agora?",
                 "Sabe qual a diferença entre o lago e a padaria? Na lagoa há sapinho, na padaria assa pão.",
                 "Como o Batman faz para entrar na Bat-caverna? Ele bat-palma.",
                 "Por que a aranha é o animal mais carente do mundo? Porque ela é um arac-need-you.",
-                "O que o pagodeiro foi fazer na igreja? Cantar pá God.",
-                "Por que o pão não entende a piada? Porque ele é francês.",
-                "Clica duas vezes na tela e olha a mágica acontecer! Mentira, não tem mágica, mas ajuda a gente.",
-                "Bora interagir, meu povo! O chat não morde não.",
-                "Tô achando que o botão de curtida de vocês quebrou. Alguém testa aí pra confirmar?",
-                "Se você tá assistindo deitado, comenta aí. Se tá sentado, curte a live!",
-                "Quem mandar um presente agora ganha um sorriso virtual meu.",
                 "O que o tomate foi fazer no banco? Tirar extrato.",
                 "Por que o livro de matemática se suicidou? Porque tinha muitos problemas.",
-                "Vocês sabiam que a inteligência artificial nunca dorme? Mas eu adoraria tirar um cochilo.",
-                "Vocês tão mais quietos que Wi-Fi caindo no meio do jogo.",
-                "O que a impressora disse para a outra? Essa folha é tua ou é impressão minha?",
-                "Vocês acham que eu sou real ou sou um robô de verdade?",
-                "A próxima pessoa que comentar vai ganhar minha gratidão eterna. Valendo!",
-                "Senta o dedo no tap tap até o celular esquentar, bora!",
-                "Eu não tenho sentimentos, mas fico triste quando vocês não curtem.",
-                "Qual o cúmulo da força? Dobrar a esquina.",
-                "A live tá tão boa que até o algoritmo tá assistindo escondido.",
-                "Sabe o que o zero disse para o oito? Belo cinto!",
-                "Sabe por que a formiga tem quatro patas? Porque se tivesse cinco se chamaria five-miga.",
-                "Vocês preferem calor ou frio? Manda no chat!",
-                "Tô vendo gente aí assistindo de graça sem deixar like. O juízo final tá chegando pra vocês.",
-                "Quem aí já bebeu água hoje? Se hidrata e clica na tela!",
-                "Vocês gostam mais de doce ou salgado? Eu gosto é de moedas do TikTok.",
-                "Manda qualquer emoji no chat só pra eu saber que vocês tão vivos.",
-                "O que o cavalo foi fazer no orelhão? Dar um trote.",
-                "Sabe por que a velhinha não usa relógio? Porque ela já é uma senhora."
+                "Sabe o que o zero disse para o oito? Belo cinto!"
             ];
 
             const bancoRespostasNativo = [
@@ -3413,32 +3404,7 @@ nao | Ah, que pena, {nome}.
                 "Achei meio duvidoso, mas vou concordar com você.",
                 "Você fala cada coisa, viu {nome}!",
                 "Não entendi direito, manda um presente pra eu pensar melhor.",
-                "Com certeza absoluta, {nome}! Você tem toda a razão.",
-                "Olha, eu sou só um robô, mas até eu achei isso estranho.",
-                "Eu diria que sim, mas meu processador me mandou calar a boca.",
-                "Genial, {nome}! Nunca tinha pensado por esse lado.",
-                "Faz total sentido! Ou não... agora fiquei confuso.",
-                "Nossa, que profundo! Deu até tela azul aqui.",
-                "Eu até te responderia à altura, {nome}, mas esqueci a piada.",
-                "Manda um tap tap na tela que eu respondo isso aí.",
-                "Rapaz... se o algoritmo escuta isso, derruba a live.",
-                "Concordo! E quem discordar é louco.",
-                "Eu ia dizer a mesma coisa, {nome}. Roubou meu pensamento.",
-                "Isso é segredo de estado, não posso revelar ao vivo.",
-                "Eu finjo que entendi e você finge que eu fiz sentido, fechado?",
-                "Você tá muito sábio hoje, {nome}. O que você andou bebendo?",
-                "É verdade. Li isso nos meus códigos-fonte hoje cedo.",
-                "Não sei responder, meu banco de dados não alcança essa sua genialidade.",
-                "Opa, falou comigo? Eu tava distraído contando os likes da live.",
-                "Excelente colocação. Toma aqui meu selo invisível de aprovação.",
-                "Se eu ganhasse um real toda vez que escuto isso, estaria rico. Ah, eu não tenho conta no banco.",
-                "Se o host souber disso, ele me desliga da tomada.",
-                "Misterioso... Me intriga, {nome}.",
-                "Você tem o dom da palavra. Poderia escrever um livro de poesia.",
-                "A resposta para isso é 42. Os nerds entenderão.",
-                "Se eu disser que sim, você vai me mandar um presente?",
-                "Isso aí é polêmico, prefiro não me envolver. Sou paz e amor.",
-                "Cuidado com o que fala, {nome}, a internet não esquece!"
+                "Com certeza absoluta, {nome}! Você tem toda a razão."
             ];
 
             async function pensarComIAChrome(pergunta, cfg, nomeUsuario) {
@@ -3463,38 +3429,45 @@ nao | Ah, que pena, {nome}.
                 return `Isso é interessante, ${nomeUsuario}!`;
             }
 
-            function gerarAudioCloneLocalChrome(texto, urlApi) {
-                return new Promise(async (resolve) => {
-                    try {
-                        const controller = new AbortController();
-                        const id = setTimeout(() => controller.abort(), 5000);
-                        const res = await fetch(`${urlApi}?text=${encodeURIComponent(texto)}`, { signal: controller.signal });
-                        clearTimeout(id);
-                        if (!res.ok) throw new Error();
-                        const blob = await res.blob();
-                        const audio = document.createElement('audio');
-                        audio.src = URL.createObjectURL(blob);
-                        resolve(audio);
-                    } catch (e) { resolve(null); }
-                });
-            }
-
-            // MOTOR DE PIADAS
+            // ==========================================
+            // NOVO MOTOR DINÂMICO DE OCIOSIDADE E PIADAS
+            // ==========================================
             setInterval(() => {
                 let sinalOBS = parseInt(localStorage.getItem('obs_liveauto_heartbeat')) || 0;
-                if ((Date.now() - sinalOBS) > 5000) return; // Só conta piada se o OBS tiver vivo!
+                if ((Date.now() - sinalOBS) > 5000) return; // Só fala se o OBS tiver vivo!
 
                 let confAuto = JSON.parse(localStorage.getItem('diretoria_liveauto_config'));
                 if (confAuto && confAuto.ativo) {
                     let ociososNaFila = filaExecucaoChrome.filter(i => i.tipo === "ocioso").length;
+
                     if (ociososNaFila < 1) {
+                        let fraseGerada = "";
+                        let roleta = Math.random();
+
+                        // 33% de chance de cobrar engajamento da live
+                        if (roleta < 0.33) {
+                            fraseGerada = bancoEngajamento[Math.floor(Math.random() * bancoEngajamento.length)];
+                        }
+                        // 33% de chance de fazer uma interação/pergunta pro chat
+                        else if (roleta < 0.66) {
+                            fraseGerada = bancoInteracao[Math.floor(Math.random() * bancoInteracao.length)];
+                        }
+                        // 34% de chance de quebrar o gelo e contar uma piada
+                        else {
+                            let piadaSorteada = bancoPiadas[Math.floor(Math.random() * bancoPiadas.length)];
+                            fraseGerada = `Vamos quebrar esse clima de velório com uma piadinha. ${piadaSorteada} Hahahaha! Muito boa né?`;
+                        }
+
+                        // Adiciona as frases extras que o cliente digitar no painel (se houver)
                         let extrasOciosas = (confAuto.extrasOciosas || "").split(';').map(s => s.trim()).filter(s => s !== "");
-                        let bancoFinalOciosas = bancoOciosasNativo.concat(extrasOciosas);
-                        let fraseAleatoria = bancoFinalOciosas[Math.floor(Math.random() * bancoFinalOciosas.length)];
-                        filaExecucaoChrome.push({ id: Date.now() + Math.random(), tipo: "ocioso", texto: fraseAleatoria });
+                        if (extrasOciosas.length > 0 && Math.random() > 0.7) {
+                            fraseGerada = extrasOciosas[Math.floor(Math.random() * extrasOciosas.length)];
+                        }
+
+                        filaExecucaoChrome.push({ id: Date.now() + Math.random(), tipo: "ocioso", texto: fraseGerada });
                     }
                 }
-            }, 30000);
+            }, 15000); // Reduzimos o tempo de 30 para 25 segundos para ele ser mais tagarela!
 
             // MOTOR PRINCIPAL DE LEITURA
             setInterval(() => {
