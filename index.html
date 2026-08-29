@@ -544,7 +544,7 @@ nao | Ah, que pena, {nome}.
                             <strong style="color: #00f2fe; font-size: 14px;">📥 Servidor de Voz IA (.EXE)</strong><br>
                             Programa local para gerar vozes ultra-realistas sem delay na live.
                         </div>
-                        <a href="https://drive.google.com/file/d/1JqR45v6TDEVb9bqX3R8nkmbK-XiiNDLe/view?usp=drive_link" target="_blank" style="background: #00f2fe; color: black; padding: 8px 15px; border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 13px; transition: 0.2s; white-space: nowrap;">Baixar Programa</a>
+                        <a href="https://drive.google.com/file/d/1dFc7lfeuaWDIXf9Fjo3ulHZp7vhiKcXk/view?usp=sharing" target="_blank" style="background: #00f2fe; color: black; padding: 8px 15px; border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 13px; transition: 0.2s; white-space: nowrap;">Baixar Programa</a>
                     </div>
                 </div>
 
@@ -3427,6 +3427,23 @@ nao | Ah, que pena, {nome}.
                     return respostaGen.replace(/{nome}/g, nomeUsuario);
                 }
                 return `Isso é interessante, ${nomeUsuario}!`;
+            }
+
+            // 👇 COLE ESTA FUNÇÃO AQUI 👇
+            function gerarAudioCloneLocalChrome(texto, urlApi) {
+                return new Promise(async (resolve) => {
+                    try {
+                        const controller = new AbortController();
+                        const id = setTimeout(() => controller.abort(), 5000);
+                        const res = await fetch(`${urlApi}?text=${encodeURIComponent(texto)}`, { signal: controller.signal });
+                        clearTimeout(id);
+                        if (!res.ok) throw new Error();
+                        const blob = await res.blob();
+                        const audio = document.createElement('audio');
+                        audio.src = URL.createObjectURL(blob);
+                        resolve(audio);
+                    } catch (e) { resolve(null); }
+                });
             }
 
             // ==========================================
