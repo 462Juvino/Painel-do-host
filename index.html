@@ -1606,25 +1606,69 @@ nao | Ah, que pena, {nome}.
             }
         }
 
+        // Fila inteligente para o Narrador não falar 10 coisas ao mesmo tempo
+        let filaNarrador = Promise.resolve();
+
         function falar(texto) {
             if (narradorPausado) return;
 
+            filaNarrador = filaNarrador.then(async () => {
+                if (narradorPausado) return;
+
+                // 1. Tenta puxar a configuração da IA lá da aba Live Auto
+                let cfg = null;
+                try { cfg = JSON.parse(localStorage.getItem('diretoria_liveauto_config')); } catch(e) {}
+
+                // 2. Se a IA estiver em modo 'local', tenta gerar o áudio realista primeiro!
+                if (cfg && cfg.modo === 'local' && cfg.apiLocal) {
+                    try {
+                        const controller = new AbortController();
+                        const id = setTimeout(() => controller.abort(), 5000); // Dá 5 segs de limite
+                        const res = await fetch(`${cfg.apiLocal}?text=${encodeURIComponent(texto)}`, { signal: controller.signal });
+                        clearTimeout(id);
+
+                        if (res.ok) {
+                            const blob = await res.blob();
+                            const audio = document.createElement('audio');
+                            audio.src = URL.createObjectURL(blob);
+
+                            // Toca a IA e espera acabar para ir para a próxima mensagem
+                            await new Promise((resolve) => {
+                                audio.onended = resolve;
+                                audio.onerror = resolve;
+                                audio.play().catch(() => {
+                                    // Se o navegador bloquear o autoplay, força o fallback
+                                    falarNativoFallback(texto, resolve);
+                                });
+                            });
+                            return; // Sai da função, a IA já deu conta do recado!
+                        }
+                    } catch (e) {
+                        console.log("IA de Voz offline ou ocupada. Acionando voz do navegador.");
+                    }
+                }
+
+                // 3. FALLBACK: Se não tem IA, a IA falhou, ou o modo é 'nativo', usa a voz mecânica
+                await new Promise((resolve) => {
+                    falarNativoFallback(texto, resolve);
+                });
+            });
+        }
+
+        function falarNativoFallback(texto, callbackResolve) {
             const utterThis = new SpeechSynthesisUtterance(texto);
             const seletor = document.getElementById('seletor-vozes');
             const vozDinamica = document.getElementById('voz-dinamica').checked;
 
             if (vozDinamica && vozesFiltradas.length > 0) {
-                // A Voz Dinâmica agora sorteia entre todas as vozes PT e EN que o PC tiver!
-                const vozAleatoria = vozesFiltradas[Math.floor(Math.random() * vozesFiltradas.length)];
-                utterThis.voice = vozAleatoria;
+                utterThis.voice = vozesFiltradas[Math.floor(Math.random() * vozesFiltradas.length)];
             } else {
-                // Usa a voz principal escolhida na caixinha
                 const vozSelecionada = vozesFiltradas[seletor.value];
-                if (vozSelecionada) {
-                    utterThis.voice = vozSelecionada;
-                }
+                if (vozSelecionada) utterThis.voice = vozSelecionada;
             }
 
+            utterThis.onend = callbackResolve;
+            utterThis.onerror = callbackResolve;
             window.speechSynthesis.speak(utterThis);
         }
 
