@@ -3362,7 +3362,7 @@ nao | Ah, que pena, {nome}.
                         liveauto: loadSafe('diretoria_fila_liveauto', []), // ENVIA A FILA DE BOAS VINDAS
                         liveautoVideos: loadSafe('diretoria_liveauto_videos', { geral: '', resposta: '', presentes: [] }), // 🔥 ENVIA O MAPEAMENTO
                         liveautoDisparo: loadSafe('diretoria_liveauto_disparo', {}), // 🔥 ENVIA A ORDEM PRO OBS TOCAR
-                        batalha: loadSafe('diretoria_batalha', { estado: 'idle', tempoAtual: 0, tempoTotal: 300, auto: false, taps: {}, coins: {} })
+                        batalha: JSON.parse(localStorage.getItem('diretoria_batalha')) || { estado: 'idle', tempoAtual: 300, tempoTotal: 300, auto: false, taps: {}, coins: {} }
                     };
 
                     fetch(urlSync, {
@@ -3546,19 +3546,10 @@ nao | Ah, que pena, {nome}.
             async function processarFilaNPCChrome() {
                 tocandoChrome = true;
 
-                let indexToPlay = 0;
-                let pIdx = filaExecucaoChrome.findIndex(i => i.tipo === 'presente');
-                if (pIdx !== -1) indexToPlay = pIdx;
-                else {
-                    let cIdx = filaExecucaoChrome.findIndex(i => i.tipo === 'chat');
-                    let jIdx = filaExecucaoChrome.findIndex(i => i.tipo === 'join');
-                    let oIdx = filaExecucaoChrome.findIndex(i => i.tipo === 'ocioso');
-                    if (lastPlayedType === 'join') { if (cIdx !== -1) indexToPlay = cIdx; else if (oIdx !== -1) indexToPlay = oIdx; }
-                    else if (lastPlayedType === 'chat') { if (jIdx !== -1) indexToPlay = jIdx; else if (oIdx !== -1) indexToPlay = oIdx; }
-                    else { if (cIdx !== -1) indexToPlay = cIdx; else if (jIdx !== -1) indexToPlay = jIdx; }
-                }
+                // SISTEMA FIFO (Ordem de Chegada)
+                // Remove a prioridade extrema dos presentes para permitir que o bot conte piadas e converse naturalmente
+                let atual = filaExecucaoChrome.shift();
 
-                let atual = filaExecucaoChrome.splice(indexToPlay, 1)[0];
                 lastPlayedType = atual.tipo;
                 isIdlePlaying = (atual.tipo === "ocioso");
 
@@ -3582,9 +3573,23 @@ nao | Ah, que pena, {nome}.
                         let nomeSemAcento = presLimpo.normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '_');
                         urlVideoEscolhido = `@${hostArroba}_${nomeSemAcento}.mp4`;
                     }
-                    if (atual.moedas > 98) textoFinal = `Uau! Muito obrigado pelo presentão, ${atual.nome}!`;
-                    else if (atual.qtd > 1) textoFinal = `Que combo de ${atual.presenteNome}! Valeu, ${atual.nome}!`;
-                    else textoFinal = `Obrigado pelo presente ${atual.presenteNome}, ${atual.nome}!`;
+
+                    // FRASES MAIS HUMANAS E VARIADAS PARA PRESENTES
+                    let variacoesPresente = [
+                        `Obrigado pelo presente ${atual.presenteNome}, ${atual.nome}!`,
+                        `Valeu pelo carinho, ${atual.nome}! Esse ${atual.presenteNome} ajuda demais!`,
+                        `Olha só, ${atual.nome} mandou um ${atual.presenteNome}! Você é fera!`,
+                        `Caramba, ${atual.nome}, muito obrigado! Bora animar essa live!`,
+                        `Aê ${atual.nome}! Recebi seu ${atual.presenteNome}, tamo junto!`
+                    ];
+
+                    if (atual.moedas > 98) {
+                        textoFinal = `Uau! Que presentão, ${atual.nome}! Muito obrigado, de verdade!`;
+                    } else if (atual.qtd > 1) {
+                        textoFinal = `Que combo absurdo de ${atual.presenteNome}! Valeu mesmo, ${atual.nome}!`;
+                    } else {
+                        textoFinal = variacoesPresente[Math.floor(Math.random() * variacoesPresente.length)];
+                    }
                 } else {
                     textoFinal = atual.texto;
                 }
@@ -3711,6 +3716,7 @@ nao | Ah, que pena, {nome}.
             const auto = document.getElementById('batalha-auto-start').checked;
             const batData = { estado: 'running', tempoAtual: tempo, tempoTotal: tempo, auto: auto, taps: {}, coins: {} };
             localStorage.setItem('diretoria_batalha', JSON.stringify(batData));
+            if (typeof sincronizarPainel === 'function') sincronizarPainel(); // 🔥 FORÇA A NUVEM
         }
 
         function pararBatalha() {
@@ -3718,6 +3724,7 @@ nao | Ah, que pena, {nome}.
             b.estado = 'idle';
             b.tempoAtual = b.tempoTotal;
             localStorage.setItem('diretoria_batalha', JSON.stringify(b));
+            if (typeof sincronizarPainel === 'function') sincronizarPainel(); // 🔥 FORÇA A NUVEM
         }
 
         function formatTempo(segs) {
@@ -3866,28 +3873,23 @@ nao | Ah, que pena, {nome}.
                      st = { estado: 'idle', tempoAtual: 300, tempoTotal: 300, auto: false, taps: {}, coins: {} };
                 }
 
-                // ⏱️ MOTOR DE RELÓGIO LISO NO OBS
+                // ⏱️ O OBS AGORA É UM ESPELHO 100% FIEL DO PAINEL
+                // Ele NÃO controla o tempo, apenas exibe a ordem exata que chega da Nuvem
                 if (st.estado === 'running') {
-
-                    // Impede o relógio de iniciar sozinho se o host ainda não mandou o tempo real
-                    if (window.tempoOBS === undefined && stNuvem) {
-                         window.tempoOBS = st.tempoAtual;
-                    } else if (window.tempoOBS === undefined && !stNuvem) {
-                         window.tempoOBS = st.tempoTotal; // Aguarda o host
-                         st.estado = 'idle'; // Força a ficar parado até a nuvem confirmar
+                    if (window.tempoOBS === undefined) {
+                        window.tempoOBS = st.tempoAtual;
+                    } else {
+                        // Fazemos uma animação suave entre os dados da nuvem para não piscar
+                        if (st.tempoAtual > window.tempoOBS) {
+                           window.tempoOBS = st.tempoAtual; // Se o painel reiniciou a batalha, o OBS obedece!
+                        } else if (window.tempoOBS > st.tempoAtual) {
+                           window.tempoOBS--; // O OBS só anda pra frente (pra baixo) sozinho pra manter a fluidez
+                           if (Math.abs(window.tempoOBS - st.tempoAtual) > 2) window.tempoOBS = st.tempoAtual; // Se a Nuvem atualizar e tiver > 2 seg de diferença, força ajuste.
+                        }
                     }
-
-                    // Se o Painel enviar o tempo MÁXIMO (com 2s de margem), significa que você clicou em REINICIAR!
-                    if (stNuvem && stNuvem.tempoAtual >= st.tempoTotal - 2) {
-                        window.tempoOBS = st.tempoTotal;
-                    }
-                    // O OBS assume o controle absoluto da contagem local e NUNCA MAIS volta para trás!
-                    else if (window.tempoOBS !== undefined && st.estado === 'running') {
-                        window.tempoOBS--;
-                        if (window.tempoOBS < 0) window.tempoOBS = 0;
-                    }
-                    st.tempoAtual = window.tempoOBS !== undefined ? window.tempoOBS : st.tempoAtual;
+                    st.tempoAtual = window.tempoOBS;
                 } else {
+                    // Se estiver Idle ou Finished, obedece estritamente ao Painel!
                     window.tempoOBS = st.tempoAtual;
                 }
 
