@@ -1449,15 +1449,12 @@ nao | Ah, que pena, {nome}.
             }
         }
 
-        // ==========================================
-        // GERADOR DE LINKS AUTOMÁTICOS
-        // ==========================================
         function copiarLinkOBS(viewName) {
-            // A MÁGICA: O split('#')[0] arranca qualquer âncora fantasma antes de gerar o link!
             let baseUrl = window.location.href.split('?')[0].split('#')[0];
             const user = localStorage.getItem('rdm_user_tiktok') || localStorage.getItem('rdm_user') || 'visitante';
 
-            let linkFinal = `${baseUrl}?u=${user}&p=pro&view=${viewName}`;
+            // A MÁGICA: encodeURIComponent transforma espaços em "%20", impedindo o OBS de quebrar o link!
+            let linkFinal = `${baseUrl}?u=${encodeURIComponent(user)}&p=pro&view=${viewName}`;
 
             navigator.clipboard.writeText(linkFinal).then(() => {
                 alert(`✅ Link copiado com sucesso!\nCole direto no TikTok Studio/OBS como Fonte de Navegador (O fundo já vai transparente).\n\nLink: ${linkFinal}`);
@@ -3570,29 +3567,35 @@ nao | Ah, que pena, {nome}.
                     if (!playerAudioChrome) playerAudioChrome = new SpeechSynthesisUtterance(textoFinal);
 
                     let audioTerminado = false;
-                    const finalizarChrome = () => {
-                        if (audioTerminado) return;
-                        audioTerminado = true;
-                        localStorage.setItem('diretoria_liveauto_disparo', JSON.stringify({ id: Date.now(), url: 'ESCONDER' }));
 
-                        window.motorDeVozOcupado = false;
-                        window.itensNaFilaIA--;
-                        tocandoChrome = false;
-                        isIdlePlaying = false;
-                    };
+                    // TRAVA MESTRA: Obrigamos a fila global a "congelar" até este áudio acabar!
+                    await new Promise((resolve) => {
+                        const finalizarChrome = () => {
+                            if (audioTerminado) return;
+                            audioTerminado = true;
+                            localStorage.setItem('diretoria_liveauto_disparo', JSON.stringify({ id: Date.now(), url: 'ESCONDER' }));
 
-                    if (playerAudioChrome instanceof SpeechSynthesisUtterance) {
-                        playerAudioChrome.onend = finalizarChrome;
-                        playerAudioChrome.onerror = finalizarChrome;
-                        window.speechSynthesis.speak(playerAudioChrome);
-                    } else {
-                        playerAudioChrome.onended = finalizarChrome;
-                        playerAudioChrome.onerror = finalizarChrome;
-                        let pAud = playerAudioChrome.play();
-                        if (pAud) pAud.catch(finalizarChrome);
-                    }
+                            window.motorDeVozOcupado = false;
+                            window.itensNaFilaIA--;
+                            tocandoChrome = false;
+                            isIdlePlaying = false;
+                            resolve(); // <--- A MÁGICA AQUI: Isso avisa a Fila Mestra que ela já pode tocar o próximo!
+                        };
+
+                        if (playerAudioChrome instanceof SpeechSynthesisUtterance) {
+                            playerAudioChrome.onend = finalizarChrome;
+                            playerAudioChrome.onerror = finalizarChrome;
+                            window.speechSynthesis.speak(playerAudioChrome);
+                        } else {
+                            playerAudioChrome.onended = finalizarChrome;
+                            playerAudioChrome.onerror = finalizarChrome;
+                            let pAud = playerAudioChrome.play();
+                            if (pAud) pAud.catch(finalizarChrome);
+                        }
+                    }); // Fim da Promise de espera
                 });
-            } else {
+            } // FIM DA FUNÇÃO processarFilaNPCChrome
+        } else {
             // MODO OBS / TIKTOK STUDIO (O ESCRAVO DA API)
             window.NUVEM_OBS = {};
             let ultimaOrdemReload = null; // Memória para o gatilho de F5
