@@ -2409,7 +2409,21 @@ nao | Ah, que pena, {nome}.
             if (memDirty.metaL) { localStorage.setItem('diretoria_meta_like', JSON.stringify(cacheSys.metaLike)); memDirty.metaL = false; }
             if (memDirty.maiores) { localStorage.setItem('diretoria_maiores_presentes', JSON.stringify(maioresPresentes)); memDirty.maiores = false; }
             if (memDirty.meta) { localStorage.setItem('diretoria_users_meta', JSON.stringify(ramData.usersMeta)); memDirty.meta = false; }
-            if (memDirty.liveauto) { localStorage.setItem('diretoria_fila_liveauto', JSON.stringify(ramData.filaLiveAuto)); memDirty.liveauto = false; }
+            if (memDirty.liveauto) {
+                localStorage.setItem('diretoria_fila_liveauto', JSON.stringify(ramData.filaLiveAuto));
+
+                // Se for OBS (TikTok Studio), envia as falas geradas para a Nuvem, para o Painel enviar ao Python!
+                if (new URLSearchParams(window.location.search).get('view') !== null) {
+                    const userG = (localStorage.getItem('rdm_user_tiktok') || localStorage.getItem('rdm_user') || 'visitante').replace(/[.#$[\\]]/g, '_');
+                    fetch(`https://painel-do-host-default-rtdb.firebaseio.com/usuarios/${userG}/obs_fila_liveauto_pendente.json`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(ramData.filaLiveAuto.slice(-10))
+                    }).catch(()=>{});
+                }
+
+                memDirty.liveauto = false;
+            }
         }, 1500);
         // ==========================================
         // SISTEMA DO LETREIRO ANIMADO (COM FOTO)
@@ -2783,9 +2797,10 @@ nao | Ah, que pena, {nome}.
                         }
                     }
                 }
-                // Bloqueia a sobreposição caso a view atual seja mídia, potes, letreiro, gerador, sorteio, podio ou live_auto
-                if (viewMode !== 'midia' && !viewMode.startsWith('pote') && viewMode !== 'gerador' && viewMode !== 'letreiro' && viewMode !== 'sorteio' && viewMode !== 'podio_fas' && viewMode !== 'live_auto') {
-                    document.getElementById('obs-container').innerHTML = html;
+                // Bloqueia a sobreposição para telas que têm renderização própria
+                if (viewMode !== 'midia' && !viewMode.startsWith('pote') && viewMode !== 'gerador' && viewMode !== 'letreiro' && viewMode !== 'sorteio' && viewMode !== 'podio_fas' && viewMode !== 'live_auto' && viewMode !== 'batalha') {
+                    const obsCont = document.getElementById('obs-container');
+                    if (obsCont) obsCont.innerHTML = html;
                 }
             }, 1000);
             // ===================================
@@ -3002,7 +3017,16 @@ nao | Ah, que pena, {nome}.
 
                 setInterval(() => {
                     // 🔥 SENSOR DE PRESENÇA: Avisa o Cérebro no Chrome que o OBS está ligado!
-                    localStorage.setItem('obs_liveauto_heartbeat', Date.now().toString());
+                    const t = Date.now().toString();
+                    localStorage.setItem('obs_liveauto_heartbeat', t);
+
+                    // Dispara para a Nuvem para furar o bloqueio do TikTok Studio
+                    const userG = (localStorage.getItem('rdm_user_tiktok') || localStorage.getItem('rdm_user') || 'visitante').replace(/[.#$[\\]]/g, '_');
+                    fetch(`https://painel-do-host-default-rtdb.firebaseio.com/usuarios/${userG}/obs_liveauto_ativo.json`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ heartbeat: t })
+                    }).catch(()=>{});
 
                     const vCfg = JSON.parse(getSafeMem('diretoria_liveauto_videos')) || { geral: '', resposta: '', presentes: [] };
                     const vidGeral = document.getElementById('vid-geral');
@@ -3337,10 +3361,34 @@ nao | Ah, que pena, {nome}.
         // O GRANDE MOTOR DE SINCRONIZAÇÃO GLOBAL (API DO PAINEL)
         // ==========================================
         const userGlobal = localStorage.getItem('rdm_user_tiktok') || localStorage.getItem('rdm_user') || 'visitante';
-        const userGLimpo = userGlobal.replace(/[.#$[\]]/g, '_');
+        const userGLimpo = userGlobal.replace(/[.#$[\\]]/g, '_');
         const urlSync = `https://painel-do-host-default-rtdb.firebaseio.com/usuarios/${userGLimpo}/sync_global.json`;
 
         if (!viewModeParam) {
+            // Escuta o OBS do TikTok Studio (Heartbeat + Falas para o Python)
+            setInterval(() => {
+                fetch(`https://painel-do-host-default-rtdb.firebaseio.com/usuarios/${userGLimpo}/obs_liveauto_ativo.json`)
+                    .then(r => r.json())
+                    .then(d => { if (d && d.heartbeat) localStorage.setItem('obs_liveauto_heartbeat', d.heartbeat); })
+                    .catch(()=>{});
+
+                fetch(`https://painel-do-host-default-rtdb.firebaseio.com/usuarios/${userGLimpo}/obs_fila_liveauto_pendente.json`)
+                    .then(r => r.json())
+                    .then(d => {
+                        if (d && Array.isArray(d)) {
+                            let filaPainel = JSON.parse(localStorage.getItem('diretoria_fila_liveauto')) || [];
+                            let mudou = false;
+                            d.forEach(itemObs => {
+                                if (!filaPainel.some(i => i.id === itemObs.id)) {
+                                    filaPainel.push(itemObs);
+                                    mudou = true;
+                                }
+                            });
+                            if (mudou) localStorage.setItem('diretoria_fila_liveauto', JSON.stringify(filaPainel));
+                        }
+                    }).catch(()=>{});
+            }, 2000);
+
             // MODO CHROME (O CÉREBRO): Loop Inteligente Anti-Gargalo
             function sincronizarPainel() {
                 try {
@@ -3362,7 +3410,7 @@ nao | Ah, que pena, {nome}.
                         liveauto: loadSafe('diretoria_fila_liveauto', []), // ENVIA A FILA DE BOAS VINDAS
                         liveautoVideos: loadSafe('diretoria_liveauto_videos', { geral: '', resposta: '', presentes: [] }), // 🔥 ENVIA O MAPEAMENTO
                         liveautoDisparo: loadSafe('diretoria_liveauto_disparo', {}), // 🔥 ENVIA A ORDEM PRO OBS TOCAR
-                        batalha: JSON.parse(localStorage.getItem('diretoria_batalha')) || { estado: 'idle', tempoAtual: 300, tempoTotal: 300, auto: false, taps: {}, coins: {} }
+                        batalha: loadSafe('diretoria_batalha', { estado: 'idle', tempoAtual: 300, tempoTotal: 300, auto: false, taps: {}, coins: {} })
                     };
 
                     fetch(urlSync, {
@@ -3874,22 +3922,18 @@ nao | Ah, que pena, {nome}.
                 }
 
                 // ⏱️ O OBS AGORA É UM ESPELHO 100% FIEL DO PAINEL
-                // Ele NÃO controla o tempo, apenas exibe a ordem exata que chega da Nuvem
                 if (st.estado === 'running') {
-                    if (window.tempoOBS === undefined) {
+                    if (window.tempoOBS === undefined) window.tempoOBS = st.tempoAtual;
+
+                    window.tempoOBS--;
+                    if (window.tempoOBS < 0) window.tempoOBS = 0;
+
+                    // Se o OBS ficar atrasado ou adiantado mais de 2s em relação ao painel, ele corrige a rota sozinho
+                    if (Math.abs(window.tempoOBS - st.tempoAtual) > 2) {
                         window.tempoOBS = st.tempoAtual;
-                    } else {
-                        // Fazemos uma animação suave entre os dados da nuvem para não piscar
-                        if (st.tempoAtual > window.tempoOBS) {
-                           window.tempoOBS = st.tempoAtual; // Se o painel reiniciou a batalha, o OBS obedece!
-                        } else if (window.tempoOBS > st.tempoAtual) {
-                           window.tempoOBS--; // O OBS só anda pra frente (pra baixo) sozinho pra manter a fluidez
-                           if (Math.abs(window.tempoOBS - st.tempoAtual) > 2) window.tempoOBS = st.tempoAtual; // Se a Nuvem atualizar e tiver > 2 seg de diferença, força ajuste.
-                        }
                     }
-                    st.tempoAtual = window.tempoOBS;
+                    st.tempoAtual = window.tempoOBS; // A tela usará esse tempo fluído
                 } else {
-                    // Se estiver Idle ou Finished, obedece estritamente ao Painel!
                     window.tempoOBS = st.tempoAtual;
                 }
 
