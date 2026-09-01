@@ -2306,12 +2306,14 @@ nao | Ah, que pena, {nome}.
                     giftPictureUrl = window.catalogoGlobal[giftName].url || "";
                 }
 
+
                 // SOMA NA BATALHA X1
                 let batData = JSON.parse(localStorage.getItem('diretoria_batalha')) || { estado: 'idle', tempoAtual: 0, tempoTotal: 300, auto: false, taps: {}, coins: {} };
                 if (batData.estado === 'running') {
                     if (!batData.coins[user]) batData.coins[user] = { avatar: avatarUrl, score: 0 };
                     batData.coins[user].score += totalDiamonds;
                     localStorage.setItem('diretoria_batalha', JSON.stringify(batData));
+                    window.batalhaPrecisaAtualizarOBS = true;
                 }
 
                 // Salvando a QTD e a URL corretas na fila dos Potes 2D
@@ -2380,11 +2382,12 @@ nao | Ah, que pena, {nome}.
                 somarPontoRanking('likes', user, avatarUrl, likeCount);
 
                 // SOMA NA BATALHA X1
-                let batDataL = JSON.parse(localStorage.getItem('diretoria_batalha')) || { estado: 'idle', tempoAtual: 0, tempoTotal: 300, auto: false, taps: {}, coins: {} };
-                if (batDataL.estado === 'running') {
-                    if (!batDataL.taps[user]) batDataL.taps[user] = { avatar: avatarUrl, score: 0 };
-                    batDataL.taps[user].score += likeCount;
-                    localStorage.setItem('diretoria_batalha', JSON.stringify(batDataL));
+                let batData = JSON.parse(localStorage.getItem('diretoria_batalha')) || { estado: 'idle', tempoAtual: 0, tempoTotal: 300, auto: false, taps: {}, coins: {} };
+                if (batData.estado === 'running') {
+                    if (!batData.coins[user]) batData.coins[user] = { avatar: avatarUrl, score: 0 };
+                    batData.coins[user].score += totalDiamonds;
+                    localStorage.setItem('diretoria_batalha', JSON.stringify(batData));
+                    window.batalhaPrecisaAtualizarOBS = true;
                 }
 
                 cacheSys.metaLike.atual += likeCount;
@@ -2397,11 +2400,52 @@ nao | Ah, que pena, {nome}.
             }
         }
 
-        // ESVAZIADOR DO BUFFER (Salva a RAM no HD a cada 1.5s pra não explodir o disco)
+        // ESVAZIADOR DO BUFFER E SINCRONIZADOR OBS
         setInterval(() => {
-            if (new URLSearchParams(window.location.search).get('view')) return; // OBS PROIBIDO DE SALVAR NO HD DA MÁQUINA!
+            const isOBS = new URLSearchParams(window.location.search).get('view') !== null;
+            const rdmUser = localStorage.getItem('rdm_user_tiktok') || localStorage.getItem('rdm_user') || 'visitante';
+            const userLimpo = rdmUser.replace(/[.#$[\]]/g, '_');
 
-            if (memDirty.ativos) { localStorage.setItem('diretoria_ativos_obj', JSON.stringify(ramData.ativosObj)); memDirty.ativos = false; }
+            if (isOBS) {
+                // OBS MODO: Envia os dados locais para o Firebase para alimentar o TikTok Studio!
+                const isMaster = (typeof wsTikfinity !== 'undefined' && wsTikfinity && wsTikfinity.readyState === 1);
+
+                if (isMaster) {
+                    let payload = {};
+                    let enviar = false;
+
+                    if (memDirty.ativos) { payload.ativos = Array.from(usuariosAtivosLive); memDirty.ativos = false; enviar = true; }
+                    if (memDirty.metaG) { payload.metaG = cacheSys.metaGift; memDirty.metaG = false; enviar = true; }
+                    if (memDirty.metaL) { payload.metaL = cacheSys.metaLike; memDirty.metaL = false; enviar = true; }
+                    if (memDirty.maiores) { payload.maiores = maioresPresentes; memDirty.maiores = false; enviar = true; }
+                    if (memDirty.meta) { payload.umeta = ramData.usersMeta; memDirty.meta = false; enviar = true; }
+                    if (memDirty.potes) { payload.potes = ramData.filaPotes; memDirty.potes = false; enviar = true; }
+                    if (rankingPrecisaAtualizar) { payload.rank = bancoRankings; rankingPrecisaAtualizar = false; enviar = true; }
+                    if (window.batalhaPrecisaAtualizarOBS) { payload.batalha = JSON.parse(localStorage.getItem('diretoria_batalha')); window.batalhaPrecisaAtualizarOBS = false; enviar = true; }
+
+                    if (memDirty.liveauto) {
+                        payload.liveauto = ramData.filaLiveAuto;
+                        memDirty.liveauto = false; enviar = true;
+                        // Fila do Live Auto
+                        fetch(`https://painel-do-host-default-rtdb.firebaseio.com/usuarios/${userLimpo}/obs_fila_liveauto_pendente.json`, {
+                            method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ramData.filaLiveAuto.slice(-10))
+                        }).catch(()=>{});
+                    }
+
+                    if (enviar) {
+                        // PATCH envia os dados limpos direto para o Tik Tok Studio ver!
+                        fetch(`https://painel-do-host-default-rtdb.firebaseio.com/usuarios/${userLimpo}/sync_global.json`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        }).catch(()=>{});
+                    }
+                }
+                return; // Bloqueia o salvamento no HD local do OBS
+            }
+
+            // MODO CHROME: Salva no disco normalmente
+            if (memDirty.ativos) { localStorage.setItem('diretoria_ativos_obj', JSON.stringify(ramData.ativosObj)); localStorage.setItem('diretoria_ativos', JSON.stringify(Array.from(usuariosAtivosLive))); memDirty.ativos = false; }
             if (memDirty.vistos) { localStorage.setItem('diretoria_vistos_hj', JSON.stringify(ramData.vistos)); memDirty.vistos = false; }
             if (memDirty.rastreio) { localStorage.setItem('diretoria_rastreio_sorteio', JSON.stringify(ramData.rastreioSorteio)); memDirty.rastreio = false; }
             if (memDirty.potes) { localStorage.setItem('diretoria_fila_potes', JSON.stringify(ramData.filaPotes)); memDirty.potes = false; }
@@ -2409,21 +2453,7 @@ nao | Ah, que pena, {nome}.
             if (memDirty.metaL) { localStorage.setItem('diretoria_meta_like', JSON.stringify(cacheSys.metaLike)); memDirty.metaL = false; }
             if (memDirty.maiores) { localStorage.setItem('diretoria_maiores_presentes', JSON.stringify(maioresPresentes)); memDirty.maiores = false; }
             if (memDirty.meta) { localStorage.setItem('diretoria_users_meta', JSON.stringify(ramData.usersMeta)); memDirty.meta = false; }
-            if (memDirty.liveauto) {
-                localStorage.setItem('diretoria_fila_liveauto', JSON.stringify(ramData.filaLiveAuto));
-
-                // Se for OBS (TikTok Studio), envia as falas geradas para a Nuvem, para o Painel enviar ao Python!
-                if (new URLSearchParams(window.location.search).get('view') !== null) {
-                    const userG = (localStorage.getItem('rdm_user_tiktok') || localStorage.getItem('rdm_user') || 'visitante').replace(/[.#$[\\]]/g, '_');
-                    fetch(`https://painel-do-host-default-rtdb.firebaseio.com/usuarios/${userG}/obs_fila_liveauto_pendente.json`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(ramData.filaLiveAuto.slice(-10))
-                    }).catch(()=>{});
-                }
-
-                memDirty.liveauto = false;
-            }
+            if (memDirty.liveauto) { localStorage.setItem('diretoria_fila_liveauto', JSON.stringify(ramData.filaLiveAuto)); memDirty.liveauto = false; }
         }, 1500);
         // ==========================================
         // SISTEMA DO LETREIRO ANIMADO (COM FOTO)
@@ -3716,30 +3746,35 @@ nao | Ah, que pena, {nome}.
                             }
                         }
 
-                        window.NUVEM_OBS['diretoria_rankings'] = JSON.stringify(st.rank || { diario: { id: '', gifters: {}, likes: {} }, semanal: { id: '', gifters: {}, likes: {} }, mensal: { id: '', gifters: {}, likes: {} }, semestral: { id: '', gifters: {}, likes: {} }, anual: { id: '', gifters: {}, likes: {} }, geral: { id: 'geral', gifters: {}, likes: {} } });
-                        window.NUVEM_OBS['diretoria_meta_gift'] = JSON.stringify(st.metaG || { alvo: 100, atual: 0, presente: "" });
-                        window.NUVEM_OBS['diretoria_meta_like'] = JSON.stringify(st.metaL || { alvo: 10000, atual: 0 });
-                        window.NUVEM_OBS['diretoria_users_meta'] = JSON.stringify(st.umeta || {});
-                        window.NUVEM_OBS['diretoria_ativos'] = JSON.stringify(st.ativos || []);
-                        window.NUVEM_OBS['diretoria_maiores_presentes'] = JSON.stringify(st.maiores || []);
+                        const isMaster = (typeof wsTikfinity !== 'undefined' && wsTikfinity && wsTikfinity.readyState === 1);
+
+                        // O OBS Mestre (que lê do TikFinity) NÃO deve ser sobrescrito pelo Firebase (pois ele gera os dados)
+                        if (!isMaster) {
+                            window.NUVEM_OBS['diretoria_rankings'] = JSON.stringify(st.rank || { diario: { id: '', gifters: {}, likes: {} }, semanal: { id: '', gifters: {}, likes: {} }, mensal: { id: '', gifters: {}, likes: {} }, semestral: { id: '', gifters: {}, likes: {} }, anual: { id: '', gifters: {}, likes: {} }, geral: { id: 'geral', gifters: {}, likes: {} } });
+                            window.NUVEM_OBS['diretoria_meta_gift'] = JSON.stringify(st.metaG || { alvo: 100, atual: 0, presente: "" });
+                            window.NUVEM_OBS['diretoria_meta_like'] = JSON.stringify(st.metaL || { alvo: 10000, atual: 0 });
+                            window.NUVEM_OBS['diretoria_users_meta'] = JSON.stringify(st.umeta || {});
+                            window.NUVEM_OBS['diretoria_ativos'] = JSON.stringify(st.ativos || []);
+                            window.NUVEM_OBS['diretoria_maiores_presentes'] = JSON.stringify(st.maiores || []);
+                            window.NUVEM_OBS['diretoria_fila_potes'] = JSON.stringify(st.potes || []);
+                            if(st.batalha) window.NUVEM_OBS['diretoria_batalha'] = JSON.stringify(st.batalha);
+                        }
+
+                        // Configurações do Painel descem normalmente
                         window.NUVEM_OBS['diretoria_letreiro'] = JSON.stringify(st.letr || { itens: [], sep: "⭐", vel: 60 });
                         window.NUVEM_OBS['diretoria_rank_layout'] = JSON.stringify(st.layout || {"gifters":"completo","gifts":"completo","likes":"completo"});
-                        window.NUVEM_OBS['diretoria_fila_potes'] = JSON.stringify(st.potes || []);
-
-                        // Sincroniza Sorteios, Mídias e LIVE AUTO em tempo real!
                         if(st.sort && st.sort.id) window.NUVEM_OBS['diretoria_sorteio_disparo'] = JSON.stringify(st.sort);
                         if(st.midia && st.midia.id) window.NUVEM_OBS['diretoria_midia_disparo'] = JSON.stringify(st.midia);
                         window.NUVEM_OBS['diretoria_fila_liveauto'] = JSON.stringify(st.liveauto || []);
-
-                        // 🔥 OBS RECEBENDO O SINAL DO CÉREBRO
                         window.NUVEM_OBS['diretoria_liveauto_videos'] = JSON.stringify(st.liveautoVideos || { geral: '', resposta: '', presentes: [] });
                         if(st.liveautoDisparo && st.liveautoDisparo.id) window.NUVEM_OBS['diretoria_liveauto_disparo'] = JSON.stringify(st.liveautoDisparo);
 
-                        if(st.batalha) window.NUVEM_OBS['diretoria_batalha'] = JSON.stringify(st.batalha);
                         try {
-                            localStorage.setItem('diretoria_rankings', window.NUVEM_OBS['diretoria_rankings']);
-                            localStorage.setItem('diretoria_users_meta', window.NUVEM_OBS['diretoria_users_meta']);
-                            localStorage.setItem('diretoria_meta_like', window.NUVEM_OBS['diretoria_meta_like']);
+                            if (!isMaster) {
+                                localStorage.setItem('diretoria_rankings', window.NUVEM_OBS['diretoria_rankings']);
+                                localStorage.setItem('diretoria_users_meta', window.NUVEM_OBS['diretoria_users_meta']);
+                                localStorage.setItem('diretoria_meta_like', window.NUVEM_OBS['diretoria_meta_like']);
+                            }
                         } catch(e) {}
                     }
                     setTimeout(lerNuvemOBS, 1000); // Só busca de novo quando o Firebase responder!
@@ -3814,13 +3849,16 @@ nao | Ah, que pena, {nome}.
             }
         };
 
-        // RELÓGIO MESTRE (Só roda no Chrome, não no OBS)
-        if (!new URLSearchParams(window.location.search).get('view')) {
-            if (!localStorage.getItem('diretoria_batalha')) {
-                localStorage.setItem('diretoria_batalha', JSON.stringify({estado: 'idle', tempoAtual: 300, tempoTotal: 300, auto: false, taps: {}, coins: {}}));
-            }
+        // RELÓGIO MESTRE (Roda no Chrome OU no OBS Mestre local)
+        if (!localStorage.getItem('diretoria_batalha')) {
+            localStorage.setItem('diretoria_batalha', JSON.stringify({estado: 'idle', tempoAtual: 300, tempoTotal: 300, auto: false, taps: {}, coins: {}}));
+        }
 
-            setInterval(() => {
+        setInterval(() => {
+            const isChrome = !new URLSearchParams(window.location.search).get('view');
+            const isMaster = (typeof wsTikfinity !== 'undefined' && wsTikfinity && wsTikfinity.readyState === 1);
+
+            if (isChrome || isMaster) {
                 let b = JSON.parse(localStorage.getItem('diretoria_batalha'));
                 if (!b) return;
 
@@ -3839,15 +3877,17 @@ nao | Ah, que pena, {nome}.
                                     bb.taps = {};
                                     bb.coins = {};
                                     localStorage.setItem('diretoria_batalha', JSON.stringify(bb));
+                                    window.batalhaPrecisaAtualizarOBS = true;
                                 }
                             }, 5000); // 5 Segundos de comemoração
                         }
                     }
                     localStorage.setItem('diretoria_batalha', JSON.stringify(b));
+                    window.batalhaPrecisaAtualizarOBS = true;
                 }
                 if(window.renderizarBatalhaPainel) renderizarBatalhaPainel();
-            }, 1000);
-        }
+            }
+        }, 1000);
 
         // TELA DO OBS
         const viewModeBatalha = new URLSearchParams(window.location.search).get('view');
